@@ -10,6 +10,7 @@
 import requests
 import json
 import time
+import datetime as dt
 
 
 class JSONRPCException(Exception):
@@ -64,6 +65,9 @@ class BitcoinProxy(JSONRPCProxy):
     def getblock(self, hash):
         """Returns information about the block with the given hash."""
         r = self._call('getblock', hash)
+        r['time'] = dt.datetime.fromtimestamp(
+            int(r['time'])).strftime('%Y-%m-%d %H:%M:%S')
+        r['height'] = int(r['height'])
         return r
 
     def getblockcount(self):
