@@ -27,10 +27,17 @@ def generate_tx_graph(first_block=0, last_block=None):
     print("Generating transaction graph from block %d to %d..." % (first_block,
           last_block))
 
-    for x in range(first_block, last_block + 1):
-        block_hash = bcProxy.getblockhash(first_block)
-        block = bcProxy.getblock(block_hash)
+    current_block = first_block
+    next_block_hash = bcProxy.getblockhash(first_block)
+
+    while (next_block_hash is not None) and (current_block <= last_block):
+        block = bcProxy.getblock(next_block_hash)
         print_json(block)
+        if 'nextblockhash' in block:
+            next_block_hash = block['nextblockhash']
+        else:
+            next_block_hash = None
+        current_block += 1
 
 if __name__ == '__main__':
-    generate_tx_graph(105,106)
+    generate_tx_graph(106, 106)
