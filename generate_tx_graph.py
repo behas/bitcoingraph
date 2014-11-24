@@ -9,7 +9,6 @@
 
 
 import rpc
-
 import json
 
 
@@ -17,27 +16,49 @@ def print_json(obj):
     print(json.dumps(obj, sort_keys=True, indent=4, separators=(',', ': ')))
 
 
-def generate_tx_graph(first_block=0, last_block=None):
-    bcProxy = rpc.BitcoinProxy('http://bitcoinrpc:pass@localhost:8332/')
-    if first_block == 0:
-        first_block = 0
-    if last_block is None:
-        last_block = bcProxy.getblockcount()
+# TODO: write TransactionGenerator class with transaction generator function
 
-    print("Generating transaction graph from block %d to %d..." % (first_block,
-          last_block))
+DEFAULT_SERVICE_URI = 'http://bitcoinrpc:pass@localhost:8332/'
 
-    current_block = first_block
-    next_block_hash = bcProxy.getblockhash(first_block)
 
-    while (next_block_hash is not None) and (current_block <= last_block):
-        block = bcProxy.getblock(next_block_hash)
-        print_json(block)
-        if 'nextblockhash' in block:
-            next_block_hash = block['nextblockhash']
+class TransactionGraphHandler(object):
+    """
+    Handler for Bitcoin transaction graph.
+    """
+
+    def __init__(self, bitcoin_service_uri=None):
+        # initialize Bitcoin proxy
+        if bitcoin_service_uri is not None:
+            self.bcProxy = rpc.BitcoinProxy(bitcoin_service_uri)
         else:
-            next_block_hash = None
-        current_block += 1
+            self.bcProxy = rpc.BitcoinProxy(DEFAULT_SERVICE_URI)
+
+    def transaction_range(self, first_height=0, last_height=0):
+        if first_height == 0:
+            first_height = 0
+        if last_height is None:
+            last_height = self.bcProxy.getblockcount()
+
+        current_height = first_height
+        next_block_hash = self.bcProxy.getblockhash(first_height)
+
+        while (next_block_hash is not None) and \
+              (current_height <= last_height):
+
+            block = self.bcProxy.getblock(next_block_hash)
+            for tx in block['tx']:
+                transaction = self.bcProxy.getrawtransaction(tx)
+                yield transaction
+            if 'nextblockhash' in block:
+                next_block_hash = block['nextblockhash']
+            else:
+                next_block_hash = None
+            current_height += 1
+
 
 if __name__ == '__main__':
-    generate_tx_graph(106, 106)
+    handler = TransactionGraphHandler()
+    transactions = handler.transaction_range(100000, 100000)
+    for tx in transactions:
+        # print("Bla")
+        print_json(tx)
