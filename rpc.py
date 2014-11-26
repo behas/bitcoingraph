@@ -9,8 +9,6 @@
 
 import requests
 import json
-import time
-import datetime as dt
 
 
 class JSONRPCException(Exception):
@@ -65,9 +63,6 @@ class BitcoinProxy(JSONRPCProxy):
     def getblock(self, hash):
         """Returns information about the block with the given hash."""
         r = self._call('getblock', hash)
-        r['time'] = dt.datetime.fromtimestamp(
-            int(r['time'])).strftime('%Y-%m-%d %H:%M:%S')
-        r['height'] = int(r['height'])
         return r
 
     def getblockcount(self):
@@ -85,10 +80,12 @@ class BitcoinProxy(JSONRPCProxy):
         r = self._call('getinfo')
         return r
 
-    def getrawtransaction(self, txid, verbose=1):
+    def getrawtransaction(self, tx_id, verbose=1):
         """Returns raw transaction representation for given transaction id."""
-        r = self._call('getrawtransaction', txid, verbose)
+        r = self._call('getrawtransaction', tx_id, verbose)
         return r
+
+    ## TODO: implement further methods as needed
 
 
 if __name__ == '__main__':
