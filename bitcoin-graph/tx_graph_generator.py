@@ -41,6 +41,9 @@ class BlockchainObject:
     def __str__(self):
         return to_json(self._raw_data)
 
+    def __repr__(self):
+        return to_json(self._raw_data)
+
 
 class Block(BlockchainObject):
     """
@@ -62,7 +65,7 @@ class Block(BlockchainObject):
         return self._raw_data['tx']
 
 
-class Transaction:
+class Transaction(BlockchainObject):
     """
     Wrapper class for bitcoin transactions
     """
@@ -136,4 +139,4 @@ if __name__ == '__main__':
     for block in handler.blocks(105, 105):
         print(block.height, block.time, block.tx_count)
         for transaction in handler.transactions(block.tx_ids):
-            print(transaction.txid)
+            print(transaction)
