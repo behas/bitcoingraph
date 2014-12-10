@@ -57,6 +57,10 @@ class Block(BlockchainObject):
         return int(self._raw_data['height'])
 
     @property
+    def hash(self):
+        return self._raw_data['hash']
+
+    @property
     def tx_count(self):
         return len(self._raw_data['tx'])
 
@@ -105,7 +109,11 @@ class BlockChain:
 
     def __init__(self, bitcoin_proxy):
         self._bitcoin_proxy = bitcoin_proxy
-        print("Init Blockchain")
+
+    def get_block_by_hash(self, block_hash):
+        # Returns block with a given height
+        raw_block_data = self._bitcoin_proxy.getblock(block_hash)
+        return Block(raw_block_data)
 
     def blocks(self, first_height=0, last_height=0):
         # Generator yielding block json data for a given block range
