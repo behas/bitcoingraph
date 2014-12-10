@@ -71,9 +71,9 @@ class BitcoinProxy(JSONRPCProxy):
     def __init__(self, url):
         super().__init__(url)
 
-    def getblock(self, hash):
+    def getblock(self, block_hash):
         """Returns information about the block with the given hash."""
-        r = self._call('getblock', hash)
+        r = self._call('getblock', block_hash)
         return r
 
     def getblockcount(self):
@@ -81,9 +81,9 @@ class BitcoinProxy(JSONRPCProxy):
         r = self._call('getblockcount')
         return int(r)
 
-    def getblockhash(self, index):
-        """Returns hash of block in best-block-chain at <index>"""
-        r = self._call('getblockhash', index)
+    def getblockhash(self, height):
+        """Returns hash of block in best-block-chain at <height>"""
+        r = self._call('getblockhash', height)
         return r
 
     def getinfo(self):
