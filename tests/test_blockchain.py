@@ -1,9 +1,15 @@
 import unittest
 
-import bitcoingraph
+from tests.rpc_mock import BitcoinProxyMock
+
+from bitcoingraph.blockchain import BlockChain
 
 
-class TestSimple(unittest.TestCase):
+class TestBlockchain(unittest.TestCase):
 
-    def test_failure(self):
-        self.assertTrue(True)
+    def setUp(self):
+        bitcoin_proxy = BitcoinProxyMock()
+        self.blockchain = BlockChain(bitcoin_proxy)
+
+    def test_init(self):
+        self.assertIsNotNone(self.blockchain)

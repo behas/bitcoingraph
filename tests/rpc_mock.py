@@ -5,7 +5,8 @@ class BitcoinProxyMock(BitcoinProxy):
 
     """Proxy to Bitcoin RPC Service implementing Bitcoin client call list
     https://en.bitcoin.it/wiki/Original_Bitcoin_client/API_Calls_list"""
-    def __init__(self, url):
+
+    def __init__(self, url=None):
         super().__init__(url)
 
     def getblock(self, hash):

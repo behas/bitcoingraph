@@ -12,16 +12,23 @@ import json
 
 import time
 
+DEFAULT_SERVICE_URL = 'http://bitcoinrpc:pass@localhost:8332/'
+
 
 class JSONRPCException(Exception):
     pass
 
 
 class JSONRPCProxy:
+
     """A generic JSOWN RPC interface with keep-alive session reuse"""
-    def __init__(self, url):
+
+    def __init__(self, url=None):
         self._session = requests.Session()
-        self._url = url
+        if url is not None:
+            self._url = url
+        else:
+            self._url = DEFAULT_SERVICE_URL
         self._headers = {'content-type': 'application/json'}
 
     def _call(self, rpcMethod, *params):
@@ -57,8 +64,10 @@ class JSONRPCProxy:
 
 
 class BitcoinProxy(JSONRPCProxy):
+
     """Proxy to Bitcoin RPC Service implementing Bitcoin client call list
     https://en.bitcoin.it/wiki/Original_Bitcoin_client/API_Calls_list"""
+
     def __init__(self, url):
         super().__init__(url)
 
@@ -86,8 +95,6 @@ class BitcoinProxy(JSONRPCProxy):
         """Returns raw transaction representation for given transaction id."""
         r = self._call('getrawtransaction', tx_id, verbose)
         return r
-
-    ## TODO: implement further methods as needed
 
 
 if __name__ == '__main__':

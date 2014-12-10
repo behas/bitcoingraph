@@ -8,13 +8,9 @@
 """
 
 
-import rpc
 import json
 
 import datetime as dt
-
-
-DEFAULT_SERVICE_URI = 'http://bitcoinrpc:pass@localhost:8332/'
 
 
 def to_json(raw_data):
@@ -28,9 +24,11 @@ def to_time(numeric_string):
 
 
 class BlockchainObject:
+
     """
     Generic wrapper class for any kind of Blockchain BlockchainObject
     """
+
     def __init__(self, raw_data):
         self._raw_data = raw_data
 
@@ -46,9 +44,11 @@ class BlockchainObject:
 
 
 class Block(BlockchainObject):
+
     """
     Wrapper class for block chain data
     """
+
     def __init__(self, raw_data):
         super().__init__(raw_data)
 
@@ -66,9 +66,11 @@ class Block(BlockchainObject):
 
 
 class Transaction(BlockchainObject):
+
     """
     Wrapper class for bitcoin transactions
     """
+
     def __init__(self, raw_data):
         self._raw_data = raw_data
 
@@ -95,36 +97,30 @@ class Transaction(BlockchainObject):
             return 0
 
 
-class BlockChainHandler:
+class BlockChain:
+
     """
     A handler for accessing Bitcoin blockchain data objects.
     """
 
-    def __init__(self, bitcoin_service_uri=None):
-        # initialize Bitcoin proxy
-        if bitcoin_service_uri is not None:
-            self._bcProxy = rpc.BitcoinProxy(bitcoin_service_uri)
-        else:
-            self._bcProxy = rpc.BitcoinProxy(DEFAULT_SERVICE_URI)
-
-    def get_block(self, height):
-        raw_block_data =
-
+    def __init__(self, bitcoin_proxy):
+        self._bitcoin_proxy = bitcoin_proxy
+        print("Init Blockchain")
 
     def blocks(self, first_height=0, last_height=0):
         # Generator yielding block json data for a given block range
         if first_height == 0:
             first_height = 0
         if last_height is None:
-            last_height = self._bcProxy.getblockcount()
+            last_height = self._bitcoin_proxy.getblockcount()
 
         current_height = first_height
-        next_block_hash = self._bcProxy.getblockhash(first_height)
+        next_block_hash = self._bitcoin_proxy.getblockhash(first_height)
 
         while (next_block_hash is not None) and \
               (current_height <= last_height):
 
-            raw_block_data = self._bcProxy.getblock(next_block_hash)
+            raw_block_data = self._bitcoin_proxy.getblock(next_block_hash)
             yield Block(raw_block_data)
             if 'nextblockhash' in raw_block_data:
                 next_block_hash = raw_block_data['nextblockhash']
@@ -135,5 +131,5 @@ class BlockChainHandler:
     def transactions(self, tx_ids):
         # Generator yielding transaction json data for a given tx_id list
         for tx_id in tx_ids:
-            raw_tx_data = self._bcProxy.getrawtransaction(tx_id)
+            raw_tx_data = self._bitcoin_proxy.getrawtransaction(tx_id)
             yield Transaction(raw_tx_data)
