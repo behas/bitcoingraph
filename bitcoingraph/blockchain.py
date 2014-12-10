@@ -3,7 +3,7 @@
 """
     Copyright 2014 Bernhard Haslhofer
 
-    Generates transaction graph from Bitcoin blockchain
+    A collection of block chain handling wrapers
 
 """
 
@@ -97,7 +97,7 @@ class Transaction(BlockchainObject):
 
 class BlockChainHandler:
     """
-    A handler for the Bitcoin blockchain.
+    A handler for accessing Bitcoin blockchain data objects.
     """
 
     def __init__(self, bitcoin_service_uri=None):
@@ -106,6 +106,10 @@ class BlockChainHandler:
             self._bcProxy = rpc.BitcoinProxy(bitcoin_service_uri)
         else:
             self._bcProxy = rpc.BitcoinProxy(DEFAULT_SERVICE_URI)
+
+    def get_block(self, height):
+        raw_block_data =
+
 
     def blocks(self, first_height=0, last_height=0):
         # Generator yielding block json data for a given block range
@@ -133,10 +137,3 @@ class BlockChainHandler:
         for tx_id in tx_ids:
             raw_tx_data = self._bcProxy.getrawtransaction(tx_id)
             yield Transaction(raw_tx_data)
-
-if __name__ == '__main__':
-    handler = BlockChainHandler()
-    for block in handler.blocks(105, 105):
-        print(block.height, block.time, block.tx_count)
-        for transaction in handler.transactions(block.tx_ids):
-            print(transaction)
