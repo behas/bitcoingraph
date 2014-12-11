@@ -100,7 +100,7 @@ class Transaction(BlockchainObject):
         return to_time(self._raw_data['blocktime'])
 
     @property
-    def txid(self):
+    def id(self):
         return self._raw_data['txid']
 
     @property
@@ -147,8 +147,7 @@ class BlockChain:
             else:
                 block = block.nextblock
 
-    def transactions(self, tx_ids):
-        # Generator yielding transaction json data for a given tx_id list
-        for tx_id in tx_ids:
-            raw_tx_data = self._bitcoin_proxy.getrawtransaction(tx_id)
-            yield Transaction(raw_tx_data)
+    def get_transaction(self, tx_id):
+        # Returns transaction for a given transaction hash
+        raw_tx_data = self._bitcoin_proxy.getrawtransaction(tx_id)
+        return Transaction(raw_tx_data, self)
