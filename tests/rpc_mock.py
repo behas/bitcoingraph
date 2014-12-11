@@ -27,7 +27,7 @@ class BitcoinProxyMock(BitcoinProxy):
                 with f.open() as jf:
                     raw_block = json.load(jf)
                     block_hash = raw_block['hash']
-                    self.heights[height] = block_hash
+                    self.heights[int(height)] = block_hash
                     self.blocks[block_hash] = raw_block
             elif f.name.startswith("tx"):
                 tx_hash = f.name[3:-5]

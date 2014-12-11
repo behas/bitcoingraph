@@ -29,8 +29,9 @@ class BlockchainObject:
     Generic wrapper class for any kind of Blockchain BlockchainObject
     """
 
-    def __init__(self, raw_data):
+    def __init__(self, raw_data, blockchain):
         self._raw_data = raw_data
+        self._blockchain = blockchain
 
     @property
     def time(self):
@@ -49,8 +50,8 @@ class Block(BlockchainObject):
     Wrapper class for block chain data
     """
 
-    def __init__(self, raw_data):
-        super().__init__(raw_data)
+    def __init__(self, raw_data, blockchain):
+        super().__init__(raw_data, blockchain)
 
     @property
     def height(self):
@@ -59,6 +60,22 @@ class Block(BlockchainObject):
     @property
     def hash(self):
         return self._raw_data['hash']
+
+    @property
+    def nextblockhash(self):
+        return self._raw_data['nextblockhash']
+
+    @property
+    def hasnextblock(self):
+        return 'nextblockhash' in self._raw_data
+
+    @property
+    def nextblock(self):
+        if self.hasnextblock:
+            block_hash = self.nextblockhash
+            return self._blockchain.get_block_by_hash(block_hash)
+        else:
+            return None
 
     @property
     def tx_count(self):
@@ -75,8 +92,8 @@ class Transaction(BlockchainObject):
     Wrapper class for bitcoin transactions
     """
 
-    def __init__(self, raw_data):
-        self._raw_data = raw_data
+    def __init__(self, raw_data, blockchain):
+        super().__init__(raw_data, blockchain)
 
     @property
     def blocktime(self):
@@ -111,30 +128,24 @@ class BlockChain:
         self._bitcoin_proxy = bitcoin_proxy
 
     def get_block_by_hash(self, block_hash):
-        # Returns block with a given height
+        # Returns block by hash
         raw_block_data = self._bitcoin_proxy.getblock(block_hash)
-        return Block(raw_block_data)
+        return Block(raw_block_data, self)
 
-    def blocks(self, first_height=0, last_height=0):
-        # Generator yielding block json data for a given block range
-        if first_height == 0:
-            first_height = 0
-        if last_height is None:
-            last_height = self._bitcoin_proxy.getblockcount()
+    def get_block_by_height(self, block_height):
+        # Returns block by height
+        block_hash = self._bitcoin_proxy.getblockhash(block_height)
+        return self.get_block_by_hash(block_hash)
 
-        current_height = first_height
-        next_block_hash = self._bitcoin_proxy.getblockhash(first_height)
-
-        while (next_block_hash is not None) and \
-              (current_height <= last_height):
-
-            raw_block_data = self._bitcoin_proxy.getblock(next_block_hash)
-            yield Block(raw_block_data)
-            if 'nextblockhash' in raw_block_data:
-                next_block_hash = raw_block_data['nextblockhash']
+    def get_block_range(self, start_height=0, end_height=0):
+        # Returns blocks for a given height range
+        block = self.get_block_by_height(start_height)
+        while (block.height <= end_height):
+            yield block
+            if not block.hasnextblock:
+                break
             else:
-                next_block_hash = None
-            current_height += 1
+                block = block.nextblock
 
     def transactions(self, tx_ids):
         # Generator yielding transaction json data for a given tx_id list
