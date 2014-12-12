@@ -34,9 +34,27 @@ class TestBlock(unittest.TestCase):
         block = self.blockchain.get_block_by_hash(BH3)
         self.assertFalse(block.hasnextblock)
 
+    def hasnextblock(self):
+        block = self.blockchain.get_block_by_hash(BH1)
+        self.assertTrue(block.hasnextblock)
+        block = self.blockchain.get_block_by_hash(BH3)
+        self.assertFalse(block.hasnextblock)
+
     def test_nextblock(self):
         block = self.blockchain.get_block_by_hash(BH1)
         self.assertEqual(block.nextblock.height, BH2_HEIGHT)
+        block = self.blockchain.get_block_by_hash(BH3)
+        self.assertIsNone(block.nextblock)
+
+    def test_tx_count(self):
+        block = self.blockchain.get_block_by_hash(BH1)
+        self.assertEqual(block.tx_count, 1)
+        block = self.blockchain.get_block_by_hash(BH2)
+        self.assertEqual(block.tx_count, 4)
+
+    def test_tx_ids(self):
+        block = self.blockchain.get_block_by_hash(BH2)
+        self.assertTrue(TX1 in block.tx_ids)
 
 
 class TestBlockchain(unittest.TestCase):
