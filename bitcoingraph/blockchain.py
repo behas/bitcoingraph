@@ -24,6 +24,15 @@ def to_time(numeric_string):
         int(numeric_string)).strftime('%Y-%m-%d %H:%M:%S')
 
 
+class BlockchainException(Exception):
+    def __init__(self, msg, inner_exc):
+        self.msg = msg
+        self.inner_exc = inner_exc
+
+    def __str__(self):
+        return repr(self.msg)
+
+
 class BlockchainObject:
 
     """
@@ -119,15 +128,6 @@ class Transaction(BlockchainObject):
             return 0
 
 
-class BlockchainException(Exception):
-    def __init__(self, msg, inner_exc):
-        self.msg = msg
-        self.inner_exc = inner_exc
-
-    def __str__(self):
-        return repr(self.msg)
-
-
 class BlockChain:
 
     """
@@ -152,7 +152,6 @@ class BlockChain:
             block_hash = self._bitcoin_proxy.getblockhash(block_height)
             return self.get_block_by_hash(block_hash)
         except JSONRPCException as exc:
-            print("Raising Exceptions")
             raise BlockchainException("Cannot retrieve block with height %s"
                                       % (block_height), exc)
 
