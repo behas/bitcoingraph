@@ -2,7 +2,7 @@ import unittest
 
 from tests.rpc_mock import BitcoinProxyMock
 
-from bitcoingraph.blockchain import BlockChain
+from bitcoingraph.blockchain import BlockChain, BlockchainException
 
 BH1 = "000000000002d01c1fccc21636b607dfd930d31d01c3a62104612a1719011250"
 BH1_HEIGHT = 99999
@@ -87,3 +87,9 @@ class TestBlockchain(unittest.TestCase):
     def test_get_transaction(self):
         tx = self.blockchain.get_transaction(TX1)
         self.assertEqual(tx.id, TX1)
+
+    def test_exceptions(self):
+        with self.assertRaises(BlockchainException) as cm:
+            self.blockchain.get_block_by_hash("aa")
+        exc = cm.exception
+        print(exc)

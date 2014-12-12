@@ -9,8 +9,9 @@
 
 
 import json
-
 import datetime as dt
+
+from bitcoingraph.rpc import JSONRPCException
 
 
 def to_json(raw_data):
@@ -118,6 +119,10 @@ class Transaction(BlockchainObject):
             return 0
 
 
+class BlockchainException(Exception):
+    pass
+
+
 class BlockChain:
 
     """
@@ -129,8 +134,11 @@ class BlockChain:
 
     def get_block_by_hash(self, block_hash):
         # Returns block by hash
-        raw_block_data = self._bitcoin_proxy.getblock(block_hash)
-        return Block(raw_block_data, self)
+        try:
+            raw_block_data = self._bitcoin_proxy.getblock(block_hash)
+            return Block(raw_block_data, self)
+        except JSONRPCException as exc:
+            raise BlockchainException("Bla", exc)
 
     def get_block_by_height(self, block_height):
         # Returns block by height

@@ -1,4 +1,4 @@
-from bitcoingraph.rpc import BitcoinProxy
+from bitcoingraph.rpc import BitcoinProxy, JSONRPCException
 
 from pathlib import Path
 
@@ -38,16 +38,25 @@ class BitcoinProxyMock(BitcoinProxy):
     # Override production proxy methods
 
     def getblock(self, block_hash):
-        return self.blocks[block_hash]
+        if block_hash not in self.blocks:
+            raise JSONRPCException("Unknown block", block_hash)
+        else:
+            return self.blocks[block_hash]
 
     def getblockcount(self):
         return len(self.blocks)
 
     def getblockhash(self, block_height):
-        return self.heights[block_height]
+        if block_height not in self.heights:
+            raise JSONRPCException("Unknown height", block_height)
+        else:
+            return self.heights[block_height]
 
     def getinfo(self):
         print("No info")
 
     def getrawtransaction(self, tx_id, verbose=1):
-        return self.txs[tx_id]
+        if tx_id not in self.txs:
+            raise JSONRPCException("Unknown transaction", tx_id)
+        else:
+            return self.txs[tx_id]
