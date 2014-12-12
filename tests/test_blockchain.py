@@ -14,11 +14,18 @@ BH3_HEIGHT = 100001
 TX1 = "8c14f0db3df150123e6f3dbbf30f8b955a8249b62ac1d1ff16284aefa3d06d87"
 
 
-class TestBlock(unittest.TestCase):
+class TestBlockchainObject(unittest.TestCase):
 
     def setUp(self):
         self.bitcoin_proxy = BitcoinProxyMock()
         self.blockchain = BlockChain(self.bitcoin_proxy)
+
+    def test_init(self):
+        self.assertIsNotNone(self.blockchain)
+        self.assertIsNotNone(self.bitcoin_proxy)
+
+
+class TestBlock(TestBlockchainObject):
 
     def test_height(self):
         block = self.blockchain.get_block_by_hash(BH1)
@@ -57,16 +64,14 @@ class TestBlock(unittest.TestCase):
         self.assertTrue(TX1 in block.tx_ids)
 
 
-class TestBlockchain(unittest.TestCase):
+class TestTransaction(TestBlockchainObject):
 
-    def setUp(self):
-        self.bitcoin_proxy = BitcoinProxyMock()
-        self.blockchain = BlockChain(self.bitcoin_proxy)
+    def test_id(self):
+        tx = self.blockchain.get_transaction(TX1)
+        self.assertEqual(tx.id, TX1)
 
-    def test_init(self):
-        self.assertIsNotNone(self.blockchain)
 
-    ## Test Blockchain accessors
+class TestBlockchain(TestBlockchainObject):
 
     def test_get_block_by_hash(self):
         block = self.blockchain.get_block_by_hash(BH1)
