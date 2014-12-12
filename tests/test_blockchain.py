@@ -91,5 +91,14 @@ class TestBlockchain(unittest.TestCase):
     def test_exceptions(self):
         with self.assertRaises(BlockchainException) as cm:
             self.blockchain.get_block_by_hash("aa")
-        exc = cm.exception
-        print(exc)
+        self.assertEqual("Cannot retrieve block aa", cm.exception.msg)
+
+        with self.assertRaises(BlockchainException) as cm:
+            self.blockchain.get_block_by_height(123)
+        self.assertEqual("Cannot retrieve block with height 123",
+                         cm.exception.msg)
+
+        with self.assertRaises(BlockchainException) as cm:
+            self.blockchain.get_transaction("bb")
+        self.assertEqual("Cannot retrieve transaction with id bb",
+                         cm.exception.msg)

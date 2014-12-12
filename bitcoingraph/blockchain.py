@@ -120,7 +120,12 @@ class Transaction(BlockchainObject):
 
 
 class BlockchainException(Exception):
-    pass
+    def __init__(self, msg, inner_exc):
+        self.msg = msg
+        self.inner_exc = inner_exc
+
+    def __str__(self):
+        return repr(self.msg)
 
 
 class BlockChain:
@@ -138,12 +143,18 @@ class BlockChain:
             raw_block_data = self._bitcoin_proxy.getblock(block_hash)
             return Block(raw_block_data, self)
         except JSONRPCException as exc:
-            raise BlockchainException("Bla", exc)
+            raise BlockchainException("Cannot retrieve block %s"
+                                      % (block_hash), exc)
 
     def get_block_by_height(self, block_height):
         # Returns block by height
-        block_hash = self._bitcoin_proxy.getblockhash(block_height)
-        return self.get_block_by_hash(block_hash)
+        try:
+            block_hash = self._bitcoin_proxy.getblockhash(block_height)
+            return self.get_block_by_hash(block_hash)
+        except JSONRPCException as exc:
+            print("Raising Exceptions")
+            raise BlockchainException("Cannot retrieve block with height %s"
+                                      % (block_height), exc)
 
     def get_block_range(self, start_height=0, end_height=0):
         # Returns blocks for a given height range
@@ -157,5 +168,9 @@ class BlockChain:
 
     def get_transaction(self, tx_id):
         # Returns transaction for a given transaction hash
-        raw_tx_data = self._bitcoin_proxy.getrawtransaction(tx_id)
-        return Transaction(raw_tx_data, self)
+        try:
+            raw_tx_data = self._bitcoin_proxy.getrawtransaction(tx_id)
+            return Transaction(raw_tx_data, self)
+        except JSONRPCException as exc:
+            raise BlockchainException("Cannot retrieve transaction with id %s"
+                                      % (tx_id), exc)
