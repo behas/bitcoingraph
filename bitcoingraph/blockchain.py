@@ -133,6 +133,13 @@ class TxInput:
             prev_tx = self._blockchain.get_transaction(self.prev_tx_hash)
             return prev_tx.outputs[self.prev_tx_output_index]
 
+    @property
+    def addresses(self):
+        if self.is_coinbase:
+            return None
+        else:
+            return self.prev_tx_output.addresses
+
 
 class TxOutput:
 
@@ -180,6 +187,10 @@ class Transaction(BlockchainObject):
         return inputs
 
     @property
+    def is_coinbase_tx(self):
+        return self.inputs[0].is_coinbase
+
+    @property
     def vout_count(self):
         if 'vout' in self._raw_data:
             return len(self._raw_data['vout'])
@@ -193,6 +204,18 @@ class Transaction(BlockchainObject):
             tx_out = TxOutput(vout)
             outputs[tx_out.index] = tx_out
         return outputs
+
+    @property
+    def bc_flows(self):
+        bc_flows = []
+        src = None
+        if not self.is_coinbase_tx:
+            src = self.inputs[0].addresses[0]
+        for idx, output in self.outputs.items():
+            flow = {'src': src, 'tgt': output.addresses[0],
+                    'value': output.value}
+            bc_flows += [flow]
+        return bc_flows
 
 
 class BlockChain:

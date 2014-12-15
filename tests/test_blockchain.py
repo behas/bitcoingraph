@@ -112,6 +112,11 @@ class TestTxInput(TestBlockchainObject):
         prev_tx_output = tx_input.prev_tx_output
         self.assertIsNotNone(prev_tx_output)
 
+    def test_addresses(self):
+        tx = self.blockchain.get_transaction(TX2)
+        self.assertEqual("1BNwxHGaFbeUBitpjy2AsKpJ29Ybxntqvb",
+                         tx.inputs[0].addresses[0])
+
 
 class TestTxOutput(TestBlockchainObject):
 
@@ -161,6 +166,10 @@ class TestTransaction(TestBlockchainObject):
         tx = self.blockchain.get_transaction(TX1)
         self.assertIsInstance(tx.inputs[0], TxInput)
 
+    def test_is_coinbase_tx(self):
+        self.assertTrue(self.blockchain.get_transaction(TX1).is_coinbase_tx)
+        self.assertFalse(self.blockchain.get_transaction(TX2).is_coinbase_tx)
+
     def test_vout_count(self):
         tx = self.blockchain.get_transaction(TX1)
         self.assertEqual(tx.vout_count, 1)
@@ -170,6 +179,24 @@ class TestTransaction(TestBlockchainObject):
     def test_outputs(self):
         tx = self.blockchain.get_transaction(TX1)
         self.assertIsInstance(tx.outputs[0], TxOutput)
+
+    def test_bc_flows(self):
+        tx = self.blockchain.get_transaction(TX2)
+        f1 = {'src': '1BNwxHGaFbeUBitpjy2AsKpJ29Ybxntqvb',
+              'tgt': '1JqDybm2nWTENrHvMyafbSXXtTk5Uv5QAn',
+              'value': 5.56000000}
+        f2 = {'src': '1BNwxHGaFbeUBitpjy2AsKpJ29Ybxntqvb',
+              'tgt': '1EYTGtG4LnFfiMvjJdsU7GMGCQvsRSjYhx',
+              'value': 44.44000000}
+        self.assertTrue(f1 in tx.bc_flows)
+        self.assertTrue(f2 in tx.bc_flows)
+
+    def test_bc_flows_coinbase(self):
+        tx = self.blockchain.get_transaction(TX1)
+        f1 = {'src': None,
+              'tgt': '1HWqMzw1jfpXb3xyuUZ4uWXY4tqL2cW47J',
+              'value': 50.00000000}
+        self.assertTrue(f1 in tx.bc_flows)
 
 
 class TestBlockchain(TestBlockchainObject):
