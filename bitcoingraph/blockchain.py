@@ -125,12 +125,28 @@ class TxInput:
             return None
 
 
+class TxOutput:
+
+    """Wrapper class for transaction output"""
+    def __init__(self, raw_data):
+        self._raw_data = raw_data
+
+    @property
+    def index(self):
+        return self._raw_data['n']
+
+    @property
+    def value(self):
+        return float(self._raw_data['value'])
+
+    @property
+    def addresses(self):
+        return self._raw_data['scriptPubKey']['addresses']
+
+
 class Transaction(BlockchainObject):
 
-    """
-    Wrapper class for bitcoin transactions
-    """
-
+    """Wrapper class for bitcoin transactions"""
     def __init__(self, raw_data, blockchain):
         super().__init__(raw_data, blockchain)
 
@@ -148,10 +164,10 @@ class Transaction(BlockchainObject):
 
     @property
     def inputs(self):
-        inputs = []
-        for vin in self._raw_data['vin']:
+        inputs = {}
+        for idx, vin in enumerate(self._raw_data['vin']):
             tx_in = TxInput(vin)
-            inputs = inputs + [tx_in]
+            inputs[idx] = tx_in
         return inputs
 
     @property
@@ -160,6 +176,14 @@ class Transaction(BlockchainObject):
             return len(self._raw_data['vout'])
         else:
             return 0
+
+    @property
+    def outputs(self):
+        outputs = {}
+        for vout in self._raw_data['vout']:
+            tx_out = TxOutput(vout)
+            outputs[tx_out.index] = tx_out
+        return outputs
 
 
 class BlockChain:

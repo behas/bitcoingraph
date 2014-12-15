@@ -2,7 +2,7 @@ import unittest
 
 from tests.rpc_mock import BitcoinProxyMock
 
-from bitcoingraph.blockchain import BlockChain, BlockchainException, TxInput
+from bitcoingraph.blockchain import *
 
 BH1 = "000000000002d01c1fccc21636b607dfd930d31d01c3a62104612a1719011250"
 BH1_HEIGHT = 99999
@@ -107,6 +107,26 @@ class TestTxInput(TestBlockchainObject):
         self.assertIsNone(tx_input.prev_tx_out_index)
 
 
+class TestTxOutput(TestBlockchainObject):
+
+    def test_index(self):
+        tx = self.blockchain.get_transaction(TX2)
+        self.assertEqual(0, tx.outputs[0].index)
+        self.assertEqual(1, tx.outputs[1].index)
+
+    def test_value(self):
+        tx = self.blockchain.get_transaction(TX2)
+        self.assertEqual(5.56000000, tx.outputs[0].value)
+        self.assertEqual(44.44000000, tx.outputs[1].value)
+
+    def test_addresses(self):
+        tx = self.blockchain.get_transaction(TX2)
+        self.assertEqual("1JqDybm2nWTENrHvMyafbSXXtTk5Uv5QAn",
+                         tx.outputs[0].addresses[0])
+        self.assertEqual("1EYTGtG4LnFfiMvjJdsU7GMGCQvsRSjYhx",
+                         tx.outputs[1].addresses[0])
+
+
 class TestTransaction(TestBlockchainObject):
 
     def test_time(self):
@@ -140,6 +160,10 @@ class TestTransaction(TestBlockchainObject):
         self.assertEqual(tx.vout_count, 1)
         tx = self.blockchain.get_transaction(TX2)
         self.assertEqual(tx.vout_count, 2)
+
+    def test_outputs(self):
+        tx = self.blockchain.get_transaction(TX1)
+        self.assertIsInstance(tx.outputs[0], TxOutput)
 
 
 class TestBlockchain(TestBlockchainObject):
