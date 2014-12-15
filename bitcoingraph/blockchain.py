@@ -100,6 +100,31 @@ class Block(BlockchainObject):
         return self._raw_data['tx']
 
 
+class TxInput:
+
+    """Wrapper class for transaction input"""
+    def __init__(self, raw_data):
+        self._raw_data = raw_data
+
+    @property
+    def is_coinbase(self):
+        return 'coinbase' in self._raw_data
+
+    @property
+    def prev_tx_hash(self):
+        if not self.is_coinbase:
+            return self._raw_data['txid']
+        else:
+            return None
+
+    @property
+    def prev_tx_out_index(self):
+        if not self.is_coinbase:
+            return self._raw_data['vout']
+        else:
+            return None
+
+
 class Transaction(BlockchainObject):
 
     """
@@ -111,7 +136,7 @@ class Transaction(BlockchainObject):
 
     @property
     def blocktime(self):
-        return to_time(self._raw_data['blocktime'])
+        return self._raw_data['blocktime']
 
     @property
     def id(self):
@@ -119,10 +144,15 @@ class Transaction(BlockchainObject):
 
     @property
     def vin_count(self):
-        if 'vin' in self._raw_data:
-            return len(self._raw_data['vin'])
-        else:
-            return 0
+        return len(self.inputs)
+
+    @property
+    def inputs(self):
+        inputs = []
+        for vin in self._raw_data['vin']:
+            tx_in = TxInput(vin)
+            inputs = inputs + [tx_in]
+        return inputs
 
     @property
     def vout_count(self):

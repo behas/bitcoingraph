@@ -2,7 +2,7 @@ import unittest
 
 from tests.rpc_mock import BitcoinProxyMock
 
-from bitcoingraph.blockchain import BlockChain, BlockchainException
+from bitcoingraph.blockchain import BlockChain, BlockchainException, TxInput
 
 BH1 = "000000000002d01c1fccc21636b607dfd930d31d01c3a62104612a1719011250"
 BH1_HEIGHT = 99999
@@ -12,6 +12,8 @@ BH3 = "00000000000080b66c911bd5ba14a74260057311eaeb1982802f7010f1a9f090"
 BH3_HEIGHT = 100001
 
 TX1 = "8c14f0db3df150123e6f3dbbf30f8b955a8249b62ac1d1ff16284aefa3d06d87"
+TX2 = "fff2525b8931402dd09222c50775608f75787bd2b87e56995a7bdd30f79702c4"
+TX3 = "87a157f3fd88ac7907c05fc55e271dc4acdc5605d187d646604ca8c0e9382e03"
 
 
 class TestBlockchainObject(unittest.TestCase):
@@ -72,6 +74,39 @@ class TestBlock(TestBlockchainObject):
         self.assertTrue(TX1 in block.tx_ids)
 
 
+class TestTxInput(TestBlockchainObject):
+
+    def test_is_coinbase(self):
+        tx = self.blockchain.get_transaction(TX1)
+        tx_input = tx.inputs[0]
+        self.assertTrue(tx_input.is_coinbase)
+
+    def test_is_not_coinbase(self):
+        tx = self.blockchain.get_transaction(TX2)
+        tx_input = tx.inputs[0]
+        self.assertFalse(tx_input.is_coinbase)
+
+    def test_prev_tx_hash(self):
+        tx = self.blockchain.get_transaction(TX2)
+        tx_input = tx.inputs[0]
+        self.assertEqual(tx_input.prev_tx_hash, TX3)
+
+    def test_prev_tx_coinbase(self):
+        tx = self.blockchain.get_transaction(TX1)
+        tx_input = tx.inputs[0]
+        self.assertIsNone(tx_input.prev_tx_hash)
+
+    def test_tx_out_index(self):
+        tx = self.blockchain.get_transaction(TX2)
+        tx_input = tx.inputs[0]
+        self.assertEqual(tx_input.prev_tx_out_index, 0)
+
+    def test_tx_out_index_coinbase(self):
+        tx = self.blockchain.get_transaction(TX1)
+        tx_input = tx.inputs[0]
+        self.assertIsNone(tx_input.prev_tx_out_index)
+
+
 class TestTransaction(TestBlockchainObject):
 
     def test_time(self):
@@ -82,9 +117,29 @@ class TestTransaction(TestBlockchainObject):
         tx = self.blockchain.get_transaction(TX1)
         self.assertEqual(tx.time_as_dt, "2010-12-29 11:57:43")
 
+    def test_blocktime(self):
+        tx = self.blockchain.get_transaction(TX1)
+        self.assertEqual(tx.blocktime, 1293623863)
+
     def test_id(self):
         tx = self.blockchain.get_transaction(TX1)
         self.assertEqual(tx.id, TX1)
+
+    def test_vin_count(self):
+        tx = self.blockchain.get_transaction(TX1)
+        self.assertEqual(tx.vin_count, 1)
+        tx = self.blockchain.get_transaction(TX2)
+        self.assertEqual(tx.vin_count, 1)
+
+    def test_inputs(self):
+        tx = self.blockchain.get_transaction(TX1)
+        self.assertIsInstance(tx.inputs[0], TxInput)
+
+    def test_vout_count(self):
+        tx = self.blockchain.get_transaction(TX1)
+        self.assertEqual(tx.vout_count, 1)
+        tx = self.blockchain.get_transaction(TX2)
+        self.assertEqual(tx.vout_count, 2)
 
 
 class TestBlockchain(TestBlockchainObject):
