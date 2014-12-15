@@ -27,6 +27,14 @@ class TestBlockchainObject(unittest.TestCase):
 
 class TestBlock(TestBlockchainObject):
 
+    def test_time(self):
+        block = self.blockchain.get_block_by_hash(BH1)
+        self.assertEqual(block.time, 1293623731)
+
+    def test_time_as_dt(self):
+        block = self.blockchain.get_block_by_hash(BH1)
+        self.assertEqual(block.time_as_dt, "2010-12-29 11:55:31")
+
     def test_height(self):
         block = self.blockchain.get_block_by_hash(BH1)
         self.assertEqual(block.height, BH1_HEIGHT)
@@ -65,6 +73,14 @@ class TestBlock(TestBlockchainObject):
 
 
 class TestTransaction(TestBlockchainObject):
+
+    def test_time(self):
+        tx = self.blockchain.get_transaction(TX1)
+        self.assertEqual(tx.time, 1293623863)
+
+    def test_time_as_dt(self):
+        tx = self.blockchain.get_transaction(TX1)
+        self.assertEqual(tx.time_as_dt, "2010-12-29 11:57:43")
 
     def test_id(self):
         tx = self.blockchain.get_transaction(TX1)

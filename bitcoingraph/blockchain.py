@@ -20,8 +20,8 @@ def to_json(raw_data):
 
 
 def to_time(numeric_string):
-    return dt.datetime.fromtimestamp(
-        int(numeric_string)).strftime('%Y-%m-%d %H:%M:%S')
+    time_as_date = dt.datetime.utcfromtimestamp(int(numeric_string))
+    return time_as_date.strftime('%Y-%m-%d %H:%M:%S')
 
 
 class BlockchainException(Exception):
@@ -45,7 +45,11 @@ class BlockchainObject:
 
     @property
     def time(self):
-        return to_time(self._raw_data['time'])
+        return self._raw_data['time']
+
+    @property
+    def time_as_dt(self):
+        return to_time(self.time)
 
     def __str__(self):
         return to_json(self._raw_data)
