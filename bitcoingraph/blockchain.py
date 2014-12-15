@@ -103,8 +103,9 @@ class Block(BlockchainObject):
 class TxInput:
 
     """Wrapper class for transaction input"""
-    def __init__(self, raw_data):
+    def __init__(self, raw_data, blockchain):
         self._raw_data = raw_data
+        self._blockchain = blockchain
 
     @property
     def is_coinbase(self):
@@ -112,17 +113,25 @@ class TxInput:
 
     @property
     def prev_tx_hash(self):
-        if not self.is_coinbase:
-            return self._raw_data['txid']
-        else:
+        if self.is_coinbase:
             return None
+        else:
+            return self._raw_data['txid']
 
     @property
-    def prev_tx_out_index(self):
-        if not self.is_coinbase:
-            return self._raw_data['vout']
-        else:
+    def prev_tx_output_index(self):
+        if self.is_coinbase:
             return None
+        else:
+            return self._raw_data['vout']
+
+    @property
+    def prev_tx_output(self):
+        if self.is_coinbase:
+            return None
+        else:
+            prev_tx = self._blockchain.get_transaction(self.prev_tx_hash)
+            return prev_tx.outputs[self.prev_tx_output_index]
 
 
 class TxOutput:
@@ -166,7 +175,7 @@ class Transaction(BlockchainObject):
     def inputs(self):
         inputs = {}
         for idx, vin in enumerate(self._raw_data['vin']):
-            tx_in = TxInput(vin)
+            tx_in = TxInput(vin, self._blockchain)
             inputs[idx] = tx_in
         return inputs
 

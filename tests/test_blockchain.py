@@ -96,15 +96,21 @@ class TestTxInput(TestBlockchainObject):
         tx_input = tx.inputs[0]
         self.assertIsNone(tx_input.prev_tx_hash)
 
-    def test_tx_out_index(self):
+    def test_tx_output_index(self):
         tx = self.blockchain.get_transaction(TX2)
         tx_input = tx.inputs[0]
-        self.assertEqual(tx_input.prev_tx_out_index, 0)
+        self.assertEqual(tx_input.prev_tx_output_index, 0)
 
-    def test_tx_out_index_coinbase(self):
+    def test_tx_output_index_coinbase(self):
         tx = self.blockchain.get_transaction(TX1)
         tx_input = tx.inputs[0]
-        self.assertIsNone(tx_input.prev_tx_out_index)
+        self.assertIsNone(tx_input.prev_tx_output_index)
+
+    def test_prev_tx_output(self):
+        tx = self.blockchain.get_transaction(TX2)
+        tx_input = tx.inputs[0]
+        prev_tx_output = tx_input.prev_tx_output
+        self.assertIsNotNone(prev_tx_output)
 
 
 class TestTxOutput(TestBlockchainObject):
