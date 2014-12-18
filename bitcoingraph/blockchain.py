@@ -1,13 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-    Copyright 2014 Bernhard Haslhofer
-
-    A collection of block chain handling wrapers
-
-"""
-
-
 import json
 import datetime as dt
 
@@ -25,6 +15,7 @@ def to_time(numeric_string):
 
 
 class BlockchainException(Exception):
+
     def __init__(self, msg, inner_exc):
         self.msg = msg
         self.inner_exc = inner_exc
@@ -33,7 +24,7 @@ class BlockchainException(Exception):
         return repr(self.msg)
 
 
-class BlockchainObject:
+class BlockchainObject(object):
 
     """
     Generic wrapper class for any kind of Blockchain BlockchainObject
@@ -100,9 +91,10 @@ class Block(BlockchainObject):
         return self._raw_data['tx']
 
 
-class TxInput:
+class TxInput(object):
 
     """Wrapper class for transaction input"""
+
     def __init__(self, raw_data, blockchain):
         self._raw_data = raw_data
         self._blockchain = blockchain
@@ -141,9 +133,10 @@ class TxInput:
             return self.prev_tx_output.addresses
 
 
-class TxOutput:
+class TxOutput(object):
 
     """Wrapper class for transaction output"""
+
     def __init__(self, raw_data):
         self._raw_data = raw_data
 
@@ -163,6 +156,7 @@ class TxOutput:
 class Transaction(BlockchainObject):
 
     """Wrapper class for bitcoin transactions"""
+
     def __init__(self, raw_data, blockchain):
         super().__init__(raw_data, blockchain)
 
@@ -218,7 +212,7 @@ class Transaction(BlockchainObject):
         return bc_flows
 
 
-class BlockChain:
+class BlockChain(object):
 
     """
     A handler for accessing Bitcoin blockchain data objects.

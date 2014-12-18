@@ -19,7 +19,7 @@ class JSONRPCException(Exception):
     pass
 
 
-class JSONRPCProxy:
+class JSONRPCProxy(object):
 
     """A generic JSOWN RPC interface with keep-alive session reuse"""
 
