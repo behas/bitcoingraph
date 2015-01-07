@@ -1,4 +1,4 @@
-__all__ = ['dump']
+__all__ = ['generate_tx_graph']
 
 __version__ = 'devel'
 

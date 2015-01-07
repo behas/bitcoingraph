@@ -1,0 +1,5 @@
+#!/usr/bin/env python
+
+import bitcoingraph
+
+print(bitcoingraph.__version__)
