@@ -20,7 +20,8 @@ class BitcoinProxyMock(BitcoinProxy):
     # Load test data into local dicts
     def load_testdata(self):
         p = Path(TEST_DATA_PATH)
-        files = [x for x in p.iterdir() if x.is_file()]
+        files = [x for x in p.iterdir()
+                 if x.is_file() and x.name.endswith('json')]
         for f in files:
             if f.name.startswith("block"):
                 height = f.name[6:-5]

@@ -77,9 +77,13 @@ class TestBlock(TestBlockchainObject):
         block = self.blockchain.get_block_by_hash(BH1)
         txs = [tx for tx in block.transactions]
         self.assertEqual(len(txs), 1)
+        for tx in txs:
+            self.assertIsNotNone(tx.id)
         block = self.blockchain.get_block_by_hash(BH2)
         txs = [tx for tx in block.transactions]
         self.assertEqual(len(txs), 4)
+        for tx in txs:
+            self.assertIsNotNone(tx.id)
 
 
 class TestTxInput(TestBlockchainObject):
