@@ -90,6 +90,11 @@ class Block(BlockchainObject):
     def tx_ids(self):
         return self._raw_data['tx']
 
+    @property
+    def transactions(self):
+        for tx_id in self.tx_ids:
+            yield self._blockchain.get_transaction(tx_id)
+
 
 class TxInput(object):
 
@@ -239,7 +244,7 @@ class BlockChain(object):
             raise BlockchainException("Cannot retrieve block with height %s"
                                       % (block_height), exc)
 
-    def get_block_range(self, start_height=0, end_height=0):
+    def get_blocks_in_range(self, start_height=0, end_height=0):
         # Returns blocks for a given height range
         block = self.get_block_by_height(start_height)
         while (block.height <= end_height):

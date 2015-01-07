@@ -73,6 +73,14 @@ class TestBlock(TestBlockchainObject):
         block = self.blockchain.get_block_by_hash(BH2)
         self.assertTrue(TX1 in block.tx_ids)
 
+    def test_transactions(self):
+        block = self.blockchain.get_block_by_hash(BH1)
+        txs = [tx for tx in block.transactions]
+        self.assertEqual(len(txs), 1)
+        block = self.blockchain.get_block_by_hash(BH2)
+        txs = [tx for tx in block.transactions]
+        self.assertEqual(len(txs), 4)
+
 
 class TestTxInput(TestBlockchainObject):
 
@@ -209,8 +217,8 @@ class TestBlockchain(TestBlockchainObject):
         block = self.blockchain.get_block_by_height(BH1_HEIGHT)
         self.assertEqual(block.height, BH1_HEIGHT)
 
-    def test_get_block_range(self):
-        blocks = [block for block in self.blockchain.get_block_range(
+    def test_get_blocks_in_range(self):
+        blocks = [block for block in self.blockchain.get_blocks_in_range(
                   99999, 100001)]
         self.assertEqual(len(blocks), 3)
         self.assertEqual(blocks[0].height, 99999)
