@@ -34,7 +34,7 @@ class JSONRPCProxy(object):
     def _call(self, rpcMethod, *params):
         payload = json.dumps({"method": rpcMethod, "params": list(params),
                               "jsonrpc": "2.0"})
-        tries = 10
+        tries = 5
         hadConnectionFailures = False
         while True:
             try:

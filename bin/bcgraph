@@ -1,9 +1,0 @@
-#!/usr/bin/env python
-
-import argparse
-
-import bitcoingraph
-
-
-parser = argparse.ArgumentParser()
-parser.parse_args()

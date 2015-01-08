@@ -1,0 +1,63 @@
+#!/usr/bin/env python
+
+import argparse
+import sys
+
+import bitcoingraph as bcgraph
+from bitcoingraph.blockchain import BlockChain, BlockchainException
+from bitcoingraph.rpc import (BitcoinProxy,
+                              JSONRPCException, DEFAULT_SERVICE_URL)
+
+
+def generate_tx_graph(args):
+    print("Starting transaction graph generation.")
+    print("Attempting to connect to %s ..." % args.bitcoin_rpc_uri)
+    try:
+        bc_proxy = BitcoinProxy(args.bitcoin_rpc_uri)
+        bc_proxy.getinfo()
+        print("Connection successful.")
+    except JSONRPCException:
+        print("Couldn't connect to %s. Aborting." % args.bitcoin_rpc_uri)
+        sys.exit(1)
+
+    try:
+        blockchain = BlockChain(bc_proxy)
+        with open(args.output_file, 'w') as csv_file:
+            bcgraph.generate_tx_graph(blockchain, args.startheight,
+                                      args.endheight, csv_file)
+    except JSONRPCException as exc:
+        print("Connection error %s" % exc)
+    except BlockchainException as exc:
+        print("Blockchain error %s" % exc)
+    print("Finished transaction graph generation.")
+
+
+parser = argparse.ArgumentParser(
+    description="Generates graph data sets from the Bitcoin Blockchain")
+
+# Define subparsers for each command
+subparsers = parser.add_subparsers(
+    help="Bitcoin graph generation sub-command help")
+
+# Parser for transaction graph generation
+tx_graph_parser = subparsers.add_parser(
+    "tx_graph",
+    help="Transaction graph generation help")
+tx_graph_parser.add_argument("startheight", type=int,
+                             help="Start block height")
+tx_graph_parser.add_argument("endheight", type=int,
+                             help="End block height")
+tx_graph_parser.add_argument("-r", "--bitcoin_rpc_uri",
+                             default=DEFAULT_SERVICE_URL,
+                             help="URI of Bitcoin RPC service")
+tx_graph_parser.add_argument("-o", "--output_file", type=str,
+                             default="tx_graph.csv",
+                             help="Output file name")
+tx_graph_parser.set_defaults(func=generate_tx_graph)
+
+if len(sys.argv) == 1:
+    parser.print_help()
+    sys.exit(1)
+
+args = parser.parse_args()
+args.func(args)
