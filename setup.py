@@ -1,8 +1,10 @@
-from setuptools import setup, find_packages
+from setuptools import setup
+
+import bitcoingraph
 
 setup(
     name='bitcoingraph',
-    version='0.1.dev',
+    version=bitcoingraph.__version__,
     packages=['bitcoingraph'],
     scripts=['bin/bcgraph-generate'],
 
@@ -14,6 +16,6 @@ setup(
     author_email='bernhard.haslhofer@ait.ac.at',
     description='A Python library for extracting graphs from the\
                    Bitcoin\ blockchain',
-    license='MIT',
+    license='MIT License',
     url='https://bitbucket.org/bhaslhofer/bitcoingraph',
 )

@@ -1,6 +1,6 @@
 __all__ = ['generate_tx_graph']
 
-__version__ = 'devel'
+__version__ = '0.1dev'
 
 import csv
 
