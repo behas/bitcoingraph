@@ -7,12 +7,16 @@ import csv
 from bitcoingraph.blockchain import BlockchainException
 
 
-def generate_tx_graph(blockchain, start_block, end_block, output_file):
+def generate_tx_graph(blockchain, start_block, end_block,
+                      output_file, callback=None):
     cvs_writer = csv.writer(output_file, delimiter=';',
                             quotechar='|', quoting=csv.QUOTE_MINIMAL)
     cvs_writer.writerow(['txid', 'src_addr', 'tgt_addr', 'value',
                          'timestamp', 'block_height'])
     for block in blockchain.get_blocks_in_range(start_block, end_block):
+        progress = block.height / (end_block - start_block)
+        if callback:
+            callback(progress)
         for tx in block.transactions:
             try:
                 txid = tx.id

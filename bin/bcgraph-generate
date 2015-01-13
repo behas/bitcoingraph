@@ -9,6 +9,12 @@ from bitcoingraph.rpc import (BitcoinProxy,
                               JSONRPCException, DEFAULT_SERVICE_URL)
 
 
+def progress(progress=0):
+    progress = int(progress * 100)
+    sys.stdout.write("\rProgress: {0}%".format(progress))
+    sys.stdout.flush()
+
+
 def generate_tx_graph(args):
     print("Starting transaction graph generation.")
     print("Attempting to connect to %s ..." % args.bitcoin_rpc_uri)
@@ -24,12 +30,12 @@ def generate_tx_graph(args):
         blockchain = BlockChain(bc_proxy)
         with open(args.output_file, 'w') as csv_file:
             bcgraph.generate_tx_graph(blockchain, args.startheight,
-                                      args.endheight, csv_file)
+                                      args.endheight, csv_file, progress)
     except JSONRPCException as exc:
-        print("Connection error %s" % exc)
+        print("\nConnection error %s" % exc)
     except BlockchainException as exc:
-        print("Blockchain error %s" % exc)
-    print("Finished transaction graph generation.")
+        print("\nBlockchain error %s" % exc)
+    print("\nFinished transaction graph generation.")
 
 
 parser = argparse.ArgumentParser(
