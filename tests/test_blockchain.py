@@ -15,6 +15,8 @@ TX1 = "8c14f0db3df150123e6f3dbbf30f8b955a8249b62ac1d1ff16284aefa3d06d87"
 TX2 = "fff2525b8931402dd09222c50775608f75787bd2b87e56995a7bdd30f79702c4"
 TX3 = "87a157f3fd88ac7907c05fc55e271dc4acdc5605d187d646604ca8c0e9382e03"
 
+TXE = "a288fec5559c3f73fd3d93db8e8460562ebfe2fcf04a5114e8d0f2920a6270dc"
+
 
 class TestBlockchainObject(unittest.TestCase):
 
@@ -148,6 +150,12 @@ class TestTxOutput(TestBlockchainObject):
                          tx.outputs[0].addresses[0])
         self.assertEqual("1EYTGtG4LnFfiMvjJdsU7GMGCQvsRSjYhx",
                          tx.outputs[1].addresses[0])
+
+    def test_empty_addresses(self):
+        tx = self.blockchain.get_transaction(TXE)
+        self.assertEqual("152hHAq6kHoLw2FCT8G37uLEts6oFVjZKt",
+                         tx.outputs[0].addresses[0])
+        self.assertIsNone(tx.outputs[1].addresses)
 
 
 class TestTransaction(TestBlockchainObject):

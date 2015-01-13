@@ -155,7 +155,11 @@ class TxOutput(object):
 
     @property
     def addresses(self):
-        return self._raw_data['scriptPubKey']['addresses']
+        scriptPubKey = self._raw_data.get('scriptPubKey')
+        if scriptPubKey is not None:
+            return scriptPubKey.get('addresses')
+        else:
+            return None
 
 
 class Transaction(BlockchainObject):
@@ -211,7 +215,10 @@ class Transaction(BlockchainObject):
         if not self.is_coinbase_tx:
             src = self.inputs[0].addresses[0]
         for idx, output in self.outputs.items():
-            flow = {'src': src, 'tgt': output.addresses[0],
+            tgt = None
+            if output.addresses is not None:
+                tgt = output.addresses[0]
+            flow = {'src': src, 'tgt': tgt,
                     'value': output.value}
             bc_flows += [flow]
         return bc_flows
