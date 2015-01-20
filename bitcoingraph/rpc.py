@@ -12,7 +12,7 @@ import json
 
 import time
 
-DEFAULT_SERVICE_URL = 'http://bitcoinrpc:pass@localhost:8332/'
+DEFAULT_SERVICE = 'localhost:8332'
 
 
 class JSONRPCException(Exception):
@@ -28,7 +28,7 @@ class JSONRPCProxy(object):
         if url is not None:
             self._url = url
         else:
-            self._url = DEFAULT_SERVICE_URL
+            self._url = DEFAULT_SERVICE
         self._headers = {'content-type': 'application/json'}
 
     def _call(self, rpcMethod, *params):
@@ -52,7 +52,7 @@ class JSONRPCProxy(object):
                 if hadConnectionFailures:
                     print("Connected for RPC call after retry.")
                 break
-        if not response.status_code in (200, 500):
+        if response.status_code not in (200, 500):
             raise JSONRPCException("RPC connection failure: " +
                                    str(response.status_code) + ' ' +
                                    response.reason)
@@ -100,7 +100,6 @@ class BitcoinProxy(JSONRPCProxy):
 if __name__ == '__main__':
     bcProxy = BitcoinProxy('http://bitcoinrpc:pass@localhost:8332/')
     try:
-        #response = bcProxy.getblockcount()
         bh = bcProxy.getblockhash(1)
         print(bh)
         block = bcProxy.getblock(bh)

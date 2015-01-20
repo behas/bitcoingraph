@@ -6,7 +6,7 @@ import sys
 import bitcoingraph as bcgraph
 from bitcoingraph.blockchain import BlockChain, BlockchainException
 from bitcoingraph.rpc import (BitcoinProxy,
-                              JSONRPCException, DEFAULT_SERVICE_URL)
+                              JSONRPCException, DEFAULT_SERVICE)
 
 
 def progress(progress=0):
@@ -17,9 +17,11 @@ def progress(progress=0):
 
 def generate_tx_graph(args):
     print("Starting transaction graph generation.")
-    print("Attempting to connect to %s ..." % args.bitcoin_rpc_uri)
+    service_cred = args.user + ':' + args.password
+    service_uri = 'http://' + service_cred + '@' + args.service + '/'
+    print("Attempting to connect to %s ..." % service_uri)
     try:
-        bc_proxy = BitcoinProxy(args.bitcoin_rpc_uri)
+        bc_proxy = BitcoinProxy(service_uri)
         bc_proxy.getinfo()
         print("Connection successful.")
     except JSONRPCException:
@@ -53,9 +55,13 @@ tx_graph_parser.add_argument("startheight", type=int,
                              help="Start block height")
 tx_graph_parser.add_argument("endheight", type=int,
                              help="End block height")
-tx_graph_parser.add_argument("-r", "--bitcoin_rpc_uri",
-                             default=DEFAULT_SERVICE_URL,
-                             help="URI of Bitcoin RPC service")
+tx_graph_parser.add_argument("-s", "--service",
+                             default=DEFAULT_SERVICE,
+                             help="Address of Bitcoin JSON RPC Service")
+tx_graph_parser.add_argument("-u", "--user", required=True,
+                             help="Bitcoin Core RPC username")
+tx_graph_parser.add_argument("-p", "--password", required=True,
+                             help="Bitcoin Core RPC password")
 tx_graph_parser.add_argument("-o", "--output_file", type=str,
                              default="tx_graph.csv",
                              help="Output file name")

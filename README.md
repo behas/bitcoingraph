@@ -75,7 +75,7 @@ Now clone Bitcoingraph...
 
 The Bitcoin blockchain is a pretty large thing. It is recommended to export blockchain subsets, defined by block height range. The following command exports all transactions contained in block range 1 to 1000.
 
-    bcgraph-generate tx_graph 1 1000 -r http://your_rpcuser:your_rpcpass@localhost:8332/ -o tx_graph_1_1000.csv
+    bcgraph-generate tx_graph 1 1000 -s localhost:8332 -u your_rpcuser -p your_rpcpass -o tx_graph_1_1000.csv
 
 
 
