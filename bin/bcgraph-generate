@@ -8,11 +8,45 @@ from bitcoingraph.blockchain import BlockChain, BlockchainException
 from bitcoingraph.rpc import (BitcoinProxy,
                               JSONRPCException, DEFAULT_SERVICE_URL)
 
+import bitcoingraph.entitygraphgen as etgen
 
 def progress(progress=0):
     progress = int(progress * 100)
     sys.stdout.write("\rProgress: {0}%".format(progress))
     sys.stdout.flush()
+
+def setup_logger(args):
+    args = args
+    logger = None
+
+    if args.logging:
+        # Set log message format
+        #formatter = logging.Formatter( '%(asctime)s - %(name)s - %(levelname)s - %(message)s' )
+        #formatter = logging.Formatter( '%(asctime)s - %(levelname)s - %(message)s' )
+        formatter = logging.Formatter( '%(levelname)s - %(message)s' )
+
+        # Set loglevel
+        numeric_level = getattr(logging, args.loglevel.upper(), None)
+        if not isinstance(numeric_level, int):
+            print("Invalid log level: {}, defaulting to 'DEBUG'".format(args.loglevel,))
+            numeric_level = getattr(logging, "DEBUG", None)
+        logger = logging.getLogger( "l" ) # some name for logger
+        logger.setLevel(level=numeric_level)
+
+        if args.logfile:
+            # create RotatingFile handler with max 10 logFiles with max 100MB each
+            rf = logging.handlers.RotatingFileHandler( args.logfile, maxBytes=104857600, backupCount=10 )
+            rf.setLevel( numeric_level )
+            rf.setFormatter( formatter )
+            logger.addHandler( rf )
+        else:
+            # create stdout stream handler
+            ch = logging.StreamHandler()
+            ch.setLevel( numeric_level )
+            ch.setFormatter( formatter )
+            logger.addHandler( ch )
+        logger.debug('Configured logger for loglevel: {}'.format(numeric_level))
+    return logger
 
 
 def generate_tx_graph(args):
@@ -36,6 +70,43 @@ def generate_tx_graph(args):
     except BlockchainException as exc:
         print("\nBlockchain error %s" % exc)
     print("\nFinished transaction graph generation.")
+
+def generate_et_graph(args):
+    logger = setup_logger(args)
+
+    if (args.etgcsv):
+        etgcsv = str(args.etgcsv)
+    if logger: logger.info("Entity graph output file: {}".format(etgcsv))
+    else: print("Entity graph output file: {}".format(etgcsv))
+
+    if (args.etmapcsv):
+        etmapcsv = str(args.etmapcsv)
+    if logger: logger.info("Entity mapping output file: {}".format(etmapcsv))
+    else: print("Entity mapping output file: {}".format(etmapcsv))
+
+    if (args.btcmapcsv):
+        btcmapcsv = str(args.btcmapcsv)
+    if logger: logger.info("Bitcon address mapping output file: {}".format(btcmapcsv))
+    else: print("Bitcoin address mapping output file: {}".format(btcmapcsv))
+
+    if (args.txgcsv):
+        txgcsv = str(args.txgcsv)
+        if logger: logger.info("Tx graph file {}\nStarting ...".format(txgcsv))
+        else:   print("Tx graph file {}\nStarting ...".format(txgcsv))
+        if (args.sqlitedb):
+            etgenerator = EntityGraphGenerator(logger=logger,mode=SQLITEDB,sqlitedb=str(args.sqlitedb))
+        else:   
+            etgenerator = etgen.EntityGraphGenerator(logger=logger)
+        etgenerator.gen_entity_mapping(txgcsv)
+        etgenerator.print_entity_mapping(etmapcsv)
+        etgenerator.print_btcaddr_mapping(btcmapcsv)
+        if (args.sqlitedb):
+            etgenerator.sqliteclose()
+    else:
+        if logger: logger.error("No input transaction graph csv given. Aporting")
+        else:   print("No input transaction graph csv given. Aporting")
+
+    return 0
 
 
 parser = argparse.ArgumentParser(
@@ -61,7 +132,60 @@ tx_graph_parser.add_argument("-o", "--output_file", type=str,
                              help="Output file name")
 tx_graph_parser.set_defaults(func=generate_tx_graph)
 
-if len(sys.argv) == 1:
+
+et_graph_parser = subparsers.add_parser(
+    "et_graph",
+    help="Entity graph generation help")
+et_graph_parser.add_argument('-l',
+                action='store_true',
+                default = False,
+                dest='logging',
+                help='Enable Logging')
+et_graph_parser.add_argument('-lf',
+                action='store_true',
+                default = False,
+                dest='logfile',
+                help='Enable Logging to file, default is stdout when -l flag is given')
+et_graph_parser.add_argument('-lv',
+                action='store',
+                default='DEBUG',
+                dest='loglevel',
+                type=str,
+                help='Set the loglevel, default is DEBUG when -l flag is given')
+et_graph_parser.add_argument('-t','--txgcsv',
+                action='store',
+                default=None,
+                dest='txgcsv',
+                type=str,
+                help='The path and name to the transaction graph csv file')
+et_graph_parser.add_argument('-o','--output',
+                action='store',
+                default='./et_graph.csv',
+                dest='etgcsv',
+                type=str,
+                help='The path and name to the entity graph csv file')
+et_graph_parser.add_argument('-e','--etmapout',
+                action='store',
+                default='./et_map.csv',
+                dest='etmapcsv',
+                type=str,
+                help='The path and name to the entity mapping csv file.')
+et_graph_parser.add_argument('-b','--btcmapout',
+                action='store',
+                default='./btc_map.csv',
+                dest='btcmapcsv',
+                type=str,
+                help='The path and name to the btcaddr mapping csv file.')
+et_graph_parser.add_argument('-s','--sqlitedb',
+                action='store',
+                default=None,
+                dest='sqlitedb',
+                type=str,
+                help='Activates sqlite support. The path and name to the sqlite db file')
+et_graph_parser.set_defaults(func=generate_et_graph)
+
+
+if len(sys.argv) <= 2:
     parser.print_help()
     sys.exit(1)
 
