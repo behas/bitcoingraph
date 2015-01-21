@@ -208,11 +208,15 @@ class Transaction(BlockchainObject):
             outputs[tx_out.index] = tx_out
         return outputs
 
+    @property
     def input_addresses(self):
-        in_addrs = []
+        txinputs = list()
         for idx, txinput in self.inputs.items():
-            in_addr += [txinput.prev_tx_output.addresses]
-        return in_addrs
+            if self.is_coinbase_tx: 
+               txinputs.append(None) 
+            else:
+               txinputs.append(txinput.addresses[0]) #Why is addresses a list?
+        return txinputs
 
     @property
     def bc_flows(self):
