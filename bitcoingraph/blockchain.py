@@ -208,13 +208,19 @@ class Transaction(BlockchainObject):
             outputs[tx_out.index] = tx_out
         return outputs
 
+    def input_addresses(self):
+        in_addrs = []
+        for idx, txinput in self.inputs.items():
+            in_addr += [txinput.prev_tx_output.addresses]
+        return in_addrs
+
     @property
     def bc_flows(self):
         bc_flows = []
         src = None
-        if not self.is_coinbase_tx:
-            src = self.inputs[0].addresses[0]
         for idx, output in self.outputs.items():
+            if not self.is_coinbase_tx:
+                    src = self.inputs[0].addresses[0] #TODO iterate/mathc inputs to outputs or display all of them
             tgt = None
             if output.addresses is not None:
                 tgt = output.addresses[0]

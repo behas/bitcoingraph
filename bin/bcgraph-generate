@@ -48,6 +48,30 @@ def setup_logger(args):
         logger.debug('Configured logger for loglevel: {}'.format(numeric_level))
     return logger
 
+def generate_txin_graph(args):
+    print("Starting transaction graph generation.")
+    service_cred = args.user + ':' + args.password
+    service_uri = 'http://' + service_cred + '@' + args.service + '/'
+    print("Attempting to connect to %s ..." % service_uri)
+    try:
+        bc_proxy = BitcoinProxy(service_uri)
+        bc_proxy.getinfo()
+        print("Connection successful.")
+    except JSONRPCException:
+        print("Couldn't connect to %s. Aborting." % args.bitcoin_rpc_uri)
+        sys.exit(1)
+
+    try:
+        blockchain = BlockChain(bc_proxy)
+        with open(args.output_file, 'w') as csv_file:
+            bcgraph.generate_txin_graph(blockchain, args.startheight,
+                                      args.endheight, csv_file, progress)
+    except JSONRPCException as exc:
+        print("\nConnection error %s" % exc)
+    except BlockchainException as exc:
+        print("\nBlockchain error %s" % exc)
+    print("\nFinished transaction graph generation.")
+
 
 def generate_tx_graph(args):
     print("Starting transaction graph generation.")
@@ -137,6 +161,27 @@ tx_graph_parser.add_argument("-o", "--output_file", type=str,
                              default="tx_graph.csv",
                              help="Output file name")
 tx_graph_parser.set_defaults(func=generate_tx_graph)
+
+
+tx_graph_parser = subparsers.add_parser(
+    "txin_graph",
+    help="Transaction input graph generation help")
+tx_graph_parser.add_argument("startheight", type=int,
+                             help="Start block height")
+tx_graph_parser.add_argument("endheight", type=int,
+                             help="End block height")
+tx_graph_parser.add_argument("-s", "--service",
+                             default=DEFAULT_SERVICE,
+                             help="Address of Bitcoin JSON RPC Service")
+tx_graph_parser.add_argument("-u", "--user", required=True,
+                             help="Bitcoin Core RPC username")
+tx_graph_parser.add_argument("-p", "--password", required=True,
+                             help="Bitcoin Core RPC password")
+tx_graph_parser.add_argument("-o", "--output_file", type=str,
+                             default="tx_graph.csv",
+                             help="Output file name")
+tx_graph_parser.set_defaults(func=generate_txin_graph)
+
 
 
 et_graph_parser = subparsers.add_parser(
