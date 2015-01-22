@@ -2,6 +2,7 @@
 
 import argparse
 import sys
+import logging
 
 import bitcoingraph as bcgraph
 from bitcoingraph.blockchain import BlockChain, BlockchainException

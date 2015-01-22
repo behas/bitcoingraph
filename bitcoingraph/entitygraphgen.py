@@ -247,35 +247,31 @@ class EntityGraphGenerator:
         if self._logger: 
             self._logger.debug("Handle txstack with len: {} in memory".format(len(txstack)))
         entity          = None    # the entity of all btc src addresses in this tx
-        entitylist      = list()  # list of all entity mappings for btc src addresses in this tx
-        btcaddrlist     = list()  # list of all btc src addresses in this tx
+        entitylist      = set()  # list of all entity mappings for btc src addresses in this tx
+        btcaddrlist     = set()  # list of all btc src addresses in this tx
         for txitem in txstack: 
             if (self._btcdict.__contains__(txitem[BTCADDRSRC])):
                 entity = self._btcdict[txitem[BTCADDRSRC]]
-                entitylist.append(self._btcdict[txitem[BTCADDRSRC]])
+                entitylist.add(self._btcdict[txitem[BTCADDRSRC]])
                 txitem[ENTITYSRC] = entity
                 if self._logger: 
                     self._logger.debug("btcaddr \"{}\" entity: {}".format(txitem[BTCADDRSRC], entity))
 
-            # create list of all unique source addresses
-            if not btcaddrlist.__contains__(txitem[BTCADDRSRC]):
-                if self._logger: 
-                    self._logger.debug("btcaddrlist append: {}".format(txitem[BTCADDRSRC]))
-                btcaddrlist.append(txitem[BTCADDRSRC])
+            # create set of all unique source addresses
+            btcaddrlist.add(txitem[BTCADDRSRC])
 
         if len(entitylist) > 0:
             # handle entity collision and add new btc src addresses
             entity = min(entitylist)
             for et in entitylist:
                 if et != entity:
-                    self._etdict[entity].extend(self._etdict[et])
+                    self._etdict[entity] = self._etdict[entity].union(self._etdict[et])
                     self._etdict[et] = None 
            
             # add btc addresses to entity->btc dict
             if self._logger: self._logger.debug("btcaddrlist: {}".format(btcaddrlist))
             for btcaddr in btcaddrlist:
-                if not self._etdict[entity].__contains__(btcaddr):
-                    self._etdict[entity].append(btcaddr)
+                self._etdict[entity].add(btcaddr)
             # change btc address entity mapping of entries alread in btc->entity dict
             for btcaddr in self._etdict[entity]:
                 self._btcdict[btcaddr] = entity             
