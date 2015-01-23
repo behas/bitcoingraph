@@ -128,7 +128,7 @@ class TxInput(object):
             return None
         else:
             prev_tx = self._blockchain.get_transaction(self.prev_tx_hash)
-            return prev_tx.outputs[self.prev_tx_output_index]
+            return prev_tx.get_output_by_index(self.prev_tx_output_index)
 
     @property
     def addresses(self):
@@ -169,6 +169,8 @@ class Transaction(BlockchainObject):
     def __init__(self, raw_data, blockchain):
         super().__init__(raw_data, blockchain)
 
+    # Explicit transaction properties
+
     @property
     def blocktime(self):
         return self._raw_data['blocktime']
@@ -177,45 +179,54 @@ class Transaction(BlockchainObject):
     def id(self):
         return self._raw_data['txid']
 
-    @property
-    def vin_count(self):
-        return len(self.inputs)
+    # Input properties
 
-    @property
-    def inputs(self):
-        inputs = {}
-        for idx, vin in enumerate(self._raw_data['vin']):
-            tx_in = TxInput(vin, self._blockchain)
-            inputs[idx] = tx_in
-        return inputs
+    def get_inputs(self):
+        for tx_input in self._raw_data['vin']:
+            yield TxInput(tx_input, self._blockchain)
+
+    def get_input_count(self):
+        if 'vin' in self._raw_data:
+            return len(self._raw_data['vin'])
+        else:
+            return 0
 
     @property
     def is_coinbase_tx(self):
-        return self.inputs[0].is_coinbase
+        for tx_input in self.get_inputs():
+            if tx_input.is_coinbase:
+                return True
+        else:
+            return False
 
-    @property
-    def vout_count(self):
+    # Output properties
+
+    def get_output_count(self):
         if 'vout' in self._raw_data:
             return len(self._raw_data['vout'])
         else:
             return 0
 
-    @property
-    def outputs(self):
-        outputs = {}
-        for vout in self._raw_data['vout']:
-            tx_out = TxOutput(vout)
-            outputs[tx_out.index] = tx_out
-        return outputs
+    def get_outputs(self):
+        for tx_output in self._raw_data['vout']:
+            yield TxOutput(tx_output)
+
+    def get_output_by_index(self, index):
+        for output in self.get_outputs():
+            if output.index == index:
+                return output
+        return None
+
+    # Bitcoin flow properties
 
     @property
     def bc_flows(self):
         bc_flows = []
-        for idx, tx_input in self.inputs.items():
+        for tx_input in self.get_inputs():
             src = None
             if not self.is_coinbase_tx:
                 src = tx_input.addresses[0]
-            for idx, tx_output in self.outputs.items():
+            for tx_output in self.get_outputs():
                 tgt = None
                 if tx_output.addresses[0] is not None:
                     tgt = tx_output.addresses[0]
