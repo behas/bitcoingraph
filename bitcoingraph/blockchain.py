@@ -211,16 +211,17 @@ class Transaction(BlockchainObject):
     @property
     def bc_flows(self):
         bc_flows = []
-        src = None
-        if not self.is_coinbase_tx:
-            src = self.inputs[0].addresses[0]
-        for idx, output in self.outputs.items():
-            tgt = None
-            if output.addresses is not None:
-                tgt = output.addresses[0]
-            flow = {'src': src, 'tgt': tgt,
-                    'value': output.value}
-            bc_flows += [flow]
+        for idx, tx_input in self.inputs.items():
+            src = None
+            if not self.is_coinbase_tx:
+                src = tx_input.addresses[0]
+            for idx, tx_output in self.outputs.items():
+                tgt = None
+                if tx_output.addresses[0] is not None:
+                    tgt = tx_output.addresses[0]
+                flow = {'src': src, 'tgt': tgt,
+                        'value': tx_output.value}
+                bc_flows += [flow]
         return bc_flows
 
 

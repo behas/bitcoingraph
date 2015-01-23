@@ -11,11 +11,16 @@ BH2_HEIGHT = 100000
 BH3 = "00000000000080b66c911bd5ba14a74260057311eaeb1982802f7010f1a9f090"
 BH3_HEIGHT = 100001
 
+# standard transactions
 TX1 = "8c14f0db3df150123e6f3dbbf30f8b955a8249b62ac1d1ff16284aefa3d06d87"
 TX2 = "fff2525b8931402dd09222c50775608f75787bd2b87e56995a7bdd30f79702c4"
 TX3 = "87a157f3fd88ac7907c05fc55e271dc4acdc5605d187d646604ca8c0e9382e03"
 
+# transaction with unknown output
 TXE = "a288fec5559c3f73fd3d93db8e8460562ebfe2fcf04a5114e8d0f2920a6270dc"
+
+# transaction with multiple in and outputs
+TXM = "d5f013abf2cf4af6d68bcacd675c91f19bab5b7103b4ac2f4941686eb47da1f0"
 
 
 class TestBlockchainObject(unittest.TestCase):
@@ -217,6 +222,17 @@ class TestTransaction(TestBlockchainObject):
               'tgt': '1HWqMzw1jfpXb3xyuUZ4uWXY4tqL2cW47J',
               'value': 50.00000000}
         self.assertTrue(f1 in tx.bc_flows)
+
+    def test_bc_flows_multiple_inputs(self):
+        tcx = self.blockchain.get_transaction(TXM)
+        f1 = {'src': '1Nj6ssafuCe8JqDaR1n3Jw61gZ9FXJim5x',
+              'tgt': '1BWwKwTM6phe45zwUVGQq6WipmWZsVbK8h',
+              'value': 1.05000000}
+        self.assertTrue(f1 in tcx.bc_flows)
+        f2 = {'src': '1LjzLspWYZHgBECKvrMKDY5myM2kkCrtKu',
+              'tgt': '1BWwKwTM6phe45zwUVGQq6WipmWZsVbK8h',
+              'value': 1.05000000}
+        self.assertTrue(f2 in tcx.bc_flows)
 
 
 class TestBlockchain(TestBlockchainObject):
