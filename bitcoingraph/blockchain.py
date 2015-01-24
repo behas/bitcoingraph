@@ -225,7 +225,10 @@ class Transaction(BlockchainObject):
         for tx_input in self.get_inputs():
             src = None
             if not self.is_coinbase_tx:
-                src = tx_input.addresses[0]
+                if tx_input.addresses == None:
+                    src = None
+                else:
+                    src = tx_input.addresses[0]
             for tx_output in self.get_outputs():
                 tgt = None
                 if tx_output.addresses[0] is not None:
