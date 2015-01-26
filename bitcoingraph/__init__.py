@@ -1,7 +1,8 @@
 """
 bitcoingraph
 
-A graph interface to the Bitcoin blockchain
+A Python library for extracting and navigating graph structures from
+the Bitcoin block chain.
 
 """
 
