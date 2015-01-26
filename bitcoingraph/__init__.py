@@ -1,14 +1,32 @@
-__all__ = ['generate_tx_graph']
+"""
+bitcoingraph
 
+A graph interface to the Bitcoin blockchain
+
+"""
+
+__author__ = 'Bernhard Haslhofer (bernhard.haslhofer@ait.ac.at)'
+__copyright__ = 'Copyright 2015, Bernhard Haslhofer'
+__license__ = "MIT"
 __version__ = '0.1dev'
 
 import csv
 
 from bitcoingraph.blockchain import BlockchainException
 
+__all__ = ['generate_tx_graph']
+
 
 def generate_tx_graph(blockchain, start_block, end_block,
                       output_file, callback=None):
+    """
+    Generates transaction graph from the block chain and saves it to a
+    CSV file.
+
+    :param BlockChain blockchain: instantiated blockchain object
+    :param int start_block: start block of transaction generation range
+    :param int end_block: end block of transaction genration range
+    """
     cvs_writer = csv.writer(output_file, delimiter=';',
                             quotechar='|', quoting=csv.QUOTE_MINIMAL)
     cvs_writer.writerow(['txid', 'src_addr', 'tgt_addr', 'value',

@@ -1,11 +1,11 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
-    Copyright 2014 Bernhard Haslhofer
-
-    Bitcoin RPC interface.
+Bitcoin Core JSON-RPC interface.
 
 """
+
+__author__ = 'Bernhard Haslhofer (bernhard.haslhofer@ait.ac.at)'
+__copyright__ = 'Copyright 2015, Bernhard Haslhofer'
+__license__ = "MIT"
 
 import requests
 import json
@@ -16,14 +16,25 @@ DEFAULT_SERVICE = 'localhost:8332'
 
 
 class JSONRPCException(Exception):
+    """
+    Exception raised when accessing Bitcoin Core via JSON-RPCS.
+    """
     pass
 
 
 class JSONRPCProxy(object):
-
-    """A generic JSOWN RPC interface with keep-alive session reuse"""
+    """
+    A generic JSON-RPC interface with keep-alive session reuse.
+    """
 
     def __init__(self, url=None):
+        """
+        Creates a generic JSON-RPC interface object.
+
+        :param str url: URL of JSON-RPC endpoint
+        :return: JSON-RPC proxy object
+        :rtype: JSONRPCProxy
+        """
         self._session = requests.Session()
         if url is not None:
             self._url = url
@@ -64,47 +75,73 @@ class JSONRPCProxy(object):
 
 
 class BitcoinProxy(JSONRPCProxy):
+    """
+    Proxy to Bitcoin JSON RPC Service.
 
-    """Proxy to Bitcoin RPC Service implementing Bitcoin client call list
-    https://en.bitcoin.it/wiki/Original_Bitcoin_client/API_Calls_list"""
+    Implements a subset of call list described
+    `here <https://en.bitcoin.it/wiki/Original_Bitcoin_client/API_Calls_list>`_
+    """
 
     def __init__(self, url):
+        """
+        Creates a Bitcoin JSON RPC Service object.
+
+        :param str url: URL of Bitcoin Core JSON-RPC endpoint
+        :return: bitcoin proxy object
+        :rtype: BitcoinProxy
+        """
         super().__init__(url)
 
     def getblock(self, block_hash):
-        """Returns information about the block with the given hash."""
+        """
+        Returns information about the block with the given hash.
+
+        :param str block_hash: the block hash
+        :return: block as JSON
+        :rtype: str
+        """
         r = self._call('getblock', block_hash)
         return r
 
     def getblockcount(self):
-        """Returns the number of blocks in the longest block chain."""
+        """
+        Returns the number of blocks in the longest block chain.
+
+        :return: number of blocks in block chain
+        :rtype: int
+        """
         r = self._call('getblockcount')
         return int(r)
 
     def getblockhash(self, height):
-        """Returns hash of block in best-block-chain at <height>"""
+        """
+        Returns hash of block in best-block-chain at given height.
+
+        :param str height: the block height
+        :return: block hash
+        :rtype: str
+        """
         r = self._call('getblockhash', height)
         return r
 
     def getinfo(self):
-        """Returns an object containing various state info."""
+        """
+        Returns an object containing various state info.
+
+        :return: JSON string with state info
+        :rtype: str
+        """
         r = self._call('getinfo')
         return r
 
     def getrawtransaction(self, tx_id, verbose=1):
-        """Returns raw transaction representation for given transaction id."""
+        """
+        Returns raw transaction representation for given transaction id.
+
+        :param str tx_id: transaction id
+        :param int verbose: complete transaction record (0 = false, 1 = true)
+        :return: raw transaction data as JSON
+        :rtype: str
+        """
         r = self._call('getrawtransaction', tx_id, verbose)
         return r
-
-
-if __name__ == '__main__':
-    bcProxy = BitcoinProxy('http://bitcoinrpc:pass@localhost:8332/')
-    try:
-        bh = bcProxy.getblockhash(1)
-        print(bh)
-        block = bcProxy.getblock(bh)
-        print(block)
-        transaction = bcProxy.getrawtransaction(block['tx'][0])
-        print(transaction)
-    except Exception as err:
-        print('Ooops...RPC Exception:', err)
