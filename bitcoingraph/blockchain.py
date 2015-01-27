@@ -452,13 +452,15 @@ class Transaction(BlockchainObject):
         for tx_input in self.get_inputs():
             src = None
             if not self.is_coinbase_tx:
-                if tx_input.addresses == None:
+                if tx_input is None or tx_input.addresses is None:
                     src = None
                 else:
                     src = tx_input.addresses[0]
             for tx_output in self.get_outputs():
                 tgt = None
-                if tx_output.addresses[0] is not None:
+                if tx_output is None or tx_output.addresses is None or tx_output.addresses[0] is None:
+                    tgt = None
+                else:
                     tgt = tx_output.addresses[0]
                 flow = {'src': src, 'tgt': tgt,
                         'value': tx_output.value}
