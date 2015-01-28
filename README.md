@@ -1,6 +1,4 @@
-Bitcoingraph - A Python Bitcoin library supporting
-* navigation along Bitcoin blocks and transactions
-* generation of various type of data graphs from the Bitcoin blockchain
+Bitcoingraph - A Python library for extracting and navigating graph structures from the Bitcoin block chain.
 
 # Prerequesites
 
