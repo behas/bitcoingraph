@@ -105,11 +105,8 @@ def generate_et_graph(args):
         txgcsv = str(args.txgcsv)
         if logger: logger.info("Tx graph file {}\nStarting ...".format(txgcsv))
         else:   print("Tx graph file {}\nStarting ...".format(txgcsv))
-        if (args.sqlitedb):
-            etgenerator = etg.EtGraphGen(logger=logger,mode=SQLITEDB,sqlitedb=str(args.sqlitedb))
-        else:   
-            etgenerator = etg.EtGraphGen(logger=logger)
         
+        etgenerator = etg.EtGraphGen(logger=logger)
         etgenerator.gen_entity_mapping(txgcsv)
 
         if (args.btcmapcsv):
@@ -130,8 +127,6 @@ def generate_et_graph(args):
             if logger: logger.info("Entity graph output file: {}".format(etgcsv))
             else: print("Entity graph output file: {}".format(etgcsv))
 
-        #if (args.sqlitedb):
-        #    etgenerator.sqliteclose()
     else:
         if logger: logger.error("No input transaction graph csv given. Aporting")
         else:   print("No input transaction graph csv given. Aporting")
@@ -231,12 +226,6 @@ et_graph_parser.add_argument('-b','--btcmapout',
                 dest='btcmapcsv',
                 type=str,
                 help='The path and name to the btcaddr mapping csv file.')
-et_graph_parser.add_argument('-s','--sqlitedb',
-                action='store',
-                default=None,
-                dest='sqlitedb',
-                type=str,
-                help='Activates sqlite support. The path and name to the sqlite db file')
 et_graph_parser.set_defaults(func=generate_et_graph)
 
 

@@ -14,7 +14,7 @@ TEST=$1
 #asdf qwer ...
 REF=$2
 # The number of lines which should be compared
-TRIES=10
+TRIES=20
 
 ERROR=0
 

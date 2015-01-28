@@ -2,13 +2,12 @@ import unittest
 import logging
 from tempfile import NamedTemporaryFile 
 
-import bitcoingraph.entitygraphgen as etg
+import bitcoingraph.graphgen as etg
 
 LOGFILE = "./testlog.log" 
 LOGLVL  = "DEBUG"
-MODE    = etg.INMEMORY
 
-class TestEntityGraphGenerator(unittest.TestCase):
+class TestEtGraphGen(unittest.TestCase):
     """ unittests for EnitityGraphGenerator
     $ rm ./testlog.log; python3.4 test/test_entitygraphgenerator.py; cat ./testlog.log
     """
@@ -51,7 +50,7 @@ class TestEntityGraphGenerator(unittest.TestCase):
         logger.debug("TEST - Tempfile: {}".format(infile.name))
         
         # run entity map generator 
-        etgenerator = etg.EntityGraphGenerator(logger=logger,mode=MODE)
+        etgenerator = etg.EtGraphGen(logger=logger)
         ret = etgenerator.gen_entity_mapping(infile.name)
         self.assertTrue(ret == 0,"Entity mapping method returned an error: {}".format(ret))                
         # test entity mapping  
@@ -92,7 +91,7 @@ class TestEntityGraphGenerator(unittest.TestCase):
         logger.debug("TEST - Tempfile: {}".format(infile.name))
         
         # run entity map generator 
-        etgenerator = etg.EntityGraphGenerator(logger=logger,mode=MODE)
+        etgenerator = etg.EtGraphGen(logger=logger)
         ret = etgenerator.gen_entity_mapping(infile.name)
         self.assertTrue(ret == 0,"Entity mapping method returned an error: {}".format(ret))                
         # test entity mapping  
@@ -168,7 +167,7 @@ bbbb;C2;XX;0.1;1417611696;111
         logger.debug("TEST - Tempfile: {}".format(infile.name))
         
         # run entity map generator 
-        etgenerator = etg.EntityGraphGenerator(logger=logger,mode=MODE)
+        etgenerator = etg.EtGraphGen(logger=logger)
         ret = etgenerator.gen_entity_mapping(infile.name)
         self.assertTrue(ret == 0,"Entity mapping method returned an error: {}".format(ret))                
         # test entity mapping  

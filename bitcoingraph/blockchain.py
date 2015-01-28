@@ -442,12 +442,12 @@ class Transaction(BlockchainObject):
 
     @property
     def input_addresses(self):
-        txinputs = list()
-        for idx, txinput in self.inputs.items():
+        txinputs = set()
+        for txinput in self.get_inputs():
             if self.is_coinbase_tx or txinput.addresses == None: #TODO txinput.addresses can be "None" in error cases, why?
-               txinputs.append(None)
+               txinputs.add(None) 
             else:
-               txinputs.append(txinput.addresses[0]) #Why is addresses a list in this case?
+               txinputs.add(txinput.addresses[0]) #Why is addresses a list in this case?
         return txinputs
 
     @property
