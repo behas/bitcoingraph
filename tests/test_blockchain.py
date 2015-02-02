@@ -267,6 +267,10 @@ class TestBlockchain(TestBlockchainObject):
         tx = self.blockchain.get_transaction(TX1)
         self.assertEqual(tx.id, TX1)
 
+    def test_get_max_blockheight(self):
+        max_height = self.blockchain.get_max_blockheight()
+        self.assertEqual(max_height, 100001)
+
     def test_exceptions(self):
         with self.assertRaises(BlockchainException) as cm:
             self.blockchain.get_block_by_hash("aa")

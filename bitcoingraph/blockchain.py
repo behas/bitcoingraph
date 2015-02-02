@@ -549,3 +549,17 @@ class BlockChain(object):
         except JSONRPCException as exc:
             raise BlockchainException("Cannot retrieve transaction with id %s"
                                       % (tx_id), exc)
+
+    def get_max_blockheight(self):
+        """
+        Returns maximum known block height.
+
+        :return: maximum block height
+        :rtype: int
+        """
+        try:
+            max_height = self._bitcoin_proxy.getblockcount()
+            return max_height
+        except JSONRPCException as exc:
+            raise BlockchainException("Error when retrieving maximum\
+                block height", exc)
