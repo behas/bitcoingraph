@@ -441,16 +441,6 @@ class Transaction(BlockchainObject):
     # Bitcoin flow properties
 
     @property
-    def input_addresses(self):
-        txinputs = set()
-        for txinput in self.get_inputs():
-            if self.is_coinbase_tx or txinput.addresses == None: #TODO txinput.addresses can be "None" in error cases, why?
-               txinputs.add(None) 
-            else:
-               txinputs.add(txinput.addresses[0]) #Why is addresses a list in this case?
-        return txinputs
-
-    @property
     def bc_flows(self):
         """
         Returns flows of Bitcoins between source and target addresses.
@@ -462,16 +452,16 @@ class Transaction(BlockchainObject):
         for tx_input in self.get_inputs():
             src = None
             if not self.is_coinbase_tx:
-                if tx_input is None or tx_input.addresses is None:
-                    src = None
+                if tx_input.addresses is not None:
+                    if tx_input.addresses[0] is not None:
+                        src = tx_input.addresses[0]
                 else:
                     src = tx_input.addresses[0]
             for tx_output in self.get_outputs():
                 tgt = None
-                if tx_output is None or tx_output.addresses is None or tx_output.addresses[0] is None:
-                    tgt = None
-                else:
-                    tgt = tx_output.addresses[0]
+                if tx_output.addresses is not None:
+                    if tx_output.addresses[0] is not None:
+                        tgt = tx_output.addresses[0]
                 flow = {'src': src, 'tgt': tgt,
                         'value': tx_output.value}
                 bc_flows += [flow]
