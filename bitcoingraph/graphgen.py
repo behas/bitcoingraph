@@ -6,14 +6,6 @@ import os             #os.urandom(n)
 import csv            #csv parsing 
 
 # csv header fields in tx graph file
-"""
-TXID       = "tx_id"
-BTCADDRSRC = "btcaddr_src"
-BTCADDRDST = "btcaddr_dst"
-BTC        = "btc"
-TIMESTAMP  = "timestamp"
-BLOCKID    = "block_id"
-"""
 TXID       = "txid"
 BTCADDRSRC = "src_addr"
 BTCADDRDST = "tgt_addr"
@@ -25,8 +17,7 @@ ENTITYSRC  = "entity_src"
 ENTITYDST  = "entity_dst"
 # csv header fields in et mapping file
 ENTITYID   = "entity_id" 
-
-# csv settings
+# csv special chars
 DELIMCHR   = ';'
 QUOTECHR   = '|'
 
@@ -47,8 +38,8 @@ class EtGraphGen(object):
     Memory intensive variant.
     """
     def __init__(self, logger=None):
-        self._logger = logger    # logger or 'None' 
-        self._etdict = dict()    # dict() with entities as key 
+        self._logger  = logger    
+        self._etdict  = dict()   # dict() with entities as key 
         self._btcdict = dict()   # dict() with btc addresses as key
         return  
 
@@ -76,10 +67,17 @@ class EtGraphGen(object):
     def handle_tx_inputs_in_memory(self, txstack):
         if self._logger: 
             self._logger.debug("Handle txstack with len: {} in memory".format(len(txstack)))
-        entity          = None    # the entity of all btc src addresses in this tx
-        entitylist      = set()  # list of all entity mappings for btc src addresses in this tx
-        btcaddrlist     = set()  # list of all btc src addresses in this tx
+        entity          = None   # the entity of all btc src addresses in this tx
+        entitylist      = set()  # set of all entity mappings for btc src addresses in this tx
+        btcaddrlist     = set()  # set all btc src addresses in this tx
+        rtxstack        = list() # return list
+
         for txitem in txstack: 
+            if (len(txstack) > 1 and txitem[BTCADDRSRC] == 'NULL'):
+                # ignore coinbase transactions or 'NULL' inputs
+                if self._logger: self._logger.error("Found NULL/coinbase tx input in txitem: {}".format(txitem))                
+                continue
+
             if (self._btcdict.__contains__(txitem[BTCADDRSRC])):
                 entity = self._btcdict[txitem[BTCADDRSRC]]
                 entitylist.add(self._btcdict[txitem[BTCADDRSRC]])
@@ -89,6 +87,8 @@ class EtGraphGen(object):
 
             # create set of all unique source addresses
             btcaddrlist.add(txitem[BTCADDRSRC])
+            # everythin is fine then add item to return txstack 
+            rtxstack.append(txitem)
 
         if len(entitylist) > 0:
             # handle entity collision and add new btc src addresses
@@ -113,11 +113,10 @@ class EtGraphGen(object):
             self._etdict[entity] = btcaddrlist
 
         # add Bitcoin source address to btc->entity dict
-        for txitem in txstack:    
+        for txitem in rtxstack:    
             self._btcdict[txitem[BTCADDRSRC]] = entity
  
-        return txstack 
-
+        return rtxstack 
 
 
     def gen_entity_mapping(self, txgcsv):
@@ -151,11 +150,11 @@ class EtGraphGen(object):
                     txstack = self.handle_tx_inputs_in_memory(txstack) 
                     if numtx != len(txstack):
                         if self._logger: 
-                            self._logger.error("Error handling tx inptus: {}".format(txsack))
+                            self._logger.error("Error handling tx inptus: {}".format(txstack))
                         else:   
-                            print("Error handling tx inptus: {}".format(txsack))
-                        raise TxInputHandlingException("Tx inputs handling failed")
-                        return 5
+                            print("Error handling tx inptus: {}".format(txstack))
+                        #raise TxInputHandlingException("Tx inputs handling failed")
+                        #return 5
                     while len(txstack) != 0:
                         txitem = txstack.pop()
                        
