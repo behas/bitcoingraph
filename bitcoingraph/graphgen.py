@@ -75,7 +75,7 @@ class EtGraphGen(object):
         for txitem in txstack: 
             if (len(txstack) > 1 and txitem[BTCADDRSRC] == 'NULL'):
                 # ignore coinbase transactions or 'NULL' inputs
-                if self._logger: self._logger.error("Found NULL/coinbase tx input in txitem: {}".format(txitem))                
+                if self._logger: self._logger.debug("Found NULL/coinbase tx input: {}".format(txitem))                
                 continue
 
             if (self._btcdict.__contains__(txitem[BTCADDRSRC])):
@@ -148,11 +148,11 @@ class EtGraphGen(object):
                     # next transaction, check/map current tx inputs to entity
                     numtx = len(txstack)
                     txstack = self.handle_tx_inputs_in_memory(txstack) 
-                    if numtx != len(txstack):
+                    if (numtx != len(txstack)) and (len(txstack) > 0):
                         if self._logger: 
-                            self._logger.error("Error handling tx inptus: {}".format(txstack))
+                            self._logger.error("Handling tx inptus of txid={} the remaining inputs are: {}".format(txid,txstack))
                         else:   
-                            print("Error handling tx inptus: {}".format(txstack))
+                            print("Handling tx inptus of txid={} the remaining inputs are: {}".format(txid,txstack))
                         #raise TxInputHandlingException("Tx inputs handling failed")
                         #return 5
                     while len(txstack) != 0:
