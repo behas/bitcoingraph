@@ -31,6 +31,7 @@ class Graph(object):
     A generic directed graph representation.
 
     TODO: wrap third party library
+    TODO: implement required graph search algorithms
     """
     def __init__(self):
         self._edges = []
@@ -80,7 +81,7 @@ class TransactionGraph(Graph):
 
     def _generate_from_blockchain(self, start_block=None, end_block=None):
         """
-        Generates transaction graph from blockchain.
+        Generates transaction graph by extracting edges from blockchain.
         """
         if self._blockchain is None:
             raise GraphException("Cannot generated transaction graph without \
@@ -112,7 +113,7 @@ class TransactionGraph(Graph):
 
     def _generate_from_file(self, start_block, end_block, tx_graph_file):
         """
-        Generates transaction graph from CSV file.
+        Generates transaction graph by loading edges from CSV file.
         """
         with open(tx_graph_file, newline='') as csvfile:
                 csv_reader = csv.DictReader(csvfile, delimiter=';',
@@ -137,3 +138,39 @@ class TransactionGraph(Graph):
                 csv_writer.writerow(edge)
                 if progress:
                     progress(edge['blockheight'] / (end_block - start_block))
+
+
+class EntityGraph(Graph):
+    """
+    A directed graph view on entites in the blockchain.
+
+    Vertex = entity
+    Edge = bitcoin flow between entities
+    """
+
+    def __init__(self, tx_graph=None):
+        """
+        Creates entity graph view based on transaction graph.
+        """
+        if tx_graph is not None:
+            self._tx_graph = tx_graph
+        super().__init__()
+
+    def _generate_from_file(self, et_graph_file):
+        """
+        TODO: Generates entity graph by loading edges from CSV file.
+        """
+        pass
+
+    def generate_from_tx_graph(self):
+        """
+        TODO: Generate entity graph by computing union-find over transaction
+        graph.
+        """
+        pass
+
+    def export_to_csv(self, output_file, progress=None):
+        """
+        Exports entity graph to CSV file.
+        """
+        pass

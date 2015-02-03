@@ -14,7 +14,7 @@ __version__ = '0.1'
 __all__ = ['export_tx_graph']
 
 
-from bitcoingraph.graph import TransactionGraph
+from bitcoingraph.graph import TransactionGraph, EntityGraph
 
 
 def export_tx_graph(blockchain, start_block, end_block,
@@ -29,3 +29,8 @@ def export_tx_graph(blockchain, start_block, end_block,
     """
     tx_graph = TransactionGraph(blockchain)
     tx_graph.export_to_csv(start_block, end_block, output_file, progress)
+
+def export_et_graph(tx_graph, output_file, progress=None):
+    """
+    TODO: implement entity graph export just as above
+    """

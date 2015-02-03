@@ -44,3 +44,12 @@ class TestTransactionGraph(unittest.TestCase):
     def test_load_from_file(self):
         self.txgraph.load(99999, 100000, TEST_CSV)
         self.assertEqual(7, self.txgraph.count_edges())
+
+
+class TestEntityGraph(unittest.TestCase):
+
+    def test_generate_from_tx_graph(self):
+        pass
+
+    def test_generate_from_file(self):
+        pass
