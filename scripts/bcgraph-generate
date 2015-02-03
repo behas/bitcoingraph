@@ -9,7 +9,7 @@ from bitcoingraph.blockchain import BlockChain, BlockchainException
 from bitcoingraph.rpc import (BitcoinProxy,
                               JSONRPCException, DEFAULT_SERVICE)
 
-import bitcoingraph.graphgen as etg
+from bitcoingraph.graph import EntityGraph
 
 def progress(progress=0):
     progress = int(progress * 100)
@@ -65,6 +65,7 @@ def generate_txin_graph(args):
     try:
         blockchain = BlockChain(bc_proxy)
         with open(args.output_file, 'w') as csv_file:
+            #TODO fix this - this code does not exist anymore?
             bcgraph.generate_txin_graph(blockchain, args.startheight,
                                       args.endheight, csv_file, progress)
     except JSONRPCException as exc:
@@ -104,28 +105,35 @@ def generate_et_graph(args):
         txgcsv = str(args.txgcsv)
         if logger: logger.info("Tx graph file {}\nStarting ...".format(txgcsv))
         else:   print("Tx graph file {}\nStarting ...".format(txgcsv))
+     
+        et_graph = EntityGraph(logger=logger) 
         
-        etgenerator = etg.EtGraphGen(logger=logger)
-        etgenerator.gen_entity_mapping(txgcsv)
+        #try: 
+        if (args.etgcsv):
+            etgcsv = str(args.etgcsv)
+            if logger: logger.info("Entity graph output file: {}".format(etgcsv))
+            else: print("Entity graph output file: {}".format(etgcsv))
+            et_graph.export_to_csv(txgcsv, etgcsv)
 
         if (args.btcmapcsv):
             btcmapcsv = str(args.btcmapcsv)
-            etgenerator.print_btcaddr_mapping(btcmapcsv)
             if logger: logger.info("Bitcoin address mapping output file: {}".format(btcmapcsv))
             else: print("Bitcoin address mapping output file: {}".format(btcmapcsv))
+            if et_graph.print_btcaddr_mapping(btcmapcsv) == 1:
+                et_graph._generate_from_tx_graph(txgcsv)
+                et_graph.print_entity_mapping(etmapcsv)
 
         if (args.etmapcsv):
             etmapcsv = str(args.etmapcsv)
-            etgenerator.print_entity_mapping(etmapcsv)
             if logger: logger.info("Entity mapping output file: {}".format(etmapcsv))
             else: print("Entity mapping output file: {}".format(etmapcsv))
-
-        if (args.etgcsv):
-            etgcsv = str(args.etgcsv)
-            etgenerator.print_entity_graph(etgcsv, txgcsv)
-            if logger: logger.info("Entity graph output file: {}".format(etgcsv))
-            else: print("Entity graph output file: {}".format(etgcsv))
-
+            if et_graph.print_entity_mapping(etmapcsv) == 1:
+                et_graph._generate_from_tx_graph(txgcsv)
+                et_graph.print_entity_mapping(etmapcsv)
+        #except:
+        #    if logger: logger.error("Exception {}".format(sys.exc_info()[0]))
+        #    else: print("Exception {}".format(sys.exc_info()[0]))
+            
     else:
         if logger: logger.error("No input transaction graph csv given. Aporting")
         else:   print("No input transaction graph csv given. Aporting")

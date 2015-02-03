@@ -1,4 +1,8 @@
 #!/bin/bash
+# This script should check missing addresses that
+# have been found in the reference dataset but not in the
+# actual enity mapping. 
+# A possible cause for that is that the reference dataset includes 
 
 if [ $# -lt 2 ];
 then
@@ -7,15 +11,23 @@ then
     echo "  \$2  File of tx_graph input addresses"
     exit
 fi 
-# The Missing bitcoin addresses from the test_etmap_csv.sh
+# The Missing bitcoin addresses from the verify_etmap_csv.sh
 # in the format:
 #<btcaddrs> 
 # This can be generated as follows:
-#
+# $ grep -En '\{.[0-9a-zA-Z]{20,35}.\:\s*None\,\}' verify_etmap_csv.log | cut -d"'" -f 2 > verify_negative.log
+# To be sure that there are only missing entitys that consist 
+# of single bitcoin addresses quickly check if the following
+# files have the same length
+# $ grep -En '\:\s*None' verify_etmap_csv.log > verify_negative_all.log
+# $ grep -En '\{.[0-9a-zA-Z]{20,35}.\:\s*None\,\}' verify_etmap_csv.log > verify_negative_single.log
+# $ wc -l verify_negative*
 MBTC=$1
+
 # The Input addresses of the tx_graph in the format:
 #<btcaddr> 
-# This can be generated as follows
+# This can be generated as follows:
+# $ cut -d";" -f 2 tx_graph_1-136165_2015-01-26.csv > tx_graph_1-136165_2015-01-26.csv_f2 
 IBTC=$2
 
 # The number of lines which should be compared 

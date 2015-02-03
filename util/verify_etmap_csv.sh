@@ -7,9 +7,10 @@
 
 if [ $# -lt 2 ];
 then
-    echo "This command takes two arguments"
-    echo "\t\$1  File to check"
-    echo "\t\$2  File to check against i.e. reference"
+    echo "This command takes three arguments"
+    echo "  \$1  File to check"
+    echo "  \$2  File to check against i.e. reference"
+    echo "  \$3  Size of sample set to verify, 0 for all"
     exit
 fi 
 # The file to test in the format:
@@ -23,7 +24,8 @@ REF=$2
 
 # The number of lines which should be compared 
 # Set to 0 for comparing all
-TRIES=0
+TRIES=$3
+
 RLINES=$(wc -l $REF | cut -d" " -f 1)
 # Error flag
 ERROR=0

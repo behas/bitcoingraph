@@ -2,12 +2,12 @@ import unittest
 import logging
 from tempfile import NamedTemporaryFile 
 
-import bitcoingraph.graphgen as etg
+import bitcoingraph.graph as etg
 
 LOGFILE = "./testlog.log" 
 LOGLVL  = "DEBUG"
 
-class TestEtGraphGen(unittest.TestCase):
+class TestEntityGraph(unittest.TestCase):
     """ unittests for EnitityGraphGenerator
     $ rm ./testlog.log; python3.4 test/test_entitygraphgenerator.py; cat ./testlog.log
     """
@@ -50,8 +50,8 @@ class TestEtGraphGen(unittest.TestCase):
         logger.debug("TEST - Tempfile: {}".format(infile.name))
         
         # run entity map generator 
-        etgenerator = etg.EtGraphGen(logger=logger)
-        ret = etgenerator.gen_entity_mapping(infile.name)
+        etgenerator = etg.EntityGraph(logger=logger)
+        ret = etgenerator._generate_entity_mapping(infile.name)
         self.assertTrue(ret == 0,"Entity mapping method returned an error: {}".format(ret))                
         # test entity mapping  
         logger.debug("TEST - Entity Dict: {}".format(etgenerator.etdict)) 
@@ -91,8 +91,8 @@ class TestEtGraphGen(unittest.TestCase):
         logger.debug("TEST - Tempfile: {}".format(infile.name))
         
         # run entity map generator 
-        etgenerator = etg.EtGraphGen(logger=logger)
-        ret = etgenerator.gen_entity_mapping(infile.name)
+        etgenerator = etg.EntityGraph(logger=logger)
+        ret = etgenerator._generate_entity_mapping(infile.name)
         self.assertTrue(ret == 0,"Entity mapping method returned an error: {}".format(ret))                
         # test entity mapping  
         logger.debug("TEST - Entity Dict: {}".format(etgenerator.etdict)) 
@@ -167,8 +167,8 @@ bbbb;C2;XX;0.1;1417611696;111
         logger.debug("TEST - Tempfile: {}".format(infile.name))
         
         # run entity map generator 
-        etgenerator = etg.EtGraphGen(logger=logger)
-        ret = etgenerator.gen_entity_mapping(infile.name)
+        etgenerator = etg.EntityGraph(logger=logger)
+        ret = etgenerator._generate_entity_mapping(infile.name)
         self.assertTrue(ret == 0,"Entity mapping method returned an error: {}".format(ret))                
         # test entity mapping  
         logger.debug("TEST - Entity Dict: {}".format(etgenerator.etdict)) 
