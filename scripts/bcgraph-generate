@@ -89,9 +89,8 @@ def generate_tx_graph(args):
 
     try:
         blockchain = BlockChain(bc_proxy)
-        with open(args.output_file, 'w') as csv_file:
-            bcgraph.generate_tx_graph(blockchain, args.startheight,
-                                      args.endheight, csv_file, progress)
+        bcgraph.export_tx_graph(blockchain, args.startheight,
+                                args.endheight, args.output_file, progress)
     except JSONRPCException as exc:
         print("\nConnection error %s" % exc)
     except BlockchainException as exc:

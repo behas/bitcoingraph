@@ -45,7 +45,7 @@ class BitcoinProxyMock(BitcoinProxy):
             return self.blocks[block_hash]
 
     def getblockcount(self):
-        return len(self.blocks)
+        return max(self.heights.keys())
 
     def getblockhash(self, block_height):
         if block_height not in self.heights:
