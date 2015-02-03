@@ -20,10 +20,9 @@ class TestBitcoinGraph(unittest.TestCase):
         reference_file = None
         with open(TEST_CSV, 'r') as f:
             reference_file = f.readlines()
-        with NamedTemporaryFile(mode='w+') as csv_file:
-            bgraph.export_tx_graph(self.blockchain, 99999, 100000, csv_file)
-            csv_file.flush()
-            with open(csv_file.name) as f:
-                content = f.readlines()
-                for line in content:
-                    self.assertIn(line, reference_file)
+        tempfile = NamedTemporaryFile(mode='w+')
+        bgraph.export_tx_graph(self.blockchain, 99999, 100000, tempfile.name)
+        with open(tempfile.name) as f:
+            content = f.readlines()
+            for line in content:
+                self.assertIn(line, reference_file)

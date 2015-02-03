@@ -29,10 +29,9 @@ class TestTransactionGraph(unittest.TestCase):
         self.assertEqual(7, len(edges))
 
     def test_export_to_csv(self):
-        with NamedTemporaryFile(mode='w+') as csv_file:
-            self.txgraph.export_to_csv(99999, 100000, csv_file)
-            csv_file.flush()
-            with open(csv_file.name) as f:
-                content = f.readlines()
-                for line in content:
-                    self.assertIn(line, self.reference_file)
+        tempfile = NamedTemporaryFile(mode='w+')
+        self.txgraph.export_to_csv(99999, 100000, tempfile.name)
+        with open(tempfile.name) as f:
+            content = f.readlines()
+            for line in content:
+                self.assertIn(line, self.reference_file)

@@ -40,6 +40,7 @@ class TransactionGraph(object):
         """
         if blockchain is not None:
             self._blockchain = blockchain
+        self._edges = []
 
     def generate_edges(self, start_block=None, end_block=None):
         """
@@ -82,18 +83,28 @@ class TransactionGraph(object):
         """
         Exports transaction graph to CSV file.
         """
-        cvs_writer = csv.writer(output_file, delimiter=';',
-                                quotechar='|', quoting=csv.QUOTE_MINIMAL)
-        cvs_writer.writerow(['txid', 'src_addr', 'tgt_addr', 'value',
-                             'timestamp', 'block_height'])
-        for edge in self.generate_edges(start_block, end_block):
-            src = edge['src']
-            if src is None:
-                src = "NULL"
-            tgt = edge['tgt']
-            if tgt is None:
-                tgt = "NULL"
-            cvs_writer.writerow([edge['txid'], src, tgt, edge['value'],
-                                 edge['timestamp'], edge['blockheight']])
-            if progress:
-                progress(edge['blockheight'] / (end_block - start_block))
+        with open(output_file, 'w', newline='') as csvfile:
+            csv_writer = csv.writer(csvfile, delimiter=';',
+                                    quotechar='|', quoting=csv.QUOTE_MINIMAL)
+            csv_writer.writerow(['txid', 'src_addr', 'tgt_addr', 'value',
+                                 'timestamp', 'block_height'])
+            for edge in self.generate_edges(start_block, end_block):
+                src = edge['src']
+                if src is None:
+                    src = "NULL"
+                tgt = edge['tgt']
+                if tgt is None:
+                    tgt = "NULL"
+                csv_writer.writerow([edge['txid'], src, tgt, edge['value'],
+                                    edge['timestamp'], edge['blockheight']])
+                if progress:
+                    progress(edge['blockheight'] / (end_block - start_block))
+
+    def load(self, start_block, end_block, tx_graph_file=None):
+        """
+        Loads transaction graph from blockchain or from given transaction
+        graph output file.
+        """
+        if tx_graph_file is None:
+            for edge in self.generate_edges(start_block, end_block):
+                self._edges = self._edges + edge
