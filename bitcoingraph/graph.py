@@ -26,7 +26,29 @@ class GraphException(Exception):
         return repr(self.msg)
 
 
-class TransactionGraph(object):
+class Graph(object):
+    """
+    A generic directed graph representation.
+
+    TODO: wrap third party library
+    """
+    def __init__(self):
+        self._edges = []
+
+    def add_edge(self, edge):
+        """
+        Add edge to graph.
+        """
+        self._edges.append(edge)
+
+    def count_edges(self):
+        """
+        Returns number of edges in graph.
+        """
+        return len(self._edges)
+
+
+class TransactionGraph(Graph):
     """
     A directed graph view on block chain transactions.
 
@@ -40,15 +62,25 @@ class TransactionGraph(object):
         """
         if blockchain is not None:
             self._blockchain = blockchain
-        self._edges = []
+        super().__init__()
 
-    def generate_edges(self, start_block=None, end_block=None):
+    def load(self, start_block, end_block, tx_graph_file=None):
         """
-        Generates transaction graph edges from blockchain.
+        Loads transaction graph from blockchain or from transaction
+        graph output file, if given.
+        """
+        if tx_graph_file:
+            generator = self._generate_from_file(start_block,
+                                                 end_block, tx_graph_file)
+        else:
+            generator = self._generate_from_blockchain(start_block, end_block)
 
-        An edge consists of a source (src) and a target (tgt) value
-        and a set of named edge descriptors.
+        for edge in generator:
+            self.add_edge(edge)
 
+    def _generate_from_blockchain(self, start_block=None, end_block=None):
+        """
+        Generates transaction graph from blockchain.
         """
         if self._blockchain is None:
             raise GraphException("Cannot generated transaction graph without \
@@ -78,33 +110,30 @@ class TransactionGraph(object):
                     raise GraphException("Transaction graph generation failed",
                                          exc)
 
+    def _generate_from_file(self, start_block, end_block, tx_graph_file):
+        """
+        Generates transaction graph from CSV file.
+        """
+        with open(tx_graph_file, newline='') as csvfile:
+                csv_reader = csv.DictReader(csvfile, delimiter=';',
+                                            quotechar='|',
+                                            quoting=csv.QUOTE_MINIMAL)
+                for edge in csv_reader:
+                    yield edge
+
     def export_to_csv(self, start_block=None,
                       end_block=None, output_file=None, progress=None):
         """
-        Exports transaction graph to CSV file.
+        Exports transaction graph to CSV file directly from blockchain.
         """
         with open(output_file, 'w', newline='') as csvfile:
-            csv_writer = csv.writer(csvfile, delimiter=';',
-                                    quotechar='|', quoting=csv.QUOTE_MINIMAL)
-            csv_writer.writerow(['txid', 'src_addr', 'tgt_addr', 'value',
-                                 'timestamp', 'block_height'])
-            for edge in self.generate_edges(start_block, end_block):
-                src = edge['src']
-                if src is None:
-                    src = "NULL"
-                tgt = edge['tgt']
-                if tgt is None:
-                    tgt = "NULL"
-                csv_writer.writerow([edge['txid'], src, tgt, edge['value'],
-                                    edge['timestamp'], edge['blockheight']])
+            fieldnames = ['txid', 'src', 'tgt',
+                          'value', 'timestamp', 'blockheight']
+            csv_writer = csv.DictWriter(csvfile, delimiter=';', quotechar='|',
+                                        fieldnames=fieldnames,
+                                        quoting=csv.QUOTE_MINIMAL)
+            csv_writer.writeheader()
+            for edge in self._generate_from_blockchain(start_block, end_block):
+                csv_writer.writerow(edge)
                 if progress:
                     progress(edge['blockheight'] / (end_block - start_block))
-
-    def load(self, start_block, end_block, tx_graph_file=None):
-        """
-        Loads transaction graph from blockchain or from given transaction
-        graph output file.
-        """
-        if tx_graph_file is None:
-            for edge in self.generate_edges(start_block, end_block):
-                self._edges = self._edges + edge
