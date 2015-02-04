@@ -36,18 +36,13 @@ class GraphException(Exception):
     Exception raised when interacting with blockchain graph view.
     """
 
-    def __init__(self, msg, inner_exc):
+    def __init__(self, msg, inner_exc=None):
         self.msg = msg
         self.inner_exc = inner_exc
 
     def __str__(self):
         return repr(self.msg)
 
-
-class CsvParsingException(Exception):
-    # TOOD: remove; just throw GraphException saying that you cannot
-    # read file
-    pass
 
 
 class Graph(object):
@@ -195,22 +190,17 @@ class EntityGraph(Graph):
 
         return
 
-    @property
-    def etdict(self):
-        # TODO: remove; shouldn't be accessed from outside anyway
-        """ Get the Entity Dict() """
+    def _etdict(self):
+        """ 
+        Get the Entity dict() 
+        """
         return self._etdict
 
-    @property
-    def btcdict(self):
-        # TODO: remove; shouldn't be accessed from outside anyway
-        """ Get the Bitcoin Adresses Dict() """
+    def _btcdict(self):
+        """ 
+        Get the Bitcoin Adresses dict() 
+        """
         return self._btcdict
-
-    def _check_csv_is_sorted(self, txgcsv):
-        # TODO: remove; assume TransactionGraph takes care of sorting
-        """ check if csv is sorted for txid"""
-        return True
 
     def _handle_tx_inputs(self, txstack):
         if self._logger:
@@ -256,7 +246,6 @@ class EntityGraph(Graph):
 
         if (entity == None):
             # generate new entity and add new btc src addresses
-            #entity = os.urandom(ENTITYLEN).encode("hex")
             entity = len(self._etdict)+1
             self._etdict[entity] = btcaddrlist
 
@@ -327,11 +316,6 @@ class EntityGraph(Graph):
         Generate entiy mapping
         !Assumtion!: we run on a sorted list of transactions!
         """
-        if not (self._check_csv_is_sorted(txgcsv)):
-            if self._logger: self._logger.error("Input list not sorted")
-            else:   print("Input list not sorted")
-            return 2
-
         with open(txgcsv,'r') as txgfp:
             txgreader = csv.DictReader(txgfp,delimiter=DELIMCHR, quotechar=QUOTECHR)
             txstack   = list()
@@ -369,13 +353,13 @@ class EntityGraph(Graph):
 
 
                 if (txid == None):
-                    raise CsvParsingException("CSV file not well formed!")
+                    raise GraphException("CSV file not well formed!",None)
                     return 4
         return 0
 
 
 
-    def print_entity_mapping(self, etmapcsv):
+    def export_entity_mapping(self, etmapcsv):
         """ print the entity mapping as csv file
         """
         if (len(self._etdict) == 0):
@@ -398,7 +382,7 @@ class EntityGraph(Graph):
 
 
 
-    def print_btcaddr_mapping(self, btcmapcsv):
+    def export_btcaddr_mapping(self, btcmapcsv):
         """ print the btcaddr mapping as csv file
         """
         if (len(self._btcdict) == 0):

@@ -86,17 +86,17 @@ def generate_et_graph(args):
             btcmapcsv = str(args.btcmapcsv)
             if logger: logger.info("Bitcoin address mapping output file: {}".format(btcmapcsv))
             else: print("Bitcoin address mapping output file: {}".format(btcmapcsv))
-            if et_graph.print_btcaddr_mapping(btcmapcsv) == 1:
+            if et_graph.export_btcaddr_mapping(btcmapcsv) == 1:
                 et_graph._generate_from_tx_graph(txgcsv)
-                et_graph.print_entity_mapping(etmapcsv)
+                et_graph.export_btcaddr_mapping(etmapcsv)
 
         if (args.etmapcsv):
             etmapcsv = str(args.etmapcsv)
             if logger: logger.info("Entity mapping output file: {}".format(etmapcsv))
             else: print("Entity mapping output file: {}".format(etmapcsv))
-            if et_graph.print_entity_mapping(etmapcsv) == 1:
+            if et_graph.export_entity_mapping(etmapcsv) == 1:
                 et_graph._generate_from_tx_graph(txgcsv)
-                et_graph.print_entity_mapping(etmapcsv)
+                et_graph.export_entity_mapping(etmapcsv)
         #except:
         #    if logger: logger.error("Exception {}".format(sys.exc_info()[0]))
         #    else: print("Exception {}".format(sys.exc_info()[0]))
@@ -110,7 +110,7 @@ def generate_et_graph(args):
 
 parser = argparse.ArgumentParser(
     description="Generates graph data sets from the Bitcoin blockchain")
-parser.add_argument("--log", dest='logging',
+parser.add_argument("-l", "--log", dest='logging',
                     help="Enable logging (Default=DEBUG)")
 parser.add_argument("--logfile", dest='logfile',
                     help="Write logs to logfile")
