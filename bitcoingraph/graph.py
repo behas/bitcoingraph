@@ -9,22 +9,24 @@ __copyright__ = 'Copyright 2015, Bernhard Haslhofer, Aljosha Judmayer'
 __license__ = "MIT"
 
 # csv header fields in tx graph file
-TXID       = "txid"
+TXID = "txid"
 BTCADDRSRC = "src_addr"
 BTCADDRDST = "tgt_addr"
-BTC        = "value"
-TIMESTAMP  = "timestamp"
-BLOCKID    = "block_height"
+BTC = "value"
+TIMESTAMP = "timestamp"
+BLOCKID = "block_height"
 # csv header fields in et graph file
-ENTITYSRC  = "entity_src"
-ENTITYDST  = "entity_dst"
+ENTITYSRC = "entity_src"
+ENTITYDST = "entity_dst"
 # csv header fields in et mapping file
-ENTITYID   = "entity_id" 
+ENTITYID = "entity_id"
 # csv special chars
-DELIMCHR   = ';'
-QUOTECHR   = '|'
+DELIMCHR = ';'
+QUOTECHR = '|'
 
 import csv
+import logging
+logger = logging.getLogger("graph")
 
 from bitcoingraph.blockchain import BlockchainException
 
@@ -41,7 +43,10 @@ class GraphException(Exception):
     def __str__(self):
         return repr(self.msg)
 
+
 class CsvParsingException(Exception):
+    # TOOD: remove; just throw GraphException saying that you cannot
+    # read file
     pass
 
 
@@ -67,6 +72,16 @@ class Graph(object):
         """
         return len(self._edges)
 
+    def list_edges(self, sort_key=None):
+        """
+        Returns an optionally sorted (by sort_key) iterator overall edges.
+        """
+        edge_list = self._edges
+        if sort_key is not None:
+            edge_list = sorted(self._edges, key=lambda k: k[sort_key])
+        for edge in edge_list:
+            yield edge
+
 
 class TransactionGraph(Graph):
     """
@@ -90,8 +105,7 @@ class TransactionGraph(Graph):
         graph output file, if given.
         """
         if tx_graph_file:
-            generator = self._generate_from_file(start_block,
-                                                 end_block, tx_graph_file)
+            generator = self._load_from_file(tx_graph_file)
         else:
             generator = self._generate_from_blockchain(start_block, end_block)
 
@@ -130,9 +144,9 @@ class TransactionGraph(Graph):
                     raise GraphException("Transaction graph generation failed",
                                          exc)
 
-    def _generate_from_file(self, start_block, end_block, tx_graph_file):
+    def _load_from_file(self, tx_graph_file):
         """
-        Generates transaction graph by loading edges from CSV file.
+        Loads already generated transaction graph from file.
         """
         with open(tx_graph_file, newline='') as csvfile:
                 csv_reader = csv.DictReader(csvfile, delimiter=';',
@@ -173,53 +187,55 @@ class EntityGraph(Graph):
         """
         Creates entity graph view based on transaction graph.
         """
-        self._logger  = logger    
-        self._etdict  = dict()   # dict() with entities as key 
+        self._logger  = logger
+        self._etdict  = dict()   # dict() with entities as key
         self._btcdict = dict()   # dict() with btc addresses as key
 
         super().__init__()
 
-        return  
+        return
 
     @property
     def etdict(self):
+        # TODO: remove; shouldn't be accessed from outside anyway
         """ Get the Entity Dict() """
         return self._etdict
 
     @property
     def btcdict(self):
+        # TODO: remove; shouldn't be accessed from outside anyway
         """ Get the Bitcoin Adresses Dict() """
         return self._btcdict
 
     def _check_csv_is_sorted(self, txgcsv):
+        # TODO: remove; assume TransactionGraph takes care of sorting
         """ check if csv is sorted for txid"""
-        #TODO
         return True
 
     def _handle_tx_inputs(self, txstack):
-        if self._logger: 
+        if self._logger:
             self._logger.debug("Handle txstack with len: {} in memory".format(len(txstack)))
         entity          = None   # the entity of all btc src addresses in this tx
         entitylist      = set()  # set of all entity mappings for btc src addresses in this tx
         btcaddrlist     = set()  # set all btc src addresses in this tx
         rtxstack        = list() # return list
 
-        for txitem in txstack: 
+        for txitem in txstack:
             if (len(txstack) > 1 and txitem[BTCADDRSRC] == 'NULL'):
                 # ignore coinbase transactions or 'NULL' inputs
-                if self._logger: self._logger.debug("Found NULL/coinbase tx input: {}".format(txitem))                
+                if self._logger: self._logger.debug("Found NULL/coinbase tx input: {}".format(txitem))
                 continue
 
             if (self._btcdict.__contains__(txitem[BTCADDRSRC])):
                 entity = self._btcdict[txitem[BTCADDRSRC]]
                 entitylist.add(self._btcdict[txitem[BTCADDRSRC]])
                 txitem[ENTITYSRC] = entity
-                if self._logger: 
+                if self._logger:
                     self._logger.debug("btcaddr \"{}\" entity: {}".format(txitem[BTCADDRSRC], entity))
 
             # create set of all unique source addresses
             btcaddrlist.add(txitem[BTCADDRSRC])
-            # everythin is fine then add item to return txstack 
+            # everythin is fine then add item to return txstack
             rtxstack.append(txitem)
 
         if len(entitylist) > 0:
@@ -228,32 +244,32 @@ class EntityGraph(Graph):
             for et in entitylist:
                 if et != entity:
                     self._etdict[entity] = self._etdict[entity].union(self._etdict[et])
-                    self._etdict[et] = None 
-           
+                    self._etdict[et] = None
+
             # add btc addresses to entity->btc dict
             if self._logger: self._logger.debug("btcaddrlist: {}".format(btcaddrlist))
             for btcaddr in btcaddrlist:
                 self._etdict[entity].add(btcaddr)
             # change btc address entity mapping of entries alread in btc->entity dict
             for btcaddr in self._etdict[entity]:
-                self._btcdict[btcaddr] = entity             
+                self._btcdict[btcaddr] = entity
 
         if (entity == None):
-            # generate new entity and add new btc src addresses 
-            #entity = os.urandom(ENTITYLEN).encode("hex")                     
+            # generate new entity and add new btc src addresses
+            #entity = os.urandom(ENTITYLEN).encode("hex")
             entity = len(self._etdict)+1
             self._etdict[entity] = btcaddrlist
 
         # add Bitcoin source address to btc->entity dict
-        for txitem in rtxstack:    
+        for txitem in rtxstack:
             self._btcdict[txitem[BTCADDRSRC]] = entity
- 
-        return rtxstack 
+
+        return rtxstack
 
     def load(self, tx_graph_file, et_graph_file=None):
         """
-        Loads entity graph from 
-            * transaction graph csv file 
+        Loads entity graph from
+            * transaction graph csv file
             * entity graph csv file
         """
         if et_graph_file:
@@ -282,8 +298,8 @@ class EntityGraph(Graph):
         if ret != 0:
             if self._logger: self._logger.error("Failed generating entity graph")
             else:   print("Failed generating entity graph")
-            raise GraphException("Entity graph generation failed", exc) 
-        
+            raise GraphException("Entity graph generation failed", exc)
+
         with open(tx_graph_file,'r') as txgfp:
                 txgreader = csv.DictReader(txgfp,delimiter=DELIMCHR, quotechar=QUOTECHR)
                 for row in txgreader:
@@ -308,14 +324,14 @@ class EntityGraph(Graph):
 
     def _generate_entity_mapping(self, txgcsv):
         """
-        Generate entiy mapping 
+        Generate entiy mapping
         !Assumtion!: we run on a sorted list of transactions!
         """
         if not (self._check_csv_is_sorted(txgcsv)):
             if self._logger: self._logger.error("Input list not sorted")
             else:   print("Input list not sorted")
             return 2
-            
+
         with open(txgcsv,'r') as txgfp:
             txgreader = csv.DictReader(txgfp,delimiter=DELIMCHR, quotechar=QUOTECHR)
             txstack   = list()
@@ -327,25 +343,25 @@ class EntityGraph(Graph):
                     if self._logger: self._logger.info("Finished reading file")
                     else:   print("Finished reading file")
                     # handle last tx
-                    txstack = self._handle_tx_inputs(txstack) 
-                    break 
-        
+                    txstack = self._handle_tx_inputs(txstack)
+                    break
+
                 # check if still the same transaction
                 if (line[TXID] != txid and txid != None):
                     # next transaction, check/map current tx inputs to entity
                     numtx = len(txstack)
-                    txstack = self._handle_tx_inputs(txstack) 
+                    txstack = self._handle_tx_inputs(txstack)
                     if (numtx != len(txstack)) and (len(txstack) > 0):
-                        if self._logger: 
+                        if self._logger:
                             self._logger.error("Handling tx inptus of txid={} the remaining inputs are: {}".format(txid,txstack))
-                        else:   
+                        else:
                             print("Handling tx inptus of txid={} the remaining inputs are: {}".format(txid,txstack))
                         #raise TxInputHandlingException("Tx inputs handling failed")
                         #return 5
                     while len(txstack) != 0:
                         txitem = txstack.pop()
-                       
-                # store current txid, append line and go to next line/loop iteration 
+
+                # store current txid, append line and go to next line/loop iteration
                 txid = line[TXID]
                 txstack.append(line)
                 if self._logger: self._logger.debug("Processing line: {} Set tx_id: {}".format(line,txid))
@@ -355,17 +371,17 @@ class EntityGraph(Graph):
                 if (txid == None):
                     raise CsvParsingException("CSV file not well formed!")
                     return 4
-        return 0 
+        return 0
 
 
 
     def print_entity_mapping(self, etmapcsv):
         """ print the entity mapping as csv file
-        """ 
+        """
         if (len(self._etdict) == 0):
             if self._logger: self._logger.error("Dict is empty")
             else:   print("Dict is empty")
-            return 1  
+            return 1
 
         with open(etmapcsv,"w") as etmapfp:
             print(ENTITYID + "," + BTCADDRSRC,file=etmapfp)
@@ -378,17 +394,17 @@ class EntityGraph(Graph):
                         print(str(btcaddr) + " ",file=etmapfp,end='')
                     print('',file=etmapfp)
 
-        return 0 
+        return 0
 
 
 
     def print_btcaddr_mapping(self, btcmapcsv):
         """ print the btcaddr mapping as csv file
-        """ 
+        """
         if (len(self._btcdict) == 0):
             if self._logger: self._logger.error("Dict is empty")
             else:   print("Dict is empty")
-            return 1  
+            return 1
 
         with open(btcmapcsv,"w") as btcmapfp:
             print(BTCADDRSRC + "," + ENTITYID,file=btcmapfp)
@@ -403,15 +419,15 @@ class EntityGraph(Graph):
         """
         with open(tx_graph_file,'r') as txgfp:
             with open(output_file,'w') as etgfp:
-                fieldnames = [TXID, ENTITYSRC, BTCADDRSRC, ENTITYDST, 
+                fieldnames = [TXID, ENTITYSRC, BTCADDRSRC, ENTITYDST,
                               BTCADDRDST, BTC, TIMESTAMP, BLOCKID]
-                csv_writer = csv.DictWriter(etgfp, 
-                                            delimiter=DELIMCHR, 
+                csv_writer = csv.DictWriter(etgfp,
+                                            delimiter=DELIMCHR,
                                             quotechar=QUOTECHR,
                                             fieldnames=fieldnames,
                                             quoting=csv.QUOTE_MINIMAL)
                 csv_writer.writeheader()
                 for edge in self._generate_from_tx_graph(tx_graph_file):
                     csv_writer.writerow(edge)
-        return 0       
+        return 0
 

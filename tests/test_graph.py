@@ -1,13 +1,56 @@
 import unittest
 from tempfile import NamedTemporaryFile
 
-from bitcoingraph.graph import TransactionGraph
+from bitcoingraph.graph import Graph, TransactionGraph
 from bitcoingraph.blockchain import BlockChain
 
 from tests.rpc_mock import BitcoinProxyMock
 
 
 TEST_CSV = 'tests/data/tx_graph.csv'
+
+
+class TestGraph(unittest.TestCase):
+
+    def setUp(self):
+        self.graph = Graph()
+
+    def test_add_edge(self):
+        edge = dict({'txid': 'abc', 'src': '123', 'tgt': '456'})
+        self.graph.add_edge(edge)
+        self.assertEqual(1, self.graph.count_edges())
+
+    def test_add_count(self):
+        edge1 = dict({'txid': 'abc', 'src': '123', 'tgt': '456'})
+        self.graph.add_edge(edge1)
+        self.assertEqual(1, self.graph.count_edges())
+        edge2 = dict({'txid': 'def', 'src': '123', 'tgt': '789'})
+        self.graph.add_edge(edge2)
+        self.assertEqual(2, self.graph.count_edges())
+
+    def test_list_edges(self):
+        edge1 = dict({'txid': 'ghi', 'src': '789', 'tgt': '101'})
+        self.graph.add_edge(edge1)
+        edge2 = dict({'txid': 'def', 'src': '123', 'tgt': '789'})
+        self.graph.add_edge(edge2)
+        edge3 = dict({'txid': 'abc', 'src': '123', 'tgt': '456'})
+        self.graph.add_edge(edge3)
+        edges = [edge for edge in self.graph.list_edges()]
+        self.assertIn(edge1, edges)
+        self.assertIn(edge2, edges)
+        self.assertIn(edge3, edges)
+
+    def test_list_edges_sorted(self):
+        edge1 = dict({'txid': 'ghi', 'src': '789', 'tgt': '101'})
+        self.graph.add_edge(edge1)
+        edge2 = dict({'txid': 'def', 'src': '123', 'tgt': '789'})
+        self.graph.add_edge(edge2)
+        edge3 = dict({'txid': 'abc', 'src': '123', 'tgt': '456'})
+        self.graph.add_edge(edge3)
+        edges = [edge for edge in self.graph.list_edges('txid')]
+        self.assertEqual(edge3, edges[0])
+        self.assertEqual(edge2, edges[1])
+        self.assertEqual(edge1, edges[2])
 
 
 class TestTransactionGraph(unittest.TestCase):
