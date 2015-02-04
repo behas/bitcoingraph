@@ -25,7 +25,7 @@ def progress(progress=0):
 def setup_logger(args):
 
     if args.logging:
-        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        formatter = logging.Formatter('%(levelname)s - %(asctime)s - %(name)s - %(message)s')
 
         # Set loglevel
         numeric_level = getattr(logging, args.logging.upper(), None)
@@ -67,7 +67,7 @@ def generate_tx_graph(args):
 
 
 def generate_et_graph(args):
-
+    # TODO: streamline code (should use bitcoingraph interface only)
     if (args.txgcsv):
         txgcsv = str(args.txgcsv)
         if logger: logger.info("Tx graph file {}\nStarting ...".format(txgcsv))
