@@ -44,7 +44,6 @@ class GraphException(Exception):
         return repr(self.msg)
 
 
-
 class Graph(object):
     """
     A generic directed graph representation.
@@ -127,13 +126,13 @@ class TransactionGraph(Graph):
                     for bc_flow in tx.bc_flows:
                         # Construction transaction graph edge
                         edge = {}
-                        edge['src'] = bc_flow['src']
-                        edge['tgt'] = bc_flow['tgt']
+                        edge[BTCADDRSRC] = bc_flow['src']
+                        edge[BTCADDRDST] = bc_flow['tgt']
                         # Addding named edge descriptior
-                        edge['txid'] = tx.id
-                        edge['value'] = bc_flow['value']
-                        edge['timestamp'] = tx.time
-                        edge['blockheight'] = block.height
+                        edge[TXID] = tx.id
+                        edge[BTC] = bc_flow['value']
+                        edge[TIMESTAMP] = tx.time
+                        edge[BLOCKID] = block.height
                         yield edge
                 except BlockchainException as exc:
                     raise GraphException("Transaction graph generation failed",
@@ -144,8 +143,8 @@ class TransactionGraph(Graph):
         Loads already generated transaction graph from file.
         """
         with open(tx_graph_file, newline='') as csvfile:
-                csv_reader = csv.DictReader(csvfile, delimiter=';',
-                                            quotechar='|',
+                csv_reader = csv.DictReader(csvfile, delimiter=DELIMCHR,
+                                            quotechar=QUOTECHR,
                                             quoting=csv.QUOTE_MINIMAL)
                 for edge in csv_reader:
                     yield edge
@@ -156,16 +155,17 @@ class TransactionGraph(Graph):
         Exports transaction graph to CSV file directly from blockchain.
         """
         with open(output_file, 'w', newline='') as csvfile:
-            fieldnames = ['txid', 'src', 'tgt',
-                          'value', 'timestamp', 'blockheight']
-            csv_writer = csv.DictWriter(csvfile, delimiter=';', quotechar='|',
+            fieldnames = [TXID, BTCADDRSRC, BTCADDRDST,
+                          BTC, TIMESTAMP, BLOCKID]
+            csv_writer = csv.DictWriter(csvfile, delimiter=DELIMCHR,
+                                        quotechar=QUOTECHR,
                                         fieldnames=fieldnames,
                                         quoting=csv.QUOTE_MINIMAL)
             csv_writer.writeheader()
             for edge in self._generate_from_blockchain(start_block, end_block):
                 csv_writer.writerow(edge)
                 if progress:
-                    progress(edge['blockheight'] / (end_block - start_block))
+                    progress(edge[BLOCKID] / (end_block - start_block))
 
 
 class EntityGraph(Graph):
@@ -191,14 +191,14 @@ class EntityGraph(Graph):
         return
 
     def _etdict(self):
-        """ 
-        Get the Entity dict() 
+        """
+        Get the Entity dict()
         """
         return self._etdict
 
     def _btcdict(self):
-        """ 
-        Get the Bitcoin Adresses dict() 
+        """
+        Get the Bitcoin Adresses dict()
         """
         return self._btcdict
 
