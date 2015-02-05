@@ -74,14 +74,9 @@ def export_tx_graph(blockchain, start_block, end_block,
     tx_graph.export_to_csv(start_block, end_block, output_file, progress)
 
 
-def export_et_graph(tx_graph_file, output_file, logger=None, progress=None):
+def export_et_graph(tx_graph, output_dir):
     """
     Export entity graph from transaction graph
     """
-    et_graph = EntityGraph(logger=logger)
-    et_graph.export_to_csv(tx_graph_file, output_file)
-
-    # TODO:
-    # tx_graph = TransactionGraph()
-    # tx_graph.load(tx_graph_file)
-
+    et_graph = EntityGraph(tx_graph)
+    et_graph.export_to_csv(output_dir)

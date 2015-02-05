@@ -10,8 +10,6 @@ logger = logging.getLogger("bcgraph-generate")
 import bitcoingraph as bcgraph
 from bitcoingraph import BitcoingraphException
 
-from bitcoingraph.graph import EntityGraph
-
 
 DEFAULT_SERVICE = 'localhost:8332'
 
@@ -67,45 +65,14 @@ def generate_tx_graph(args):
 
 
 def generate_et_graph(args):
-    # TODO: streamline code (should use bitcoingraph interface only)
-    if (args.txgcsv):
-        txgcsv = str(args.txgcsv)
-        if logger: logger.info("Tx graph file {}\nStarting ...".format(txgcsv))
-        else:   print("Tx graph file {}\nStarting ...".format(txgcsv))
-
-        et_graph = EntityGraph(logger=logger)
-
-        #try:
-        if (args.etgcsv):
-            etgcsv = str(args.etgcsv)
-            if logger: logger.info("Entity graph output file: {}".format(etgcsv))
-            else: print("Entity graph output file: {}".format(etgcsv))
-            et_graph.export_to_csv(txgcsv, etgcsv)
-
-        if (args.btcmapcsv):
-            btcmapcsv = str(args.btcmapcsv)
-            if logger: logger.info("Bitcoin address mapping output file: {}".format(btcmapcsv))
-            else: print("Bitcoin address mapping output file: {}".format(btcmapcsv))
-            if et_graph.export_btcaddr_mapping(btcmapcsv) == 1:
-                et_graph._generate_from_tx_graph(txgcsv)
-                et_graph.export_btcaddr_mapping(etmapcsv)
-
-        if (args.etmapcsv):
-            etmapcsv = str(args.etmapcsv)
-            if logger: logger.info("Entity mapping output file: {}".format(etmapcsv))
-            else: print("Entity mapping output file: {}".format(etmapcsv))
-            if et_graph.export_entity_mapping(etmapcsv) == 1:
-                et_graph._generate_from_tx_graph(txgcsv)
-                et_graph.export_entity_mapping(etmapcsv)
-        #except:
-        #    if logger: logger.error("Exception {}".format(sys.exc_info()[0]))
-        #    else: print("Exception {}".format(sys.exc_info()[0]))
-
-    else:
-        if logger: logger.error("No input transaction graph csv given. Aporting")
-        else:   print("No input transaction graph csv given. Aporting")
-
-    return 0
+    logger.info("Starting transaction graph generation.")
+    try:
+        tx_graph = bcgraph.create_tx_graph()
+        tx_graph.load(None, None, args.txgcsv)
+        bcgraph.export_et_graph(tx_graph, args.outputdir)
+    except BitcoingraphException as exc:
+        logger.error(exc)
+        sys.exit(1)
 
 
 parser = argparse.ArgumentParser(
@@ -148,24 +115,10 @@ et_graph_parser.add_argument('-t', '--txgcsv', action='store',
                              type=str,
                              help='Transaction graph csv file')
 # TODO: specific single output directory instead of multiple files
-et_graph_parser.add_argument('-o', '--output',
-                             action='store',
-                             default=None,
-                             dest='etgcsv',
-                             type=str,
-                             help='Entity graph output csv file')
-et_graph_parser.add_argument('-e', '--etmapout',
-                             action='store',
-                             default=None,
-                             dest='etmapcsv',
-                             type=str,
-                             help='Entity mapping output csv file.')
-et_graph_parser.add_argument('-b', '--btcmapout',
-                             action='store',
-                             default=None,
-                             dest='btcmapcsv',
-                             type=str,
-                             help='Btcaddr mapping output csv file.')
+et_graph_parser.add_argument('-o', '--output-directory',
+                             default='etgraph',
+                             dest='outputdir',
+                             help='Entity graph output directory')
 et_graph_parser.set_defaults(func=generate_et_graph)
 
 
