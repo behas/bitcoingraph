@@ -68,9 +68,8 @@ class TestTransactionGraph(unittest.TestCase):
         return reference_file
 
     def test_generate_from_blockchain(self):
-        edges = [edge for edge in
-                 self.txgraph._generate_from_blockchain(99999, 100000)]
-        self.assertEqual(7, len(edges))
+        self.txgraph.generate_from_blockchain(99999, 100000)
+        self.assertEqual(7, self.txgraph.count_edges())
 
     def test_export_to_csv(self):
         tempfile = NamedTemporaryFile(mode='w+')
@@ -80,12 +79,8 @@ class TestTransactionGraph(unittest.TestCase):
             for line in content:
                 self.assertIn(line, self.reference_file)
 
-    def test_load_from_blockchain(self):
-        self.txgraph.load(99999, 100000)
-        self.assertEqual(7, self.txgraph.count_edges())
-
     def test_load_from_file(self):
-        self.txgraph.load(99999, 100000, TEST_CSV)
+        self.txgraph.load_from_file(TEST_CSV)
         self.assertEqual(7, self.txgraph.count_edges())
 
 

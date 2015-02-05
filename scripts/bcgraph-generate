@@ -55,8 +55,7 @@ def generate_tx_graph(args):
     service_cred = args.user + ':' + args.password
     service_uri = 'http://' + service_cred + '@' + args.service + '/'
     try:
-        blockchain = bcgraph.create_blockchain_proxy(service_uri)
-        bcgraph.export_tx_graph(blockchain, args.startheight,
+        bcgraph.export_tx_graph(service_uri, args.startheight,
                                 args.endheight, args.output_file, progress)
         logger.info("Finished transaction graph generation.")
     except BitcoingraphException as exc:
@@ -67,9 +66,7 @@ def generate_tx_graph(args):
 def generate_et_graph(args):
     logger.info("Starting transaction graph generation.")
     try:
-        tx_graph = bcgraph.create_tx_graph()
-        tx_graph.load(None, None, args.txgcsv)
-        bcgraph.export_et_graph(tx_graph, args.outputdir)
+        bcgraph.export_et_graph(args.txgcsv, args.outputdir)
     except BitcoingraphException as exc:
         logger.error(exc)
         sys.exit(1)
