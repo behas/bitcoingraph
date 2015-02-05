@@ -92,20 +92,43 @@ class TransactionGraph(Graph):
             self._blockchain = blockchain
         super().__init__()
 
-    def load(self, start_block, end_block, tx_graph_file=None):
+    def generate_from_blockchain(self, start_block=None, end_block=None):
         """
-        Loads transaction graph from blockchain or from transaction
-        graph output file, if given.
+        Generates transaction graph by extracting edges from blockchain.
         """
-        if tx_graph_file:
-            generator = self._load_from_file(tx_graph_file)
-        else:
-            generator = self._generate_from_blockchain(start_block, end_block)
-
-        for edge in generator:
+        for edge in self._generate(start_block, end_block):
             self.add_edge(edge)
 
-    def _generate_from_blockchain(self, start_block=None, end_block=None):
+    def load_from_file(self, tx_graph_file):
+        """
+        Loads already generated transaction graph from file.
+        """
+        with open(tx_graph_file, newline='') as csvfile:
+                csv_reader = csv.DictReader(csvfile, delimiter=DELIMCHR,
+                                            quotechar=QUOTECHR,
+                                            quoting=csv.QUOTE_MINIMAL)
+                for edge in csv_reader:
+                    self.add_edge(edge)
+
+    def export_to_csv(self, start_block=None,
+                      end_block=None, output_file=None, progress=None):
+        """
+        Exports transaction graph to CSV file directly from blockchain.
+        """
+        with open(output_file, 'w', newline='') as csvfile:
+            fieldnames = [TXID, SRC, DST,
+                          BTC, TIMESTAMP, BLOCKID]
+            csv_writer = csv.DictWriter(csvfile, delimiter=DELIMCHR,
+                                        quotechar=QUOTECHR,
+                                        fieldnames=fieldnames,
+                                        quoting=csv.QUOTE_MINIMAL)
+            csv_writer.writeheader()
+            for edge in self._generate(start_block, end_block):
+                csv_writer.writerow(edge)
+                if progress:
+                    progress(edge[BLOCKID] / (end_block - start_block))
+
+    def _generate(self, start_block=None, end_block=None):
         """
         Generates transaction graph by extracting edges from blockchain.
         """
@@ -137,34 +160,6 @@ class TransactionGraph(Graph):
                     raise GraphException("Transaction graph generation failed",
                                          exc)
 
-    def _load_from_file(self, tx_graph_file):
-        """
-        Loads already generated transaction graph from file.
-        """
-        with open(tx_graph_file, newline='') as csvfile:
-                csv_reader = csv.DictReader(csvfile, delimiter=DELIMCHR,
-                                            quotechar=QUOTECHR,
-                                            quoting=csv.QUOTE_MINIMAL)
-                for edge in csv_reader:
-                    yield edge
-
-    def export_to_csv(self, start_block=None,
-                      end_block=None, output_file=None, progress=None):
-        """
-        Exports transaction graph to CSV file directly from blockchain.
-        """
-        with open(output_file, 'w', newline='') as csvfile:
-            fieldnames = [TXID, SRC, DST,
-                          BTC, TIMESTAMP, BLOCKID]
-            csv_writer = csv.DictWriter(csvfile, delimiter=DELIMCHR,
-                                        quotechar=QUOTECHR,
-                                        fieldnames=fieldnames,
-                                        quoting=csv.QUOTE_MINIMAL)
-            csv_writer.writeheader()
-            for edge in self._generate_from_blockchain(start_block, end_block):
-                csv_writer.writerow(edge)
-                if progress:
-                    progress(edge[BLOCKID] / (end_block - start_block))
 
 
 class EntityGraph(Graph):
@@ -283,7 +278,7 @@ class EntityGraph(Graph):
                 yield edge
         pass
 
-    def _generate_from_tx_graph(self, tx_graph_file):
+    def generate_from_tx_graph(self, tx_graph_file):
         """
         Generates entity graph from tranaction graph
         """

@@ -34,10 +34,11 @@ class BitcoingraphException(Exception):
         return self.msg
 
 
-def create_blockchain_proxy(service_uri):
+# Blockchain interfaces
+
+def create_blockchain(service_uri):
     """
-    Connects to Bitcoin Core JSON-RPC serivce and returns Blockchain
-    proxy API.
+    Creates a blockchain object for a given Bitcoin Core JSON-RPC Service.
     """
     try:
         logger.debug("Connecting to Bitcoin Core at {}".format(service_uri))
@@ -50,33 +51,48 @@ def create_blockchain_proxy(service_uri):
         raise BitcoingraphException("Couldn't connect to {}.".format(service_uri), exc)
 
 
-def create_tx_graph(blockchain=None):
-    """
-    Creates transaction graph view on blockchain.
+# Transaction graph interfaces
 
-    Note: load graph before processing: tx_graph.load()
-    """
-    tx_graph = TransactionGraph(blockchain)
-    return tx_graph
-
-
-def export_tx_graph(blockchain, start_block, end_block,
+def export_tx_graph(service_uri, start_block, end_block,
                     output_file, progress=None):
     """
-    Exports transaction graph from the Blockchain and saves it to a
+    Generates transaction graph from the Blockchain and exports it to a
     CSV file.
 
     :param BlockChain blockchain: instantiated blockchain object
     :param int start_block: start block of transaction export range
     :param int end_block: end block of transaction export range
     """
+    blockchain = create_blockchain(service_uri)
     tx_graph = TransactionGraph(blockchain)
     tx_graph.export_to_csv(start_block, end_block, output_file, progress)
 
 
-def export_et_graph(tx_graph, output_dir):
+def load_tx_graph_from_file(tx_graph_file):
     """
-    Export entity graph from transaction graph
+    Loads transaction graph from given CSV file.
     """
+    tx_graph = TransactionGraph()
+    tx_graph.load_from_file(tx_graph_file)
+    return tx_graph
+
+
+# Transaction graph interfaces
+
+def export_et_graph(tx_graph_file, output_dir):
+    """
+    Export entity graph from transaction graph.
+    """
+    tx_graph = load_tx_graph_from_file(tx_graph_file)
     et_graph = EntityGraph(tx_graph)
+    et_graph.generate_from_tx_graph(None)
     et_graph.export_to_csv(output_dir)
+
+
+def load_et_graph_from_directory(et_graph_directory):
+    """
+    Loads entity graph and mapping info from directory containing CSV files.
+    """
+    et_graph = EntityGraph()
+    et_graph.load_from_directory(et_graph_directory)
+    return et_graph
