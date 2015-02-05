@@ -94,5 +94,5 @@ def load_et_graph_from_directory(et_graph_directory):
     Loads entity graph and mapping info from directory containing CSV files.
     """
     et_graph = EntityGraph()
-    et_graph.load_from_directory(et_graph_directory)
+    et_graph.load_from_dir(et_graph_directory)
     return et_graph
