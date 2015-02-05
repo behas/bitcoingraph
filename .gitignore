@@ -40,3 +40,6 @@ coverage.xml
 
 # Sphinx documentation
 docs/_build/
+
+# Test log
+/testlog.log
