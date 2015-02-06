@@ -225,7 +225,7 @@ class EntityGraph(Graph):
         for edge in txstack:
             if (len(txstack) > 1 and edge[SRC] == 'NULL'):
                 # ignore coinbase transactions or 'NULL' inputs
-                self._logger.debug("Found NULL/coinbase tx input. Ignoring edge: {}".fomat(edge))
+                self._logger.debug("Found NULL/coinbase tx input. Ignoring edge: {}".format(edge))
                 continue
 
             if (edge[SRC] in self._btcdict.keys()):
