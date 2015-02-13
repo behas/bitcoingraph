@@ -266,6 +266,8 @@ bbbb;C2;XX;0.1;1417611696;111
         self.assertTrue(etg2._etdict.get(2).__contains__("F1"),"invalid mapping")
         self.assertTrue(etg2._etdict.get(2).__contains__("F2"),"invalid mapping")  
 
+        self.assertTrue(isinstance(etg2._etdict.get(2),set))
+
         # test bitcoin address mapping
         if LOG: logger.debug("TEST - BTC Dict: {}".format(etg2._btcdict))
         self.assertTrue(etg2._btcdict.__contains__("A1"),"BTC address not found")
@@ -302,9 +304,9 @@ bbbb;C2;XX;0.1;1417611696;111
         self.assertTrue(etg2._btcdict.__contains__("F2"),"BTC address not found")
         self.assertTrue(etg2._btcdict.get("F1") == 2,"incorrect numbering")
         self.assertTrue(etg2._btcdict.get("F2") == 2,"incorrect numbering")
- 
-
- 
+  
+        self.assertTrue(isinstance(etg2._btcdict.get("A1"),int))
+        
         if EXPORTDIR.startswith("/tmp"):
             os.remove(EXPORTDIR + "/" + ETG)
             os.remove(EXPORTDIR + "/" + ETMAP)
