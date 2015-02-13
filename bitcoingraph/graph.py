@@ -196,13 +196,15 @@ class EntityGraph(Graph):
     Generator for Entity Graphs from transaction graphs
     Memory intensive variant.
     """
-    def __init__(self, tx_graph=None, customlogger=None):
+    def __init__(self, tx_graph=None, customlogger=None, map_all_txout=False):
         """
         Creates entity graph view based on transaction graph.
         """
         self._tx_graph = tx_graph
         self._etdict = dict()   # dict() with entities as key
-        self._btcdict = dict()   # dict() with btc addresses as key
+        self._btcdict = dict()  # dict() with btc addresses as key
+        self._txoutset = set()  
+        self._map_all_txout = map_all_txout # Flag for mapping all txoutputs 
         if customlogger:
             self._logger = customlogger
         else:
@@ -219,8 +221,8 @@ class EntityGraph(Graph):
         self._logger.debug("Handle txstack with len: {} in memory".format(len(txstack)))
 
         entity_id = None   # the entity id of all btc src addresses in this tx
-        entitylist = set()  # set of all entity mappings for btc src addresses in this tx
-        btcaddrlist = set()  # set all btc src addresses in this tx
+        entityset = set()  # set of all entity mappings for btc src addresses in this tx
+        btcaddrset = set()  # set all btc src addresses in this tx
 
         for edge in txstack:
             if (len(txstack) > 1 and edge[SRC] == 'NULL'):
@@ -230,34 +232,34 @@ class EntityGraph(Graph):
 
             if (edge[SRC] in self._btcdict.keys()):
                 entity_id = self._btcdict[edge[SRC]]
-                entitylist.add(self._btcdict[edge[SRC]])
+                entityset.add(self._btcdict[edge[SRC]])
 
             # create set of all unique source addresses
-            btcaddrlist.add(edge[SRC])
+            btcaddrset.add(edge[SRC])
 
-        if len(entitylist) > 0:
+        if len(entityset) > 0:
             # handle entity collision and add new btc src addresses
-            entity_id = min(entitylist)
-            for et in entitylist:
+            entity_id = min(entityset)
+            for et in entityset:
                 if et != entity_id:
-                    #TODO: do the change btc address entity step here
+                    for btcaddr in self._etdict[et]:
+                        # update current btc->entity mapping 
+                        self._btcdict[btcaddr] = entity_id
+                    
+                    # union the entity mappings which merge to one single entity 
                     self._etdict[entity_id] = self._etdict[entity_id].union(self._etdict[et])
                     self._etdict[et] = None
 
-            # change btc address entity mapping of entries already in btc->entity dict
-            for btcaddr in self._etdict[entity_id]:
-                self._btcdict[btcaddr] = entity_id
-
             # add btc addresses to entity->btc dict
-            for btcaddr in btcaddrlist:
+            for btcaddr in btcaddrset:
                 self._etdict[entity_id].add(btcaddr)
         else:
             # generate new entity and add new btc src addresses
             entity_id = len(self._etdict)+1
-            self._etdict[entity_id] = btcaddrlist
+            self._etdict[entity_id] = btcaddrset
 
         # add Bitcoin source address to btc->entity dict
-        for btcaddr in btcaddrlist:
+        for btcaddr in btcaddrset:
             self._btcdict[btcaddr] = entity_id               
 
 
@@ -277,10 +279,21 @@ class EntityGraph(Graph):
                 txstack.clear()
             txid = edge[TXID]
             txstack.append(edge)
+            
         if (len(txstack) > 0):
+            # handle last tx of tx_graph
             self._handle_tx_inputs(txstack)
             txstack.clear()
-
+       
+        if self._map_all_txout:
+            # map all remaining tx outputs which 
+            # have not been used as inputs 
+            for edge in self._tx_graph._edges:
+                if edge[DST] not in self._btcdict():
+                    entity_id = len(self._etdict)+1
+                    self._etdict[entity_id]  = set([edge[DST]])
+                    self._btcdict[edge[DST]] = entity_id    
+ 
         self._logger.info("Finished entity graph generation.")
         return 0
 
@@ -342,19 +355,24 @@ class EntityGraph(Graph):
         self._etdict.clear()
         self._btcdict.clear()
 
+        # load edges
         with open(et_graph_dir + "/" + ETG,'r') as etgfp:
             etgreader = csv.DictReader(etgfp,delimiter=DELIMCHR, quotechar=QUOTECHR)
             for edge in etgreader:
                 self.add_edge(edge)
         
+        # load entity mapping dict()
         with open(et_graph_dir + "/" + ETMAP, 'r') as etmapfp:
             etmapreader = csv.DictReader(etmapfp,delimiter=DELIMCHR, quotechar=QUOTECHR)
             for etmap in etmapreader:
                 if etmap[BTCADDRS] == "None":
                     self._etdict[int(etmap[ENTITYID])] = None 
                 else:
-                    self._etdict[int(etmap[ENTITYID])] = etmap[BTCADDRS] 
+                    btcaddrset = set()
+                    for i in str(etmap[BTCADDRS]).split(): btcaddrset.add(i) 
+                    self._etdict[int(etmap[ENTITYID])] = btcaddrset
 
+        # load bitcoin address mapping dict()
         with open(et_graph_dir + "/btcmap.csv", 'r') as btcmapfp:
             btcmapreader = csv.DictReader(btcmapfp,delimiter=DELIMCHR, quotechar=QUOTECHR)
             for btcmap in btcmapreader:
