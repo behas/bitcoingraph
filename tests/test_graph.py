@@ -16,32 +16,38 @@ class TestGraph(unittest.TestCase):
         self.graph = Graph()
 
     def test_add_edge(self):
-        self.graph.add_edge('123', 'abc', '456')
+        edge = dict({'txid': 'abc', 'src': '123', 'tgt': '456'})
+        self.graph.add_edge(edge)
         self.assertEqual(1, self.graph.count_edges())
 
     def test_add_count(self):
-        self.graph.add_edge('123', 'abc', '456')
+        edge1 = dict({'txid': 'abc', 'src': '123', 'tgt': '456'})
+        self.graph.add_edge(edge1)
         self.assertEqual(1, self.graph.count_edges())
-        self.graph.add_edge('123', 'def', '789')
+        edge2 = dict({'txid': 'def', 'src': '123', 'tgt': '789'})
+        self.graph.add_edge(edge2)
         self.assertEqual(2, self.graph.count_edges())
 
     def test_list_edges(self):
-        self.graph.add_edge('789', 'ghi', '101')
-        self.graph.add_edge('123', 'def', '789')
-        self.graph.add_edge('123', 'abc', '456')
+        edge1 = dict({'txid': 'ghi', 'src': '789', 'tgt': '101'})
+        self.graph.add_edge(edge1)
+        edge2 = dict({'txid': 'def', 'src': '123', 'tgt': '789'})
+        self.graph.add_edge(edge2)
+        edge3 = dict({'txid': 'abc', 'src': '123', 'tgt': '456'})
+        self.graph.add_edge(edge3)
         edges = [edge for edge in self.graph.list_edges()]
-        self.assertIn({'src': '789', 'edge': 'ghi', 'tgt': '101'}, edges)
-        self.assertIn({'src': '123', 'edge': 'def', 'tgt': '789'}, edges)
-        self.assertIn({'src': '123', 'edge': 'abc', 'tgt': '456'}, edges)
+        self.assertIn(edge1, edges)
+        self.assertIn(edge2, edges)
+        self.assertIn(edge3, edges)
 
     def test_list_edges_sorted(self):
-        edge1 = dict({'edge': 'ghi', 'src': '789', 'tgt': '101'})
-        self.graph.add_edge(edge1['src'], edge1['edge'], edge1['tgt'])
-        edge2 = dict({'edge': 'def', 'src': '123', 'tgt': '789'})
-        self.graph.add_edge(edge2['src'], edge2['edge'], edge2['tgt'])
-        edge3 = dict({'edge': 'abc', 'src': '123', 'tgt': '456'})
-        self.graph.add_edge(edge3['src'], edge3['edge'], edge3['tgt'])
-        edges = [edge for edge in self.graph.list_edges('edge')]
+        edge1 = dict({'txid': 'ghi', 'src': '789', 'tgt': '101'})
+        self.graph.add_edge(edge1)
+        edge2 = dict({'txid': 'def', 'src': '123', 'tgt': '789'})
+        self.graph.add_edge(edge2)
+        edge3 = dict({'txid': 'abc', 'src': '123', 'tgt': '456'})
+        self.graph.add_edge(edge3)
+        edges = [edge for edge in self.graph.list_edges('txid')]
         self.assertEqual(edge3, edges[0])
         self.assertEqual(edge2, edges[1])
         self.assertEqual(edge1, edges[2])
