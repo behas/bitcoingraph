@@ -12,8 +12,6 @@ import json
 
 import time
 
-DEFAULT_SERVICE = 'localhost:8332'
-
 
 class JSONRPCException(Exception):
     """
@@ -27,7 +25,7 @@ class JSONRPCProxy(object):
     A generic JSON-RPC interface with keep-alive session reuse.
     """
 
-    def __init__(self, url=None):
+    def __init__(self, url):
         """
         Creates a generic JSON-RPC interface object.
 
@@ -36,10 +34,7 @@ class JSONRPCProxy(object):
         :rtype: JSONRPCProxy
         """
         self._session = requests.Session()
-        if url is not None:
-            self._url = url
-        else:
-            self._url = DEFAULT_SERVICE
+        self._url = url
         self._headers = {'content-type': 'application/json'}
 
     def _call(self, rpcMethod, *params):

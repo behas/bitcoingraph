@@ -76,6 +76,10 @@ The Bitcoin blockchain is a pretty large thing. It is recommended to export bloc
     bcgraph-generate tx_graph 1 1000 -s localhost:8332 -u your_rpcuser -p your_rpcpass -o tx_graph_1_1000.csv
 
 
+## Export entity graph CSVs from given transaction graph
+
+    bcgraph-generate et_graph -t tx_graph.csv -o etgraph
+
 
 # Contributors
 
