@@ -16,7 +16,7 @@ __all__ = ['export_tx_graph']
 import logging
 logger = logging.getLogger('bitcoingraph')
 
-from bitcoingraph.blockchain import BlockChain, BlockchainException
+from bitcoingraph.blockchain import BlockChain
 from bitcoingraph.rpc import BitcoinProxy, JSONRPCException
 from bitcoingraph.graph import TransactionGraph, EntityGraph
 
