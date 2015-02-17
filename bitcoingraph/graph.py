@@ -10,9 +10,11 @@ __license__ = "MIT"
 
 
 # tx_graph/et_graph specific csv header fields
-TXID = "txid"
 SRC = "src"
 DST = "tgt"
+EDGE = "edge"
+
+TXID = "txid"
 BTC = "value"
 TIMESTAMP = "timestamp"
 BLOCKID = "block_height"
@@ -63,42 +65,155 @@ class Graph(object):
     A generic directed graph representation.
 
     TODO: wrap third party library
-    TODO: implement required graph search algorithms
     """
     def __init__(self):
-        self._edges = []
+        self._edges = dict()
 
-    def add_edge(self, edge):
+    def add_edge(self, src, edge):
         """
         Add edge to graph.
+        Structure ist as follows, where "$srcX" is 
+        either bitcoin address or entity:
+        { 
+          "$src1": [ 
+                    {
+                     "dst":"$dst1", "edge":"...", "txid":"...",
+                     "blockid":"...", ... 
+                    }
+                    {
+                     "dst":"$dst2", "edge":"...", "txid":"...",
+                     "blockid":"...", ...
+                    }
+                    ...
+                  ]
+        }
         """
-        self._edges.append(edge)
+        if self._edges.get(src):
+            self._edges[src].append(edge)
+        else:
+            self._edges[src] = list()
+            self._edges[src].append(edge)     
 
     def count_edges(self):
         """
         Returns number of edges in graph.
         """
-        return len(self._edges)
+        l = 0
+        for key in self._edges:
+            l += len(self._edges[key])
+        return l
 
-    def list_edges(self, sort_key=None):
+    def list_edges(self):
         """
-        Returns an optionally sorted (by sort_key) iterator overall edges.
+        Generator for all edges in G
         """
-        edge_list = self._edges
-        if sort_key is not None:
-            edge_list = sorted(self._edges, key=lambda k: k[sort_key])
-        for edge in edge_list:
-            yield edge
+        for src in self._edges:
+            for edge in self._edges[src]:
+                edge[SRC] = src
+                yield edge
 
-    def sort_edges(self):
-        """ 
-        Sorts edges according to (BLOCKID, TXID)
-        This is slightly faster than useing sorted() and prioritizes 
-        low BLOCKIDs which should reduce entity changes 
+    def find_edges(self,x):
         """
-        self._edges.sort(key = operator.itemgetter(BLOCKID, TXID))
-
+        Find all edges, where node x is SRC or DST
+        """
+        r = list()
         
+        # search all sources
+        for edge in self._edges[x]:
+            edge[SRC] = x   # add the searched src
+            r.append(edge)
+
+        # search all destinations
+        for src in self._edges:
+            for edge in self._edges[src]:
+                if (edge[DST] is not None and edge[DST] == x):
+                    edge[SRC] = src
+                    r.append(edge)
+        return r
+
+    def find_edge(self,x):
+        """
+        Find first reference/edge to/from node x 
+        """
+        edges = self.find_edges(x)
+        firstx = None
+
+        for edge in edges:
+            if firstx is None or edge[TIMESTAMP] < firstx[TIMESTAMP]:
+                firstx = edge            
+
+        return firstx
+
+
+    def find_edges_xy(self,x,y):
+        """
+        Find all direct edges between x and y 
+        """
+        r = list()        
+        if not self._edges.get(x):
+            return r         
+    
+        for edge in self._edges[x]: 
+            if ( edge[DST] is not None and edge[DST] == y ):
+                r.append(edge)
+        
+        return r
+
+    
+    def find_edge_x2y(self,x,y,d):
+        """
+        Find at least one path between x and y of max depth d
+        useing recursiv IDDFS (Iterative Deepening Depth-First Search).
+        This should have a time complexity of O(b^d), where
+        b is the branching-factor (outdegree) and d is the depth.
+        
+        This wrapper method is required to properly initialize 'path' list().
+        """
+        path = list()
+        return self._find_one_x2y(x,y,d,path)
+
+    def _find_one_x2y(self,x,y,d,path):
+        if d <= 0 or not self._edges.get(x):
+            return list()
+
+        for edge in self._edges[x]:
+            edge[SRC] = x
+            path.append(edge)
+            if (edge[DST] is not None and edge[DST] == y):
+                return path.copy()
+            else:
+                r = self._find_one_x2y(edge[DST],y,d-1,path.copy())
+                if len(r) == 0:
+                    path.pop()
+                    continue
+                else:
+                    return r
+        return list()
+
+    def find_edges_x2y(self,x,y,d):
+        """
+        Find all paths between x and y reachable with a max
+        depth of d.
+        This uses a modified IDDFS (Iterative Deepening Depth-First Search).
+        """
+        path = list()
+        self._paths = list()
+        self._find_all_x2y(x,y,d,path)
+        return self._paths
+    
+    def _find_all_x2y(self,x,y,d,path):
+        if d <= 0 or not self._edges.get(x):
+            return
+
+        for edge in self._edges[x]:
+            edge[SRC] = x
+            path.append(edge)
+            if (edge[DST] is not None and edge[DST] == y):
+                self._paths.append(path.copy()) # copy value of list
+            else:
+                self._find_all_x2y(edge[DST],y,d-1,path.copy())    
+            path.pop()
+        return
 
 class TransactionGraph(Graph):
     """
