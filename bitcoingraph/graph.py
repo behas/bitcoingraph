@@ -68,8 +68,9 @@ class Graph(object):
     """
     def __init__(self):
         self._edges = dict()
+        self._edge_ids = list()
 
-    def add_edge(self, src, edge):
+    def add_edge(self, edge):
         """
         Add edge to graph.
         Structure ist as follows, where "$srcX" is 
@@ -88,6 +89,17 @@ class Graph(object):
                   ]
         }
         """
+        if ( not edge.get(SRC) or
+             not edge.get(DST) ):
+            raise GraphException("Invalid 'edge' given")
+
+        src = edge.pop(SRC) # extract SRC from edge to use as key
+        if not edge.get(EDGE):
+            # if edge has not edge id (EDGE) then generate one
+            edge_id = len(self._edge_ids)+1 
+            self._edge_ids.append(edge_id)
+            edge[EDGE] = edge_id
+
         if self._edges.get(src):
             self._edges[src].append(edge)
         else:
@@ -385,8 +397,6 @@ class EntityGraph(Graph):
         txstack = list()
         txid = None
        
-        #for edge in self._tx_graph.list_edges(sort_key=TXID):
-        if EDGESORT: self.sort_edges()
         for edge in self._tx_graph._edges:
             # check if still the same transaction
             if (edge[TXID] != txid and txid is not None):

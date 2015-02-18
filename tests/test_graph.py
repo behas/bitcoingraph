@@ -16,25 +16,40 @@ class TestGraph(unittest.TestCase):
         self.graph = Graph()
 
     def test_add_edge(self):
-        edge = { DST: '456', EDGE: '111'}
-        self.graph.add_edge("123", edge)
+        edge1 = { SRC: 'A', DST: 'B' }
+        self.graph.add_edge(edge1)
         self.assertEqual(1, self.graph.count_edges())
+        
+        i = 0 
+        for edge in self.graph.list_edges():
+            self.assertTrue(edge[EDGE] == 1)
+            self.assertTrue(edge[SRC] == "A")
+            self.assertTrue(edge[DST] == "B")
+            i += 1
+        self.assertTrue(i == 1)
 
-    def test_add_count(self):
-        edge1 = {DST: '456', EDGE: '222'}
-        self.graph.add_edge("123", edge1)
+        edge2 = { DST: 'C', EDGE: '2' }
+        self.assertRaises(GraphException, self.graph.add_edge, edge2)
+
+        edge3 = { SRC: 'A', EDGE: '3' }
+        self.assertRaises(GraphException, self.graph.add_edge, edge3)
+          
+
+    def test_count_edges(self):
+        edge1 = {SRC: 'A', DST: 'B', EDGE: '1'}
+        self.graph.add_edge(edge1)
         self.assertEqual(1, self.graph.count_edges())
-        edge2 = {DST: '789', EDGE: '333'}
-        self.graph.add_edge("123", edge2)
+        edge2 = {SRC: 'A', DST: 'C', EDGE: '2'}
+        self.graph.add_edge(edge2)
         self.assertEqual(2, self.graph.count_edges())
 
     def test_list_edges(self):
-        edge1 = {DST: '101', EDGE: '444'}
-        self.graph.add_edge("789", edge1)
-        edge2 = {DST: '789', EDGE: '555'}
-        self.graph.add_edge("123", edge2)
-        edge3 = {DST: '456', EDGE: '666'}
-        self.graph.add_edge("123", edge3)
+        edge1 = {SRC: 'A', DST: 'B', EDGE: '1'}
+        self.graph.add_edge(edge1)
+        edge2 = {SRC: 'A', DST: 'C', EDGE: '2'}
+        self.graph.add_edge(edge2)
+        edge3 = {SRC: 'A', DST: 'E', EDGE: '3'}
+        self.graph.add_edge(edge3)
         edges = [edge for edge in self.graph.list_edges()]
         self.assertIn(edge1, edges)
         self.assertIn(edge2, edges)
@@ -43,34 +58,34 @@ class TestGraph(unittest.TestCase):
     def test_find_edges(self):
         self.assertEqual(0, self.graph.count_edges())
         
-        edge1 = {DST: '101', EDGE: '111'}
-        self.graph.add_edge("789", edge1)
-        edge2 = {DST: '789', EDGE: '222'}
-        self.graph.add_edge("123", edge2)
-        edge3 = {DST: '456', EDGE: '333'}
-        self.graph.add_edge("123", edge3)
-        edge4 = {DST: '123', EDGE: '444'}
-        self.graph.add_edge("aaa", edge4)
+        edge13 = {SRC: 'E', DST: 'A', EDGE: '13'}
+        self.graph.add_edge(edge13)
+        edge2 = {SRC: 'A', DST: 'B', EDGE: '2'}
+        self.graph.add_edge(edge2)
+        edge3 = {SRC: 'A', DST: 'E', EDGE: '3'}
+        self.graph.add_edge(edge3)
+        edge4 = {SRC: 'B', DST: 'D', EDGE: '4'}
+        self.graph.add_edge(edge4)
         
-        edges = self.graph.find_edges("123")
+        edges = self.graph.find_edges("A")
+        self.assertIn(edge13, edges)
         self.assertIn(edge2, edges)
-        self.assertIn(edge3, edges)
-        self.assertIn(edge4, edges)
-        self.assertNotIn(edge1, edges)
+        self.assertIn(edge2, edges)
+        self.assertNotIn(edge4, edges)
 
     def test_find_edge(self):
         self.assertEqual(0, self.graph.count_edges())
         
-        edge1 = {DST: 'b', EDGE: '111', TIMESTAMP: 111}
-        self.graph.add_edge("a", edge1)
-        edge2 = {DST: 'c', EDGE: '222', TIMESTAMP: 333}
-        self.graph.add_edge("b", edge2)
-        edge3 = {DST: 'd', EDGE: '333', TIMESTAMP: 222}
-        self.graph.add_edge("b", edge3)
-        edge4 = {DST: 'e', EDGE: '444', TIMESTAMP: 111}
-        self.graph.add_edge("b", edge4)
+        edge1 = {SRC: 'E', DST: 'A', EDGE: '13', TIMESTAMP: 444}
+        self.graph.add_edge(edge1)
+        edge2 = {SRC: 'A', DST: 'C', EDGE: '2', TIMESTAMP: 333}
+        self.graph.add_edge(edge2)
+        edge3 = {SRC: 'A', DST: 'E', EDGE: '3', TIMESTAMP: 222}
+        self.graph.add_edge(edge3)
+        edge4 = {SRC: 'A', DST: 'B', EDGE: '1', TIMESTAMP: 111}
+        self.graph.add_edge(edge4)
         
-        edge = self.graph.find_edge("b")
+        edge = self.graph.find_edge("A")
         self.assertIn(edge4, [ edge ])
         self.assertNotIn(edge1, [ edge ])
         self.assertNotIn(edge2, [ edge ])
@@ -80,41 +95,41 @@ class TestGraph(unittest.TestCase):
     def test_find_edges_xy(self):
         self.assertEqual(0, self.graph.count_edges())
         
-        edge1 = {DST: 'B', EDGE: '1'}
-        edge2 = {DST: 'C', EDGE: '2'}
-        edge3 = {DST: 'E', EDGE: '3'}
-        self.graph.add_edge("A", edge1)
-        self.graph.add_edge("A", edge2)
-        self.graph.add_edge("A", edge3)
+        edge1 = {SRC: 'A', DST: 'B', EDGE: '1'}
+        edge2 = {SRC: 'A', DST: 'C', EDGE: '2'}
+        edge3 = {SRC: 'A', DST: 'E', EDGE: '3'}
+        self.graph.add_edge(edge1)
+        self.graph.add_edge(edge2)
+        self.graph.add_edge(edge3)
        
-        edge4 = {DST: 'D', EDGE: '4'}
-        edge5 = {DST: 'F', EDGE: '5'}
-        self.graph.add_edge("B", edge4)
-        self.graph.add_edge("B", edge5)
+        edge4 = {SRC: 'B', DST: 'D', EDGE: '4'}
+        edge5 = {SRC: 'B', DST: 'F', EDGE: '5'}
+        self.graph.add_edge(edge4)
+        self.graph.add_edge(edge5)
        
-        edge6 = {DST: 'G', EDGE: '6'}
-        self.graph.add_edge("C", edge6)
+        edge6 = {SRC: 'C', DST: 'G', EDGE: '6'}
+        self.graph.add_edge(edge6)
 
-        edge13 = {DST: 'A', EDGE: '13'}
-        self.graph.add_edge("E", edge13)
+        edge13 = {SRC: 'E', DST: 'A', EDGE: '13'}
+        self.graph.add_edge(edge13)
 
-        edge7 = {DST: 'H', EDGE: '7'}
-        edge8 = {DST: 'I', EDGE: '8'}
-        self.graph.add_edge("D", edge7)
-        self.graph.add_edge("D", edge8)
+        edge7 = {SRC: 'D', DST: 'H', EDGE: '7'}
+        edge8 = {SRC: 'D', DST: 'I', EDGE: '8'}
+        self.graph.add_edge(edge7)
+        self.graph.add_edge(edge8)
        
-        edge9 = {DST: 'E', EDGE: '9'}
-        self.graph.add_edge("F", edge9)
+        edge9 = {SRC: 'F', DST: 'E', EDGE: '9'}
+        self.graph.add_edge(edge9)
         
-        edge10 = {DST: 'F', EDGE: '10'}
-        self.graph.add_edge("G", edge10)
+        edge10 = {SRC: 'G', DST: 'F', EDGE: '10'}
+        self.graph.add_edge(edge10)
 
-        edge11 = {DST: 'H', EDGE: '11'}
-        edge12 = {DST: 'F', EDGE: '12'}
-        edge14 = {DST: 'F', EDGE: '14'}
-        self.graph.add_edge("I", edge11)
-        self.graph.add_edge("I", edge12)
-        self.graph.add_edge("I", edge14)
+        edge11 = {SRC: 'I', DST: 'H', EDGE: '11'}
+        edge12 = {SRC: 'I', DST: 'F', EDGE: '12'}
+        edge14 = {SRC: 'I', DST: 'F', EDGE: '14'}
+        self.graph.add_edge(edge11)
+        self.graph.add_edge(edge12)
+        self.graph.add_edge(edge14)
  
         edges = self.graph.find_edges_xy("I","F")
         self.assertIn(edge12, edges)
@@ -136,41 +151,41 @@ class TestGraph(unittest.TestCase):
     def test_find_edge_x2y(self):
         self.assertEqual(0, self.graph.count_edges())
         
-        edge1 = {DST: 'B', EDGE: '1'}
-        edge2 = {DST: 'C', EDGE: '2'}
-        edge3 = {DST: 'E', EDGE: '3'}
-        self.graph.add_edge("A", edge1)
-        self.graph.add_edge("A", edge2)
-        self.graph.add_edge("A", edge3)
+        edge1 = {SRC: 'A', DST: 'B', EDGE: '1'}
+        edge2 = {SRC: 'A', DST: 'C', EDGE: '2'}
+        edge3 = {SRC: 'A', DST: 'E', EDGE: '3'}
+        self.graph.add_edge(edge1)
+        self.graph.add_edge(edge2)
+        self.graph.add_edge(edge3)
        
-        edge4 = {DST: 'D', EDGE: '4'}
-        edge5 = {DST: 'F', EDGE: '5'}
-        self.graph.add_edge("B", edge4)
-        self.graph.add_edge("B", edge5)
+        edge4 = {SRC: 'B', DST: 'D', EDGE: '4'}
+        edge5 = {SRC: 'B', DST: 'F', EDGE: '5'}
+        self.graph.add_edge(edge4)
+        self.graph.add_edge(edge5)
        
-        edge6 = {DST: 'G', EDGE: '6'}
-        self.graph.add_edge("C", edge6)
+        edge6 = {SRC: 'C', DST: 'G', EDGE: '6'}
+        self.graph.add_edge(edge6)
 
-        edge13 = {DST: 'A', EDGE: '13'}
-        self.graph.add_edge("E", edge13)
+        edge13 = {SRC: 'E', DST: 'A', EDGE: '13'}
+        self.graph.add_edge(edge13)
 
-        edge7 = {DST: 'H', EDGE: '7'}
-        edge8 = {DST: 'I', EDGE: '8'}
-        self.graph.add_edge("D", edge7)
-        self.graph.add_edge("D", edge8)
+        edge7 = {SRC: 'D', DST: 'H', EDGE: '7'}
+        edge8 = {SRC: 'D', DST: 'I', EDGE: '8'}
+        self.graph.add_edge(edge7)
+        self.graph.add_edge(edge8)
        
-        edge9 = {DST: 'E', EDGE: '9'}
-        self.graph.add_edge("F", edge9)
+        edge9 = {SRC: 'F', DST: 'E', EDGE: '9'}
+        self.graph.add_edge(edge9)
         
-        edge10 = {DST: 'F', EDGE: '10'}
-        self.graph.add_edge("G", edge10)
+        edge10 = {SRC: 'G', DST: 'F', EDGE: '10'}
+        self.graph.add_edge(edge10)
 
-        edge11 = {DST: 'H', EDGE: '11'}
-        edge12 = {DST: 'F', EDGE: '12'}
-        edge14 = {DST: 'F', EDGE: '14'}
-        self.graph.add_edge("I", edge11)
-        self.graph.add_edge("I", edge12)
-        self.graph.add_edge("I", edge14)
+        edge11 = {SRC: 'I', DST: 'H', EDGE: '11'}
+        edge12 = {SRC: 'I', DST: 'F', EDGE: '12'}
+        edge14 = {SRC: 'I', DST: 'F', EDGE: '14'}
+        self.graph.add_edge(edge11)
+        self.graph.add_edge(edge12)
+        self.graph.add_edge(edge14)
  
         edges = self.graph.find_edge_x2y("A","F",2)
         self.assertIn(edge1, edges)
@@ -192,42 +207,42 @@ class TestGraph(unittest.TestCase):
     def test_find_edges_x2y(self):
         self.assertEqual(0, self.graph.count_edges())
         
-        edge1 = {DST: 'B', EDGE: '1'}
-        edge2 = {DST: 'C', EDGE: '2'}
-        edge3 = {DST: 'E', EDGE: '3'}
-        self.graph.add_edge("A", edge1)
-        self.graph.add_edge("A", edge2)
-        self.graph.add_edge("A", edge3)
+        edge1 = {SRC: 'A', DST: 'B', EDGE: '1'}
+        edge2 = {SRC: 'A', DST: 'C', EDGE: '2'}
+        edge3 = {SRC: 'A', DST: 'E', EDGE: '3'}
+        self.graph.add_edge(edge1)
+        self.graph.add_edge(edge2)
+        self.graph.add_edge(edge3)
        
-        edge4 = {DST: 'D', EDGE: '4'}
-        edge5 = {DST: 'F', EDGE: '5'}
-        self.graph.add_edge("B", edge4)
-        self.graph.add_edge("B", edge5)
+        edge4 = {SRC: 'B', DST: 'D', EDGE: '4'}
+        edge5 = {SRC: 'B', DST: 'F', EDGE: '5'}
+        self.graph.add_edge(edge4)
+        self.graph.add_edge(edge5)
        
-        edge6 = {DST: 'G', EDGE: '6'}
-        self.graph.add_edge("C", edge6)
+        edge6 = {SRC: 'C', DST: 'G', EDGE: '6'}
+        self.graph.add_edge(edge6)
 
-        edge13 = {DST: 'A', EDGE: '13'}
-        self.graph.add_edge("E", edge13)
+        edge13 = {SRC: 'E', DST: 'A', EDGE: '13'}
+        self.graph.add_edge(edge13)
 
-        edge7 = {DST: 'H', EDGE: '7'}
-        edge8 = {DST: 'I', EDGE: '8'}
-        self.graph.add_edge("D", edge7)
-        self.graph.add_edge("D", edge8)
+        edge7 = {SRC: 'D', DST: 'H', EDGE: '7'}
+        edge8 = {SRC: 'D', DST: 'I', EDGE: '8'}
+        self.graph.add_edge(edge7)
+        self.graph.add_edge(edge8)
        
-        edge9 = {DST: 'E', EDGE: '9'}
-        self.graph.add_edge("F", edge9)
+        edge9 = {SRC: 'F', DST: 'E', EDGE: '9'}
+        self.graph.add_edge(edge9)
         
-        edge10 = {DST: 'F', EDGE: '10'}
-        self.graph.add_edge("G", edge10)
+        edge10 = {SRC: 'G', DST: 'F', EDGE: '10'}
+        self.graph.add_edge(edge10)
 
-        edge11 = {DST: 'H', EDGE: '11'}
-        edge12 = {DST: 'F', EDGE: '12'}
-        edge14 = {DST: 'F', EDGE: '14'}
-        self.graph.add_edge("I", edge11)
-        self.graph.add_edge("I", edge12)
-        self.graph.add_edge("I", edge14)
- 
+        edge11 = {SRC: 'I', DST: 'H', EDGE: '11'}
+        edge12 = {SRC: 'I', DST: 'F', EDGE: '12'}
+        edge14 = {SRC: 'I', DST: 'F', EDGE: '14'}
+        self.graph.add_edge(edge11)
+        self.graph.add_edge(edge12)
+        self.graph.add_edge(edge14)
+        
         edgeslist = self.graph.find_edges_x2y("A","F",4)
         self.assertTrue(len(edgeslist) == 5, "Invalid number of Paths")
 
