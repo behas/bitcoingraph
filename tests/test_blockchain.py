@@ -159,8 +159,8 @@ class TestTxOutput(TestBlockchainObject):
 
     def test_empty_addresses(self):
         tx = self.blockchain.get_transaction(TXE)
-        self.assertEqual("152hHAq6kHoLw2FCT8G37uLEts6oFVjZKt",
-                         tx.get_output_by_index(0).addresses[0])
+        self.assertEqual(["152hHAq6kHoLw2FCT8G37uLEts6oFVjZKt"],
+                         tx.get_output_by_index(0).addresses)
         self.assertIsNone(tx.get_output_by_index(1).addresses)
 
 
@@ -217,32 +217,31 @@ class TestTransaction(TestBlockchainObject):
 
     def test_bc_flows(self):
         tx = self.blockchain.get_transaction(TX2)
-        f1 = {'src': '1BNwxHGaFbeUBitpjy2AsKpJ29Ybxntqvb',
-              'tgt': '1JqDybm2nWTENrHvMyafbSXXtTk5Uv5QAn',
+        f1 = {'src_list': ['1BNwxHGaFbeUBitpjy2AsKpJ29Ybxntqvb'],
+              'tgt_list': ['1JqDybm2nWTENrHvMyafbSXXtTk5Uv5QAn'],
               'value': 5.56000000}
-        f2 = {'src': '1BNwxHGaFbeUBitpjy2AsKpJ29Ybxntqvb',
-              'tgt': '1EYTGtG4LnFfiMvjJdsU7GMGCQvsRSjYhx',
+        f2 = {'src_list': ['1BNwxHGaFbeUBitpjy2AsKpJ29Ybxntqvb'],
+              'tgt_list': ['1EYTGtG4LnFfiMvjJdsU7GMGCQvsRSjYhx'],
               'value': 44.44000000}
-        self.assertTrue(f1 in tx.bc_flows)
-        self.assertTrue(f2 in tx.bc_flows)
+        self.assertTrue({'a': ['1', '2']} in [{'a': ['1', '2']}])
+        self.assertIn(f1, tx.bc_flows)
+        self.assertIn(f2, tx.bc_flows)
 
     def test_bc_flows_coinbase(self):
         tx = self.blockchain.get_transaction(TX1)
-        f1 = {'src': None,
-              'tgt': '1HWqMzw1jfpXb3xyuUZ4uWXY4tqL2cW47J',
+        f1 = {'src_list': ['COINBASE'],
+              'tgt_list': ['1HWqMzw1jfpXb3xyuUZ4uWXY4tqL2cW47J'],
               'value': 50.00000000}
-        self.assertTrue(f1 in tx.bc_flows)
+        self.assertIn(f1, tx.bc_flows)
 
     def test_bc_flows_multiple_inputs(self):
         tcx = self.blockchain.get_transaction(TXM)
-        f1 = {'src': '1Nj6ssafuCe8JqDaR1n3Jw61gZ9FXJim5x',
-              'tgt': '1BWwKwTM6phe45zwUVGQq6WipmWZsVbK8h',
-              'value': 1.05000000}
-        self.assertTrue(f1 in tcx.bc_flows)
-        f2 = {'src': '1LjzLspWYZHgBECKvrMKDY5myM2kkCrtKu',
-              'tgt': '1BWwKwTM6phe45zwUVGQq6WipmWZsVbK8h',
-              'value': 1.05000000}
-        self.assertTrue(f2 in tcx.bc_flows)
+        sources = ['1Nj6ssafuCe8JqDaR1n3Jw61gZ9FXJim5x',
+                   '1LjzLspWYZHgBECKvrMKDY5myM2kkCrtKu']
+        flow = {'src_list': sources,
+                'tgt_list': ['1BWwKwTM6phe45zwUVGQq6WipmWZsVbK8h'],
+                'value': 1.05000000}
+        self.assertIn(flow, tcx.bc_flows)
 
 
 class TestBlockchain(TestBlockchainObject):

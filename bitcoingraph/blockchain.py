@@ -322,7 +322,11 @@ class TxOutput(object):
         """
         scriptPubKey = self._raw_data.get('scriptPubKey')
         if scriptPubKey is not None:
-            return scriptPubKey.get('addresses')
+            addresses = scriptPubKey.get('addresses')
+            if addresses is not None:
+                return [address for address in addresses]
+            else:
+                return None
         else:
             return None
 
@@ -445,26 +449,41 @@ class Transaction(BlockchainObject):
         """
         Returns flows of Bitcoins between source and target addresses.
 
-        :return: bitcoin flows (src, tgt, value)
+        :return: bitcoin flows ([src1, src2, ...], tgt, value)
         :rtype: array
         """
         bc_flows = []
-        for tx_input in self.get_inputs():
-            src = None
-            if not self.is_coinbase_tx:
-                if tx_input.addresses is not None:
-                    if tx_input.addresses[0] is not None:
-                        src = tx_input.addresses[0]
-                else:
-                    src = tx_input.addresses[0]
-            for tx_output in self.get_outputs():
-                tgt = None
-                if tx_output.addresses is not None:
-                    if tx_output.addresses[0] is not None:
-                        tgt = tx_output.addresses[0]
-                flow = {'src': src, 'tgt': tgt,
-                        'value': tx_output.value}
-                bc_flows += [flow]
+        # collect input addresses
+        if self.is_coinbase_tx:
+            src_list = ['COINBASE']
+        else:
+            src_list = []
+            for tx_input in self.get_inputs():
+                src_list += [address for address in tx_input.addresses]
+        # collect output addresses
+        for tx_output in self.get_outputs():
+            tgt_list = [address for address in tx_output.addresses]
+            flow = {'src_list': src_list, 'tgt_list': tgt_list,
+                    'value': tx_output.value}
+            bc_flows += [flow]
+
+        # for tx_input in self.get_inputs():
+        #     src = None
+        #     if not self.is_coinbase_tx:
+        #         if tx_input.addresses is not None:
+        #             if tx_input.addresses[0] is not None:
+        #                 src = tx_input.addresses[0]
+        #         else:
+        #             src = tx_input.addresses[0]
+        #     for tx_output in self.get_outputs():
+        #         tgt = None
+        #         if tx_output.addresses is not None:
+        #             if tx_output.addresses[0] is not None:
+        #                 tgt = tx_output.addresses[0]
+        #         flow = {'src': src, 'tgt': tgt,
+        #                 'value': tx_output.value}
+        #         bc_flows += [flow]
+
         return bc_flows
 
 
