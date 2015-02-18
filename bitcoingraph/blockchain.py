@@ -460,6 +460,8 @@ class Transaction(BlockchainObject):
             src_list = []
             for tx_input in self.get_inputs():
                 src_list += [address for address in tx_input.addresses]
+            # remove duplicate addresses
+            src_list = set(src_list)
         # collect output addresses
         for tx_output in self.get_outputs():
             tgt_list = [address for address in tx_output.addresses]
@@ -467,24 +469,14 @@ class Transaction(BlockchainObject):
                     'value': tx_output.value}
             bc_flows += [flow]
 
-        # for tx_input in self.get_inputs():
-        #     src = None
-        #     if not self.is_coinbase_tx:
-        #         if tx_input.addresses is not None:
-        #             if tx_input.addresses[0] is not None:
-        #                 src = tx_input.addresses[0]
-        #         else:
-        #             src = tx_input.addresses[0]
-        #     for tx_output in self.get_outputs():
-        #         tgt = None
-        #         if tx_output.addresses is not None:
-        #             if tx_output.addresses[0] is not None:
-        #                 tgt = tx_output.addresses[0]
-        #         flow = {'src': src, 'tgt': tgt,
-        #                 'value': tx_output.value}
-        #         bc_flows += [flow]
-
         return bc_flows
+
+    @property
+    def flow_sum(self):
+        """
+        Returns sum of BTC transferred
+        """
+        return sum([tx_output.value for tx_output in self.get_outputs()])
 
 
 class BlockChain(object):
