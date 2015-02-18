@@ -9,13 +9,13 @@ __copyright__ = 'Copyright 2015, Bernhard Haslhofer, Aljosha Judmayer'
 __license__ = "MIT"
 
 
-# tx_graph/et_graph specific csv header fields
+# graph specific csv header fields
 SRC = "src"
 DST = "tgt"
 EDGE = "edge"
 
 TXID = "txid"
-BTC = "value"
+BTC = "value"   # only et_graph
 TIMESTAMP = "timestamp"
 BLOCKID = "block_height"
 
@@ -41,6 +41,7 @@ EDGESORT = True
 
 import os
 import csv
+import operator
 import logging
 logger = logging.getLogger("graph")
 
@@ -363,11 +364,11 @@ class EntityGraph(Graph):
     Generator for Entity Graphs from transaction graphs
     Memory intensive variant.
     """
-    def __init__(self, tx_graph=None, customlogger=None, map_all_txout=False):
+    def __init__(self, customlogger=None, map_all_txout=False):
         """
         Creates entity graph view based on transaction graph.
         """
-        self._tx_graph = tx_graph
+        self._tx_data = list()  
         self._etdict = dict()   # dict() with entities as key
         self._btcdict = dict()  # dict() with btc addresses as key
         self._txoutset = set()
@@ -381,28 +382,35 @@ class EntityGraph(Graph):
 
         return
 
-    def _handle_tx_inputs(self, txstack):
+    def sort_tx_data(self):
+        """ 
+        Sorts records according to (BLOCKID, TXID)
+        This is slightly faster than useing sorted() and prioritizes 
+        low BLOCKIDs which should reduce entity changes 
         """
-        Generates or updates entity mapping for given group of txs of same id.
+        self._tx_data.sort(key = operator.itemgetter(BLOCKID, TXID))
+
+    def _handle_tx_inputs(self, record):
         """
-        self._logger.debug("Handle txstack with len: {} in memory".format(len(txstack)))
+        Generates or updates entity mapping
+        """
+        self._logger.debug("Handle record of tx {} with {} inputs".format(record[TXID], len(record[SRC])))
 
         entity_id = None   # the entity id of all btc src addresses in this tx
         entityset = set()  # set of all entity mappings for btc src addresses in this tx
         btcaddrset = set()  # set all btc src addresses in this tx
 
-        for edge in txstack:
-            if (len(txstack) > 1 and edge[SRC] == 'NULL'):
-                # ignore coinbase transactions or 'NULL' inputs
-                self._logger.debug("Found NULL/coinbase tx input. Ignoring edge: {}".format(edge))
+        for addr in record[SRC]:
+            if ( (addr == 'COINBASE' and len(record[SRC]) >= 1) or
+                  addr == 'NULL' or addr == 'None' ):
+                # ignore COINBASE in regular tx or 'NULL' inputs
+                self._logger.debug("Found invalid tx input address. Ignoring input in record: {}".format(record))
                 continue
 
-            if (edge[SRC] in self._btcdict.keys()):
-                entity_id = self._btcdict[edge[SRC]]
-                entityset.add(self._btcdict[edge[SRC]])
-
+            if addr in self._btcdict.keys():
+                entityset.add(self._btcdict[addr])
             # create set of all unique source addresses
-            btcaddrset.add(edge[SRC])
+            btcaddrset.add(addr)
 
         if len(entityset) > 0:
             # handle entity collision and add new btc src addresses
@@ -417,7 +425,7 @@ class EntityGraph(Graph):
                     self._etdict[entity_id] = self._etdict[entity_id].union(self._etdict[et])
                     self._etdict[et] = None
 
-            # add btc addresses to entity->btc dict
+            # add new btc addresses to entity->btc dict
             for btcaddr in btcaddrset:
                 self._etdict[entity_id].add(btcaddr)
         else:
@@ -437,27 +445,22 @@ class EntityGraph(Graph):
         txstack = list()
         txid = None
 
-        for edge in self._tx_graph._edges:
-            # check if still the same transaction
-            if (edge[TXID] != txid and txid is not None):
-                self._handle_tx_inputs(txstack)
-                txstack.clear()
-            txid = edge[TXID]
-            txstack.append(edge)
+        if EDGESORT: self.sort_tx_data()
 
-        if (len(txstack) > 0):
-            # handle last tx of tx_graph
-            self._handle_tx_inputs(txstack)
-            txstack.clear()
+        for record in self._tx_data:
+            if (record[TXID] != txid or txid is None):
+                # check if new or still the same transaction
+                self._handle_tx_inputs(record)
+            txid = record[TXID]
 
         if self._map_all_txout:
             # map all remaining tx outputs which
             # have not been used as inputs
-            for edge in self._tx_graph._edges:
-                if edge[DST] not in self._btcdict():
+            for record in self._tx_data:
+                if record[DST] not in self._btcdict():
                     entity_id = len(self._etdict)+1
-                    self._etdict[entity_id]  = set([edge[DST]])
-                    self._btcdict[edge[DST]] = entity_id
+                    self._etdict[entity_id]  = set([record[DST]])
+                    self._btcdict[record[DST]] = entity_id
 
         self._logger.info("Finished entity graph generation.")
         return 0
@@ -472,34 +475,59 @@ class EntityGraph(Graph):
             self._logger.error("Failed generating entity graph")
             raise GraphException("Entity graph generation failed", exc)
 
-        for tx_edge in self._tx_graph._edges:
-            if tx_edge[SRC] in self._btcdict.keys():
-                entity_src = self._btcdict[tx_edge[SRC]]
-            else:
-                entity_src = "0" #undefined entity
-            if tx_edge[DST] in self._btcdict.keys():
-                entity_dst = self._btcdict[tx_edge[DST]]
-            else:
-                entity_dst = "0"
+        for record in self._tx_data:
+            entityset = set()
+            entity_src = 0 # undefined entity
+            entity_dst = 0 
+            for addr in record[SRC]:
+                if addr in self._btcdict.keys():
+                    entityset.add(self._btcdict[addr])
+            if len(entityset) == 1:
+                entity_src = entityset.pop()
+            elif len(entityset) > 1:
+                self._logger.error("Invalid entity mapping of record {}".format(record))
+            
+            if record[DST] in self._btcdict.keys():
+                entity_dst = self._btcdict[record[DST]]
             et_edge = dict()
-            et_edge[TXID] = tx_edge[TXID]
+            et_edge[TXID] = record[TXID]
             et_edge[SRC] = str(entity_src)
             et_edge[DST] = str(entity_dst)
-            et_edge[BTC] = tx_edge[BTC]
-            et_edge[TIMESTAMP] = tx_edge[TIMESTAMP]
-            et_edge[BLOCKID] = tx_edge[BLOCKID]
+            et_edge[BTC] = record[BTC]
+            et_edge[TIMESTAMP] = record[TIMESTAMP]
+            et_edge[BLOCKID] = record[BLOCKID]
             yield et_edge
 
 
-    def generate_from_tx_graph(self, tx_graph=None):
+    def generate_from_tx_data(self, tx_data=None, tx_data_file=None):
         """
         Populate entity graph edges
         """
-        if tx_graph:
-            self._tx_graph = tx_graph
-        elif self._tx_graph is None:
-            self._logger.error("No tx_graph given")
-            raise GraphException("No tx_graph given", None)
+        if tx_data:
+            self._tx_data = tx_data
+        elif tx_data_file:
+            with open(tx_data_file, newline='') as csvfile:
+                csv_reader = csv.DictReader(csvfile, delimiter=DELIMCHR,
+                                            quotechar=QUOTECHR,
+                                            quoting=csv.QUOTE_MINIMAL)
+                for entry in csv_reader:
+                    src_list = [src.strip()
+                                for src in entry[SRC].split(LISTSEP)]
+                    tgt_list = [tgt.strip()
+                                for tgt in entry[DST].split(LISTSEP)]
+                    for tgt in tgt_list:
+                        record = {}
+                        record[SRC] = src_list
+                        record[DST] = tgt
+                        record[TXID] = entry[TXID]
+                        record[BTC] = entry[BTC]
+                        record[TIMESTAMP] = entry[TIMESTAMP]
+                        record[BLOCKID] = entry[BLOCKID]
+                        self._tx_data.append(record)
+         
+        elif len(self._tx_data) == 0:
+            self._logger.error("No tx_data given")
+            raise GraphException("No tx_data given", None)
 
         generator = self._generate_edges()
         for edge in generator:
@@ -561,14 +589,14 @@ class EntityGraph(Graph):
 
         # write entity graph
         with open(output_dir + "/" + ETG,'w') as etgfp:
-            fieldnames = [ TXID, SRC, DST, BTC, TIMESTAMP, BLOCKID ]
+            fieldnames = [ SRC, DST, EDGE, TXID, BTC, TIMESTAMP, BLOCKID  ]
             csv_writer = csv.DictWriter(etgfp,
                                         delimiter=DELIMCHR,
                                         quotechar=QUOTECHR,
                                         fieldnames=fieldnames,
                                         quoting=csv.QUOTE_MINIMAL)
             csv_writer.writeheader()
-            for edge in self._edges:
+            for edge in self.list_edges():
                 csv_writer.writerow(edge)
 
         # write entity mapping

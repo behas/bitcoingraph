@@ -68,46 +68,181 @@ bbbb;C2;XX;0.1;1417611696;111
             print(inlinefile,file=infile,end='') 
         logger.debug("TEST - Tempfile: {}".format(infile.name))
         """
-        cls._edges = list()
+        cls._tx_data = list()
         
-        cls._edges.append({ TXID : "1111", SRC : "A1" , DST : "XX" , BTC : "0", TIMESTAMP : "0", BLOCKID : "0" })
-        cls._edges.append({ TXID : "1111", SRC : "A2" , DST : "XX" , BTC : "0", TIMESTAMP : "0", BLOCKID : "0" })
-        cls._edges.append({ TXID : "1111", SRC : "A2" , DST : "XX" , BTC : "0", TIMESTAMP : "0", BLOCKID : "0" })
+        cls._tx_data.append({ TXID : "1111", 
+                              SRC : [ "A1", "A2", "A3" ] , 
+                              DST : "X1" , 
+                              BTC : "1", 
+                              TIMESTAMP : "0", 
+                              BLOCKID : "0" })
+        cls._tx_data.append({ TXID : "1111", 
+                              SRC : [ "A1", "A2", "A3" ] , 
+                              DST : "X2" , 
+                              BTC : "1", 
+                              TIMESTAMP : "0", 
+                              BLOCKID : "0" })
+        cls._tx_data.append({ TXID : "1111", 
+                              SRC : [ "A1", "A2", "A3" ] , 
+                              DST : "X2" , 
+                              BTC : "1", 
+                              TIMESTAMP : "0", 
+                              BLOCKID : "0" })
+        # ---
+        cls._tx_data.append({ TXID : "2222", 
+                              SRC : [ "B1", "B2", "B1", "B2", "B1", "B3" ], 
+                              DST : "X1" , 
+                              BTC : "1", 
+                              TIMESTAMP : "0", 
+                              BLOCKID : "0" })
         
-        cls._edges.append({ TXID : "2222", SRC : "B1" , DST : "XX" , BTC : "0", TIMESTAMP : "0", BLOCKID : "0" })
-        cls._edges.append({ TXID : "2222", SRC : "B2" , DST : "XX" , BTC : "0", TIMESTAMP : "0", BLOCKID : "0" })
-        cls._edges.append({ TXID : "2222", SRC : "B1" , DST : "XX" , BTC : "0", TIMESTAMP : "0", BLOCKID : "0" })
-        cls._edges.append({ TXID : "2222", SRC : "B2" , DST : "XX" , BTC : "0", TIMESTAMP : "0", BLOCKID : "0" })
-        cls._edges.append({ TXID : "2222", SRC : "B1" , DST : "XX" , BTC : "0", TIMESTAMP : "0", BLOCKID : "0" })
-        cls._edges.append({ TXID : "2222", SRC : "B3" , DST : "XX" , BTC : "0", TIMESTAMP : "0", BLOCKID : "0" })
-    
-        cls._edges.append({ TXID : "3333", SRC : "C1" , DST : "XX" , BTC : "0", TIMESTAMP : "0", BLOCKID : "0" })
+        cls._tx_data.append({ TXID : "2222", 
+                              SRC : [ "B1", "B2", "B1", "B2", "B1", "B3" ], 
+                              DST : "X2" , 
+                              BTC : "1", 
+                              TIMESTAMP : "0", 
+                              BLOCKID : "0" })
+
+        cls._tx_data.append({ TXID : "2222", 
+                              SRC : [ "B1", "B2", "B1", "B2", "B1", "B3" ], 
+                              DST : "X3" , 
+                              BTC : "1", 
+                              TIMESTAMP : "0", 
+                              BLOCKID : "0" })
+        # --- 
+        cls._tx_data.append({ TXID : "3333", 
+                              SRC : [ "C1" ], 
+                              DST : "X1" , 
+                              BTC : "1", 
+                              TIMESTAMP : "0", 
+                              BLOCKID : "0" })
+        # --- union
+        cls._tx_data.append({ TXID : "4444", 
+                              SRC : [ "A3", "A4", "A4", "A1" ], 
+                              DST : "X1" , 
+                              BTC : "1", 
+                              TIMESTAMP : "0", 
+                              BLOCKID : "0" })
+         
+        cls._tx_data.append({ TXID : "4444", 
+                              SRC : [ "A3", "A4", "A4", "A1" ], 
+                              DST : "X2" , 
+                              BTC : "1", 
+                              TIMESTAMP : "0", 
+                              BLOCKID : "0" })
         
-        cls._edges.append({ TXID : "4444", SRC : "A3" , DST : "XX" , BTC : "0", TIMESTAMP : "0", BLOCKID : "0" })
-        cls._edges.append({ TXID : "4444", SRC : "A4" , DST : "XX" , BTC : "0", TIMESTAMP : "0", BLOCKID : "0" })
-        cls._edges.append({ TXID : "4444", SRC : "A4" , DST : "XX" , BTC : "0", TIMESTAMP : "0", BLOCKID : "0" })
-        cls._edges.append({ TXID : "4444", SRC : "A1" , DST : "XX" , BTC : "0", TIMESTAMP : "0", BLOCKID : "0" }) #union
+        cls._tx_data.append({ TXID : "4444", 
+                              SRC : [ "A3", "A4", "A4", "A1" ], 
+                              DST : "X3" , 
+                              BTC : "1", 
+                              TIMESTAMP : "0", 
+                              BLOCKID : "0" })
+        
+        cls._tx_data.append({ TXID : "4444", 
+                              SRC : [ "A3", "A4", "A4", "A1" ], 
+                              DST : "X4" , 
+                              BTC : "1", 
+                              TIMESTAMP : "0", 
+                              BLOCKID : "0" })
+        # --- union
+        cls._tx_data.append({ TXID : "5555", 
+                              SRC : [ "C1", "C2" ] , 
+                              DST : "X1" , 
+                              BTC : "1", 
+                              TIMESTAMP : "0", 
+                              BLOCKID : "0" }) #union
+        
+        cls._tx_data.append({ TXID : "5555", 
+                              SRC : [ "C1", "C2" ] , 
+                              DST : "X2" , 
+                              BTC : "1", 
+                              TIMESTAMP : "0", 
+                              BLOCKID : "0" }) #union
+        #--- union 
+        cls._tx_data.append({ TXID : "6666", 
+                              SRC : [ "B4", "C2", "B3" ] , 
+                              DST : "X1" , 
+                              BTC : "1", 
+                              TIMESTAMP : "0", 
+                              BLOCKID : "0" })
+        
+        cls._tx_data.append({ TXID : "6666", 
+                              SRC : [ "B4", "C2", "B3" ] , 
+                              DST : "X2" , 
+                              BTC : "1", 
+                              TIMESTAMP : "0", 
+                              BLOCKID : "0" })
 
-        cls._edges.append({ TXID : "5555", SRC : "C1" , DST : "XX" , BTC : "0", TIMESTAMP : "0", BLOCKID : "0" }) #union
-        cls._edges.append({ TXID : "5555", SRC : "C2" , DST : "XX" , BTC : "0", TIMESTAMP : "0", BLOCKID : "0" })
-       
-        cls._edges.append({ TXID : "6666", SRC : "B4" , DST : "XX" , BTC : "0", TIMESTAMP : "0", BLOCKID : "0" })
-        cls._edges.append({ TXID : "6666", SRC : "C2" , DST : "XX" , BTC : "0", TIMESTAMP : "0", BLOCKID : "0" }) #union
-        cls._edges.append({ TXID : "6666", SRC : "B3" , DST : "XX" , BTC : "0", TIMESTAMP : "0", BLOCKID : "0" })
-
-        cls._edges.append({ TXID : "7777", SRC : "D1" , DST : "XX" , BTC : "0", TIMESTAMP : "0", BLOCKID : "0" })
-
-        cls._edges.append({ TXID : "8888", SRC : "A1" , DST : "XX" , BTC : "0", TIMESTAMP : "0", BLOCKID : "0" }) #union
-        cls._edges.append({ TXID : "8888", SRC : "D1" , DST : "XX" , BTC : "0", TIMESTAMP : "0", BLOCKID : "0" }) 
-   
-        cls._edges.append({ TXID : "9999", SRC : "E1" , DST : "XX" , BTC : "0", TIMESTAMP : "0", BLOCKID : "0" })
-        cls._edges.append({ TXID : "9999", SRC : "E2" , DST : "XX" , BTC : "0", TIMESTAMP : "0", BLOCKID : "0" })
-
-        cls._edges.append({ TXID : "aaaa", SRC : "F1" , DST : "XX" , BTC : "0", TIMESTAMP : "0", BLOCKID : "0" })
-        cls._edges.append({ TXID : "aaaa", SRC : "F2" , DST : "XX" , BTC : "0", TIMESTAMP : "0", BLOCKID : "0" })
- 
-        cls._edges.append({ TXID : "bbbb", SRC : "F1" , DST : "XX" , BTC : "0", TIMESTAMP : "0", BLOCKID : "0" }) #union
-        cls._edges.append({ TXID : "bbbb", SRC : "C2" , DST : "XX" , BTC : "0", TIMESTAMP : "0", BLOCKID : "0" })
+        cls._tx_data.append({ TXID : "6666", 
+                              SRC : [ "B4", "C2", "B3" ] , 
+                              DST : "X3" , 
+                              BTC : "1", 
+                              TIMESTAMP : "0", 
+                              BLOCKID : "0" })
+        # ---       
+        cls._tx_data.append({ TXID : "7777", 
+                              SRC : [ "D1" ] , 
+                              DST : "X1" , 
+                              BTC : "1", 
+                              TIMESTAMP : "0", 
+                              BLOCKID : "0" })
+        # ---  
+        cls._tx_data.append({ TXID : "8888", 
+                              SRC : [ "A1", "D1" ], 
+                              DST : "X1", 
+                              BTC : "1", 
+                              TIMESTAMP : "0", 
+                              BLOCKID : "0" })
+        
+        cls._tx_data.append({ TXID : "8888", 
+                              SRC : [ "A1", "D1" ], 
+                              DST : "X2", 
+                              BTC : "1", 
+                              TIMESTAMP : "0", 
+                              BLOCKID : "0" })
+        # ---
+        cls._tx_data.append({ TXID : "9999", 
+                              SRC : [ "E1", "E2" ] , 
+                              DST : "X1" , 
+                              BTC : "1", 
+                              TIMESTAMP : "0", 
+                              BLOCKID : "0" })
+        
+        cls._tx_data.append({ TXID : "9999", 
+                              SRC : [ "E1", "E2" ] , 
+                              DST : "X2" , 
+                              BTC : "1", 
+                              TIMESTAMP : "0", 
+                              BLOCKID : "0" })
+        # --- 
+        cls._tx_data.append({ TXID : "aaaa", 
+                              SRC : [ "F1", "F2" ] , 
+                              DST : "X1" , 
+                              BTC : "1", 
+                              TIMESTAMP : "0", 
+                              BLOCKID : "0" })
+        
+        cls._tx_data.append({ TXID : "aaaa", 
+                              SRC : [ "F1", "F2" ] , 
+                              DST : "X2" , 
+                              BTC : "2", 
+                              TIMESTAMP : "0", 
+                              BLOCKID : "0" })
+        # ---  
+        cls._tx_data.append({ TXID : "bbbb", 
+                              SRC : [ "F1", "C2" ] , 
+                              DST : "X1" , 
+                              BTC : "1", 
+                              TIMESTAMP : "0", 
+                              BLOCKID : "0" }) 
+        
+        cls._tx_data.append({ TXID : "bbbb", 
+                              SRC : [ "F1", "C2" ] , 
+                              DST : "X1" , 
+                              BTC : "1", 
+                              TIMESTAMP : "0", 
+                              BLOCKID : "0" }) 
+        # --- union
        
     @classmethod
     def tearDownClass(cls):
@@ -120,7 +255,7 @@ bbbb;C2;XX;0.1;1417611696;111
             del cls._logfile
             del cls._logger
 
-        del cls._edges
+        del cls._tx_data
         
     def test_generate_entity_mapping(self):
         """ join input BTC adresses of multiple tx """
@@ -129,11 +264,8 @@ bbbb;C2;XX;0.1;1417611696;111
             logger.info("TEST -------------------------------------------")
             logger.info("TEST - Starting test_generate_entity_mapping")
                    
-        tx_graph = TransactionGraph(None)
-        tx_graph._edges=self._edges   
-
-        etg = EntityGraph(tx_graph=tx_graph, customlogger=logger)
-        ret = etg.generate_from_tx_graph(tx_graph)
+        etg = EntityGraph(customlogger=logger)
+        ret = etg.generate_from_tx_data(self._tx_data)
         
         self.assertTrue(ret == 0,"Entity mapping method returned an error: {}".format(ret))                
         
@@ -213,14 +345,11 @@ bbbb;C2;XX;0.1;1417611696;111
             logger.info("TEST -------------------------------------------")
             logger.info("TEST - Starting test_export_to_csv_and_load_from_file")
         
-        tx_graph = TransactionGraph(None)
-        tx_graph._edges=self._edges   
 
-        etg = EntityGraph(tx_graph=tx_graph, customlogger=logger)
-        ret = etg.generate_from_tx_graph(tx_graph)
+        etg = EntityGraph(customlogger=logger)
+        ret = etg.generate_from_tx_data(tx_data=self._tx_data)
         
         self.assertTrue(ret == 0,"Entity mapping method returned an error: {}".format(ret))                
-        
         etg.export_to_csv(EXPORTDIR) 
         
         self.assertTrue(os.path.isdir(EXPORTDIR))
@@ -229,7 +358,7 @@ bbbb;C2;XX;0.1;1417611696;111
         self.assertTrue(os.path.isfile(EXPORTDIR + "/" + BTCMAP))
 
         
-        etg2 = EntityGraph(tx_graph=None, customlogger=logger)
+        etg2 = EntityGraph(customlogger=logger)
         ret = etg2.load_from_dir(EXPORTDIR)  
         
         self.assertTrue(ret == 0,"EntityGraph loading method returned an error: {}".format(ret))                
