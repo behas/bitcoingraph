@@ -27,19 +27,19 @@ BTCADDRS = "btc_addrs"
 BTCADDR = "btc_addr"
 
 # entity graph output files
-ETG     = "etg.csv"
-ETMAP   = "etmap.csv"
-BTCMAP  = "btcmap.csv"
+ETG = "etg.csv"
+ETMAP = "etmap.csv"
+BTCMAP = "btcmap.csv"
 
 # csv special chars
 DELIMCHR = ';'
 QUOTECHR = '|'
+LISTSEP = ','
 
 # ensure list is sorted, has an impact on performance
 EDGESORT = True
 
 import os
-import operator 
 import csv
 import logging
 logger = logging.getLogger("graph")
@@ -73,13 +73,13 @@ class Graph(object):
     def add_edge(self, edge):
         """
         Add edge to graph.
-        Structure ist as follows, where "$srcX" is 
+        Structure ist as follows, where "$srcX" is
         either bitcoin address or entity:
-        { 
-          "$src1": [ 
+        {
+          "$src1": [
                     {
                      "dst":"$dst1", "edge":"...", "txid":"...",
-                     "blockid":"...", ... 
+                     "blockid":"...", ...
                     }
                     {
                      "dst":"$dst2", "edge":"...", "txid":"...",
@@ -96,7 +96,7 @@ class Graph(object):
         src = edge.pop(SRC) # extract SRC from edge to use as key
         if not edge.get(EDGE):
             # if edge has not edge id (EDGE) then generate one
-            edge_id = len(self._edge_ids)+1 
+            edge_id = len(self._edge_ids)+1
             self._edge_ids.append(edge_id)
             edge[EDGE] = edge_id
 
@@ -104,7 +104,7 @@ class Graph(object):
             self._edges[src].append(edge)
         else:
             self._edges[src] = list()
-            self._edges[src].append(edge)     
+            self._edges[src].append(edge)
 
     def count_edges(self):
         """
@@ -129,7 +129,7 @@ class Graph(object):
         Find all edges, where node x is SRC or DST
         """
         r = list()
-        
+
         # search all sources
         for edge in self._edges[x]:
             edge[SRC] = x   # add the searched src
@@ -145,40 +145,40 @@ class Graph(object):
 
     def find_edge(self,x):
         """
-        Find first reference/edge to/from node x 
+        Find first reference/edge to/from node x
         """
         edges = self.find_edges(x)
         firstx = None
 
         for edge in edges:
             if firstx is None or edge[TIMESTAMP] < firstx[TIMESTAMP]:
-                firstx = edge            
+                firstx = edge
 
         return firstx
 
 
     def find_edges_xy(self,x,y):
         """
-        Find all direct edges between x and y 
+        Find all direct edges between x and y
         """
-        r = list()        
+        r = list()
         if not self._edges.get(x):
-            return r         
-    
-        for edge in self._edges[x]: 
+            return r
+
+        for edge in self._edges[x]:
             if ( edge[DST] is not None and edge[DST] == y ):
                 r.append(edge)
-        
+
         return r
 
-    
+
     def find_edge_x2y(self,x,y,d):
         """
         Find at least one path between x and y of max depth d
         useing recursiv IDDFS (Iterative Deepening Depth-First Search).
         This should have a time complexity of O(b^d), where
         b is the branching-factor (outdegree) and d is the depth.
-        
+
         This wrapper method is required to properly initialize 'path' list().
         """
         path = list()
@@ -212,7 +212,7 @@ class Graph(object):
         self._paths = list()
         self._find_all_x2y(x,y,d,path)
         return self._paths
-    
+
     def _find_all_x2y(self,x,y,d,path):
         if d <= 0 or not self._edges.get(x):
             return
@@ -223,9 +223,10 @@ class Graph(object):
             if (edge[DST] is not None and edge[DST] == y):
                 self._paths.append(path.copy()) # copy value of list
             else:
-                self._find_all_x2y(edge[DST],y,d-1,path.copy())    
+                self._find_all_x2y(edge[DST],y,d-1,path.copy())
             path.pop()
         return
+
 
 class TransactionGraph(Graph):
     """
@@ -258,14 +259,34 @@ class TransactionGraph(Graph):
                 csv_reader = csv.DictReader(csvfile, delimiter=DELIMCHR,
                                             quotechar=QUOTECHR,
                                             quoting=csv.QUOTE_MINIMAL)
-                for edge in csv_reader:
-                    self.add_edge(edge)
+                for entry in csv_reader:
+                    src_list = [src.strip()
+                                for src in entry[SRC].split(LISTSEP)]
+                    tgt_list = [tgt.strip()
+                                for tgt in entry[DST].split(LISTSEP)]
+                    for src in src_list:
+                        for tgt in tgt_list:
+                            edge = {}
+                            edge[SRC] = src
+                            edge[DST] = tgt
+                            # Addding additional properties
+                            edge[TXID] = entry[TXID]
+                            edge[BTC] = entry[BTC]
+                            edge[TIMESTAMP] = entry[TIMESTAMP]
+                            edge[BLOCKID] = entry[BLOCKID]
+                            print(edge)
+                            self.add_edge(edge)
 
     def export_to_csv(self, start_block=None,
                       end_block=None, output_file=None, progress=None):
         """
         Exports transaction graph to CSV file directly from blockchain.
         """
+        if start_block is None:
+            start_block = 1
+        if end_block is None:
+            end_block = self._blockchain.get_max_blockheight()
+
         with open(output_file, 'w', newline='') as csvfile:
             fieldnames = [TXID, SRC, DST,
                           BTC, TIMESTAMP, BLOCKID]
@@ -274,14 +295,33 @@ class TransactionGraph(Graph):
                                         fieldnames=fieldnames,
                                         quoting=csv.QUOTE_MINIMAL)
             csv_writer.writeheader()
-            for edge in self._generate(start_block, end_block):
-                csv_writer.writerow(edge)
-                if progress:
-                    progress(edge[BLOCKID] / (end_block - start_block))
+
+            for block in self._blockchain.get_blocks_in_range(start_block,
+                                                              end_block):
+                for tx in block.transactions:
+                    try:
+                        for bc_flow in tx.bc_flows:
+                            # Constructing CSV fields
+                            src_list = LISTSEP.join(bc_flow['src_list'])
+                            tgt_list = LISTSEP.join(bc_flow['tgt_list'])
+                            entry = {}
+                            entry[SRC] = src_list
+                            entry[DST] = tgt_list
+                            # Addding additional properties
+                            entry[TXID] = tx.id
+                            entry[BTC] = bc_flow['value']
+                            entry[TIMESTAMP] = tx.time
+                            entry[BLOCKID] = block.height
+                            csv_writer.writerow(entry)
+                            if progress:
+                                progress(entry[BLOCKID] / (end_block - start_block))
+                    except BlockchainException as exc:
+                        raise GraphException("Transaction graph \
+                            generation failed", exc)
 
     def _generate(self, start_block=None, end_block=None):
         """
-        Generates transaction graph by extracting edges from blockchain.
+        Generates transaction graph edges from blockchain.
         """
         if self._blockchain is None:
             raise GraphException("Cannot generated transaction graph without \
@@ -298,19 +338,20 @@ class TransactionGraph(Graph):
                 try:
                     for bc_flow in tx.bc_flows:
                         # Construction transaction graph edge
-                        edge = {}
-                        edge[SRC] = bc_flow['src']
-                        edge[DST] = bc_flow['tgt']
-                        # Addding named edge descriptior
-                        edge[TXID] = tx.id
-                        edge[BTC] = bc_flow['value']
-                        edge[TIMESTAMP] = tx.time
-                        edge[BLOCKID] = block.height
-                        yield edge
+                        for src in bc_flow['src_list']:
+                            for dst in bc_flow['tgt_list']:
+                                edge = {}
+                                edge[SRC] = src
+                                edge[DST] = dst
+                                # Addding additional properties
+                                edge[TXID] = tx.id
+                                edge[BTC] = bc_flow['value']
+                                edge[TIMESTAMP] = tx.time
+                                edge[BLOCKID] = block.height
+                                yield edge
                 except BlockchainException as exc:
                     raise GraphException("Transaction graph generation failed",
                                          exc)
-
 
 
 class EntityGraph(Graph):
@@ -330,8 +371,8 @@ class EntityGraph(Graph):
         self._tx_graph = tx_graph
         self._etdict = dict()   # dict() with entities as key
         self._btcdict = dict()  # dict() with btc addresses as key
-        self._txoutset = set()  
-        self._map_all_txout = map_all_txout # Flag for mapping all txoutputs 
+        self._txoutset = set()
+        self._map_all_txout = map_all_txout # Flag for mapping all txoutputs
         if customlogger:
             self._logger = customlogger
         else:
@@ -370,10 +411,10 @@ class EntityGraph(Graph):
             for et in entityset:
                 if et != entity_id:
                     for btcaddr in self._etdict[et]:
-                        # update current btc->entity mapping 
+                        # update current btc->entity mapping
                         self._btcdict[btcaddr] = entity_id
-                    
-                    # union the entity mappings which merge to one single entity 
+
+                    # union the entity mappings which merge to one single entity
                     self._etdict[entity_id] = self._etdict[entity_id].union(self._etdict[et])
                     self._etdict[et] = None
 
@@ -387,7 +428,7 @@ class EntityGraph(Graph):
 
         # add Bitcoin source address to btc->entity dict
         for btcaddr in btcaddrset:
-            self._btcdict[btcaddr] = entity_id               
+            self._btcdict[btcaddr] = entity_id
 
 
     def _generate_entity_mapping(self):
@@ -396,7 +437,7 @@ class EntityGraph(Graph):
         """
         txstack = list()
         txid = None
-       
+
         for edge in self._tx_graph._edges:
             # check if still the same transaction
             if (edge[TXID] != txid and txid is not None):
@@ -404,21 +445,21 @@ class EntityGraph(Graph):
                 txstack.clear()
             txid = edge[TXID]
             txstack.append(edge)
-            
+
         if (len(txstack) > 0):
             # handle last tx of tx_graph
             self._handle_tx_inputs(txstack)
             txstack.clear()
-       
+
         if self._map_all_txout:
-            # map all remaining tx outputs which 
-            # have not been used as inputs 
+            # map all remaining tx outputs which
+            # have not been used as inputs
             for edge in self._tx_graph._edges:
                 if edge[DST] not in self._btcdict():
                     entity_id = len(self._etdict)+1
                     self._etdict[entity_id]  = set([edge[DST]])
-                    self._btcdict[edge[DST]] = entity_id    
- 
+                    self._btcdict[edge[DST]] = entity_id
+
         self._logger.info("Finished entity graph generation.")
         return 0
 
@@ -436,7 +477,7 @@ class EntityGraph(Graph):
             if tx_edge[SRC] in self._btcdict.keys():
                 entity_src = self._btcdict[tx_edge[SRC]]
             else:
-                entity_src = "0" #undefined entity 
+                entity_src = "0" #undefined entity
             if tx_edge[DST] in self._btcdict.keys():
                 entity_dst = self._btcdict[tx_edge[DST]]
             else:
@@ -452,7 +493,7 @@ class EntityGraph(Graph):
 
 
     def generate_from_tx_graph(self, tx_graph=None):
-        """ 
+        """
         Populate entity graph edges
         """
         if tx_graph:
@@ -460,7 +501,7 @@ class EntityGraph(Graph):
         elif self._tx_graph is None:
             self._logger.error("No tx_graph given")
             raise GraphException("No tx_graph given", None)
-            
+
         generator = self._generate_edges()
         for edge in generator:
             self.add_edge(edge)
@@ -476,7 +517,7 @@ class EntityGraph(Graph):
             return 1
 
         # clear all data structures
-        self._edges.clear() 
+        self._edges.clear()
         self._etdict.clear()
         self._btcdict.clear()
 
@@ -485,16 +526,16 @@ class EntityGraph(Graph):
             etgreader = csv.DictReader(etgfp,delimiter=DELIMCHR, quotechar=QUOTECHR)
             for edge in etgreader:
                 self.add_edge(edge)
-        
+
         # load entity mapping dict()
         with open(et_graph_dir + "/" + ETMAP, 'r') as etmapfp:
             etmapreader = csv.DictReader(etmapfp,delimiter=DELIMCHR, quotechar=QUOTECHR)
             for etmap in etmapreader:
                 if etmap[BTCADDRS] == "None":
-                    self._etdict[int(etmap[ENTITYID])] = None 
+                    self._etdict[int(etmap[ENTITYID])] = None
                 else:
                     btcaddrset = set()
-                    for i in str(etmap[BTCADDRS]).split(): btcaddrset.add(i) 
+                    for i in str(etmap[BTCADDRS]).split(): btcaddrset.add(i)
                     self._etdict[int(etmap[ENTITYID])] = btcaddrset
 
         # load bitcoin address mapping dict()
@@ -502,7 +543,7 @@ class EntityGraph(Graph):
             btcmapreader = csv.DictReader(btcmapfp,delimiter=DELIMCHR, quotechar=QUOTECHR)
             for btcmap in btcmapreader:
                 self._btcdict[str(btcmap[BTCADDR])] = int(btcmap[ENTITYID])
-        
+
         return 0
 
     def export_to_csv(self, output_dir):
@@ -512,14 +553,14 @@ class EntityGraph(Graph):
         if (len(self._btcdict) == 0 or len(self._etdict) == 0 or len(self._edges) == 0):
             self._logger.error("EntityGraph not initialized")
             return 1
-        
+
         try:
             os.makedirs(output_dir)
         except OSError as exc:
             if not os.path.isdir(output_dir):
                 raise GraphException("Output direcotry is not a directory", exc)
-      
-        # write entity graph 
+
+        # write entity graph
         with open(output_dir + "/" + ETG,'w') as etgfp:
             fieldnames = [ TXID, SRC, DST, BTC, TIMESTAMP, BLOCKID ]
             csv_writer = csv.DictWriter(etgfp,
@@ -529,8 +570,8 @@ class EntityGraph(Graph):
                                         quoting=csv.QUOTE_MINIMAL)
             csv_writer.writeheader()
             for edge in self._edges:
-                csv_writer.writerow(edge)          
-        
+                csv_writer.writerow(edge)
+
         # write entity mapping
         with open(output_dir + "/" + ETMAP,'w') as etmapfp:
             print(ENTITYID + DELIMCHR + BTCADDRS,file=etmapfp)
@@ -548,7 +589,7 @@ class EntityGraph(Graph):
             print(BTCADDR + DELIMCHR + ENTITYID,file=btcmapfp)
             for btcaddr in self._btcdict.items():
                 print(str(btcaddr[0]) + DELIMCHR + str(btcaddr[1]),file=btcmapfp)
-   
+
         return 0
 
 
