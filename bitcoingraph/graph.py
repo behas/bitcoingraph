@@ -274,7 +274,6 @@ class TransactionGraph(Graph):
                             edge[BTC] = entry[BTC]
                             edge[TIMESTAMP] = entry[TIMESTAMP]
                             edge[BLOCKID] = entry[BLOCKID]
-                            print(edge)
                             self.add_edge(edge)
 
     def export_to_csv(self, start_block=None,
