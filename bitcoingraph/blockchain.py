@@ -460,6 +460,8 @@ class Transaction(BlockchainObject):
             src_list = []
             for tx_input in self.get_inputs():
                 src_list += [address for address in tx_input.addresses]
+            # remove duplicate addresses
+            src_list = set(src_list)
         # collect output addresses
         for tx_output in self.get_outputs():
             tgt_list = [address for address in tx_output.addresses]
