@@ -125,16 +125,18 @@ class Graph(object):
                 edge[SRC] = src
                 yield edge
 
-    def find_edges(self,x):
+    def find_edges(self, x):
         """
         Find all edges, where node x is SRC or DST
         """
         r = list()
 
         # search all sources
-        for edge in self._edges[x]:
-            edge[SRC] = x   # add the searched src
-            r.append(edge)
+        if x in self._edges:
+            for edge in self._edges.get(x):
+                # NOTE: this modifies dict entries; work on copy instead
+                edge[SRC] = x
+                r.append(edge)
 
         # search all destinations
         for src in self._edges:
@@ -368,7 +370,7 @@ class EntityGraph(Graph):
         """
         Creates entity graph view based on transaction graph.
         """
-        self._tx_data = list()  
+        self._tx_data = list()
         self._etdict = dict()   # dict() with entities as key
         self._btcdict = dict()  # dict() with btc addresses as key
         self._txoutset = set()
@@ -383,10 +385,10 @@ class EntityGraph(Graph):
         return
 
     def sort_tx_data(self):
-        """ 
+        """
         Sorts records according to (BLOCKID, TXID)
-        This is slightly faster than useing sorted() and prioritizes 
-        low BLOCKIDs which should reduce entity changes 
+        This is slightly faster than useing sorted() and prioritizes
+        low BLOCKIDs which should reduce entity changes
         """
         self._tx_data.sort(key = operator.itemgetter(BLOCKID, TXID))
 
@@ -478,7 +480,7 @@ class EntityGraph(Graph):
         for record in self._tx_data:
             entityset = set()
             entity_src = 0 # undefined entity
-            entity_dst = 0 
+            entity_dst = 0
             for addr in record[SRC]:
                 if addr in self._btcdict.keys():
                     entityset.add(self._btcdict[addr])
@@ -486,7 +488,7 @@ class EntityGraph(Graph):
                 entity_src = entityset.pop()
             elif len(entityset) > 1:
                 self._logger.error("Invalid entity mapping of record {}".format(record))
-            
+
             if record[DST] in self._btcdict.keys():
                 entity_dst = self._btcdict[record[DST]]
             et_edge = dict()
@@ -524,7 +526,7 @@ class EntityGraph(Graph):
                         record[TIMESTAMP] = entry[TIMESTAMP]
                         record[BLOCKID] = entry[BLOCKID]
                         self._tx_data.append(record)
-         
+
         elif len(self._tx_data) == 0:
             self._logger.error("No tx_data given")
             raise GraphException("No tx_data given", None)
