@@ -301,6 +301,7 @@ class TransactionGraph(Graph):
 
             for idx, block in enumerate(
                 self._blockchain.get_blocks_in_range(start_block, end_block)):
+
                 for tx in block.transactions:
                     try:
                         for bc_flow in tx.bc_flows:
@@ -407,7 +408,7 @@ class EntityGraph(Graph):
         btcaddrset = set()  # set all btc src addresses in this tx
 
         for addr in record[SRC]:
-            if ( (addr == 'COINBASE' and len(record[SRC]) >= 1) or
+            if ( (addr == 'COINBASE' and len(record[SRC]) > 1) or
                   addr == 'NULL' or addr == 'None' ):
                 # ignore COINBASE in regular tx or 'NULL' inputs
                 self._logger.debug("Found invalid tx input address. Ignoring input in record: {}".format(record))

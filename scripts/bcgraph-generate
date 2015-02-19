@@ -66,7 +66,7 @@ def generate_tx_graph(args):
 def generate_et_graph(args):
     logger.info("Starting transaction graph generation.")
     try:
-        bcgraph.export_et_graph(args.txgcsv, args.outputdir)
+        bcgraph.export_et_graph(args.txgcsv, args.outputdir, customlogger=logger)
     except BitcoingraphException as exc:
         logger.error(exc)
         sys.exit(1)
