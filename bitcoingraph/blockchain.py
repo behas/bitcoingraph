@@ -314,21 +314,23 @@ class TxOutput(object):
     @property
     def addresses(self):
         """
-        Returns transaction output addresses or `None` if output has
-        no recorded addresses.
+        Returns (possibly empty) transaction output addresses list.
 
         :return: output addresses
         :rtype: array
         """
+        addresses = []
+
         scriptPubKey = self._raw_data.get('scriptPubKey')
-        if scriptPubKey is not None:
-            addresses = scriptPubKey.get('addresses')
-            if addresses is not None:
-                return [address for address in addresses]
-            else:
-                return None
+        if scriptPubKey is None:
+            return addresses
+        output_addresses = scriptPubKey.get('addresses')
+        if output_addresses is None:
+            return addresses
         else:
-            return None
+            addresses += [address for address in output_addresses]
+
+        return addresses
 
 
 class Transaction(BlockchainObject):

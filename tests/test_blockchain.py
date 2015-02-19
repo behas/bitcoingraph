@@ -158,10 +158,13 @@ class TestTxOutput(TestBlockchainObject):
                          tx.get_output_by_index(1).addresses[0])
 
     def test_empty_addresses(self):
+        """
+        Test if empty list is return when no output addresses are present.
+        """
         tx = self.blockchain.get_transaction(TXE)
         self.assertEqual(["152hHAq6kHoLw2FCT8G37uLEts6oFVjZKt"],
                          tx.get_output_by_index(0).addresses)
-        self.assertIsNone(tx.get_output_by_index(1).addresses)
+        self.assertFalse(tx.get_output_by_index(1).addresses)
 
 
 class TestTransaction(TestBlockchainObject):
