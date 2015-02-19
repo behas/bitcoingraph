@@ -70,7 +70,7 @@ class TestGraph(unittest.TestCase):
         edges = self.graph.find_edges("A")
         self.assertIn(edge13, edges)
         self.assertIn(edge2, edges)
-        self.assertIn(edge2, edges)
+        self.assertIn(edge3, edges)
         self.assertNotIn(edge4, edges)
 
     def test_find_edges_unknown_key(self):

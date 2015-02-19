@@ -67,9 +67,10 @@ class Graph(object):
 
     TODO: wrap third party library
     """
-    def __init__(self):
+    def __init__(self,copydata=False):
         self._edges = dict()
         self._edge_ids = list()
+        self._copydata = copydata
 
     def add_edge(self, edge):
         """
@@ -94,7 +95,7 @@ class Graph(object):
              not edge.get(DST) ):
             raise GraphException("Invalid 'edge' given")
 
-        src = edge.pop(SRC) # extract SRC from edge to use as key
+        src = edge.get(SRC) # extract SRC from edge to use as key
         if not edge.get(EDGE):
             # if edge has not edge id (EDGE) then generate one
             edge_id = len(self._edge_ids)+1
@@ -102,10 +103,16 @@ class Graph(object):
             edge[EDGE] = edge_id
 
         if self._edges.get(src):
-            self._edges[src].append(edge)
+            if self._copydata:
+                self._edges[src].append(edge.copy())
+            else:
+                self._edges[src].append(edge)
         else:
             self._edges[src] = list()
-            self._edges[src].append(edge)
+            if self._copydata:
+                self._edges[src].append(edge.copy())
+            else:    
+                self._edges[src].append(edge)
 
     def count_edges(self):
         """
@@ -122,7 +129,6 @@ class Graph(object):
         """
         for src in self._edges:
             for edge in self._edges[src]:
-                edge[SRC] = src
                 yield edge
 
     def find_edges(self, x):
@@ -134,15 +140,12 @@ class Graph(object):
         # search all sources
         if x in self._edges:
             for edge in self._edges.get(x):
-                # NOTE: this modifies dict entries; work on copy instead
-                edge[SRC] = x
                 r.append(edge)
 
         # search all destinations
         for src in self._edges:
             for edge in self._edges[src]:
                 if (edge[DST] is not None and edge[DST] == x):
-                    edge[SRC] = src
                     r.append(edge)
         return r
 
@@ -192,7 +195,6 @@ class Graph(object):
             return list()
 
         for edge in self._edges[x]:
-            edge[SRC] = x
             path.append(edge)
             if (edge[DST] is not None and edge[DST] == y):
                 return path.copy()
@@ -221,7 +223,6 @@ class Graph(object):
             return
 
         for edge in self._edges[x]:
-            edge[SRC] = x
             path.append(edge)
             if (edge[DST] is not None and edge[DST] == y):
                 self._paths.append(path.copy()) # copy value of list
@@ -501,14 +502,14 @@ class EntityGraph(Graph):
             yield et_edge
 
 
-    def generate_from_tx_data(self, tx_data=None, tx_data_file=None):
+    def generate_from_tx_data(self, tx_data=None, tx_graph_file=None):
         """
         Populate entity graph edges
         """
         if tx_data:
             self._tx_data = tx_data
-        elif tx_data_file:
-            with open(tx_data_file, newline='') as csvfile:
+        elif tx_graph_file:
+            with open(tx_graph_file, newline='') as csvfile:
                 csv_reader = csv.DictReader(csvfile, delimiter=DELIMCHR,
                                             quotechar=QUOTECHR,
                                             quoting=csv.QUOTE_MINIMAL)

@@ -77,15 +77,14 @@ def load_tx_graph_from_file(tx_graph_file):
     return tx_graph
 
 
-# Transaction graph interfaces
+# Entity graph interfaces
 
 def export_et_graph(tx_graph_file, output_dir):
     """
     Export entity graph from transaction graph.
     """
-    tx_graph = load_tx_graph_from_file(tx_graph_file)
-    et_graph = EntityGraph(tx_graph)
-    et_graph.generate_from_tx_graph(None)
+    et_graph = EntityGraph()
+    et_graph.generate_from_tx_data(tx_graph_file=tx_graph_file)
     et_graph.export_to_csv(output_dir)
 
 
