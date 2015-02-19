@@ -377,7 +377,7 @@ class EntityGraph(Graph):
     Generator for Entity Graphs from transaction graphs
     Memory intensive variant.
     """
-    def __init__(self, customlogger=None, map_all_txout=False):
+    def __init__(self, customlogger=None, map_all_txout=True):
         """
         Creates entity graph view based on transaction graph.
         """
@@ -470,7 +470,7 @@ class EntityGraph(Graph):
             # map all remaining tx outputs which
             # have not been used as inputs
             for record in self._tx_data:
-                if record[DST] not in self._btcdict():
+                if record[DST] not in self._btcdict:
                     entity_id = len(self._etdict)+1
                     self._etdict[entity_id]  = set([record[DST]])
                     self._btcdict[record[DST]] = entity_id
