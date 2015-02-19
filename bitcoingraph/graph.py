@@ -195,6 +195,9 @@ class Graph(object):
             return list()
 
         for edge in self._edges[x]:
+            if edge[SRC] == edge[DST]:
+                # self reference loop detection
+                continue
             path.append(edge)
             if (edge[DST] is not None and edge[DST] == y):
                 return path.copy()
@@ -223,6 +226,9 @@ class Graph(object):
             return
 
         for edge in self._edges[x]:
+            if edge[SRC] == edge[DST]:
+                # self reference loop detection
+                continue
             path.append(edge)
             if (edge[DST] is not None and edge[DST] == y):
                 self._paths.append(path.copy()) # copy value of list

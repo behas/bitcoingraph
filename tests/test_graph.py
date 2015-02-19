@@ -210,7 +210,7 @@ class TestGraph(unittest.TestCase):
         self.assertNotIn(edge3, edges)
         self.assertNotIn(edge2, edges)
 
-    def test_find_edges_x2y(self):
+    def test_find_edges_x2y_selfreference(self):
         self.assertEqual(0, self.graph.count_edges())
 
         edge1 = {SRC: 'A', DST: 'B', EDGE: '1'}
@@ -248,6 +248,12 @@ class TestGraph(unittest.TestCase):
         self.graph.add_edge(edge11)
         self.graph.add_edge(edge12)
         self.graph.add_edge(edge14)
+
+        edge88 = {SRC: 'A', DST: 'A', EDGE: '88'}
+        self.graph.add_edge(edge88)
+        
+        edge888 = {SRC: 'B', DST: 'B', EDGE: '888'}
+        self.graph.add_edge(edge888)
 
         edgeslist = self.graph.find_edges_x2y("A","F",4)
         self.assertTrue(len(edgeslist) == 5, "Invalid number of Paths")
@@ -313,43 +319,3 @@ class TestGraph(unittest.TestCase):
 
 
 
-"""
-class TestTransactionGraph(unittest.TestCase):
-
-    def setUp(self):
-        self.bitcoin_proxy = BitcoinProxyMock()
-        self.blockchain = BlockChain(self.bitcoin_proxy)
-        self.txgraph = TransactionGraph(self.blockchain)
-        self.reference_file = self.load_reference_file()
-
-    def load_reference_file(self):
-        reference_file = None
-        with open(TEST_CSV, 'r') as f:
-            reference_file = f.readlines()
-        return reference_file
-
-    def test_generate_from_blockchain(self):
-        self.txgraph.generate_from_blockchain(99999, 100000)
-        self.assertEqual(7, self.txgraph.count_edges())
-
-    def test_export_to_csv(self):
-        tempfile = NamedTemporaryFile(mode='w+')
-        self.txgraph.export_to_csv(99999, 100000, tempfile.name)
-        with open(tempfile.name) as f:
-            content = f.readlines()
-            for line in content:
-                self.assertIn(line, self.reference_file)
-
-    def test_load_from_file(self):
-        self.txgraph.load_from_file(TEST_CSV)
-        self.assertEqual(7, self.txgraph.count_edges())
-
-
-class TestEntityGraph(unittest.TestCase):
-
-    def test_generate_from_tx_graph(self):
-        pass
-
-    def test_generate_from_file(self):
-        pass
-"""
