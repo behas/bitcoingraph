@@ -441,6 +441,47 @@ bbbb;C2;XX;0.1;1417611696;111
             os.remove(EXPORTDIR + "/" + ETMAP)
             os.remove(EXPORTDIR + "/" + BTCMAP)
 
+
+    def test_getters(self):
+        """ join input BTC adresses of multiple tx """
+        if LOG:
+            logger = self._logger
+            logger.info("TEST -------------------------------------------")
+            logger.info("TEST - Starting test_getters")
+        
+        etg = EntityGraph(customlogger=logger)
+        ret = etg.generate_from_tx_data(tx_data=self._tx_data)
+        
+        self.assertTrue(ret == 0,"Entity mapping method returned an error: {}".format(ret))
+            
+        r = etg.get_entity_info(2)
+        self.assertTrue(isinstance(r,set))
+        self.assertTrue(len(r) == 8)
+        self.assertIn("F2",r)
+        self.assertIn("F1",r)
+        self.assertIn("C2",r)
+        self.assertIn("B1",r)
+        self.assertNotIn("E1",r)
+        self.assertNotIn("E2",r)
+
+        r = etg.get_entity_info(88)
+        self.assertTrue(isinstance(r,set))
+        self.assertTrue(len(r) == 0)
+
+        r = etg.get_btcaddr_info("F2")
+        self.assertTrue(r == 2)
+        r = etg.get_btcaddr_info("F1")
+        self.assertTrue(r == 2)
+        r = etg.get_btcaddr_info("C2")
+        self.assertTrue(r == 2)
+        r = etg.get_btcaddr_info("B1")
+        self.assertTrue(r == 2)
+
+        r = etg.get_btcaddr_info("False")
+        self.assertTrue(isinstance(r,int))
+        self.assertTrue(r == 0)
+                
+
 if __name__ == '__main__':
         unittest.main()
             

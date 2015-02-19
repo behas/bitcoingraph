@@ -95,3 +95,4 @@ def load_et_graph_from_directory(et_graph_directory,customlogger=None):
     et_graph = EntityGraph(customlogger=customlogger)
     et_graph.load_from_dir(et_graph_directory)
     return et_graph
+
