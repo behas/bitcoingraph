@@ -449,7 +449,7 @@ class Transaction(BlockchainObject):
         """
         Returns flows of Bitcoins between source and target addresses.
 
-        :return: bitcoin flows ([src1, src2, ...], tgt, value)
+        :return: bitcoin flows ([src1, src2, ...], [tgt1, tgt2, ...], value)
         :rtype: array
         """
         bc_flows = []
@@ -459,9 +459,8 @@ class Transaction(BlockchainObject):
         else:
             src_list = []
             for tx_input in self.get_inputs():
-                src_list += [address for address in tx_input.addresses]
-            # remove duplicate addresses
-            src_list = set(src_list)
+                src_list += [address for address in tx_input.addresses
+                                     if address not in src_list]
         # collect output addresses
         for tx_output in self.get_outputs():
             tgt_list = [address for address in tx_output.addresses]

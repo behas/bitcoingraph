@@ -223,7 +223,6 @@ class TestTransaction(TestBlockchainObject):
         f2 = {'src_list': ['1BNwxHGaFbeUBitpjy2AsKpJ29Ybxntqvb'],
               'tgt_list': ['1EYTGtG4LnFfiMvjJdsU7GMGCQvsRSjYhx'],
               'value': 44.44000000}
-        self.assertTrue({'a': ['1', '2']} in [{'a': ['1', '2']}])
         self.assertIn(f1, tx.bc_flows)
         self.assertIn(f2, tx.bc_flows)
 
@@ -242,6 +241,18 @@ class TestTransaction(TestBlockchainObject):
                 'tgt_list': ['1BWwKwTM6phe45zwUVGQq6WipmWZsVbK8h'],
                 'value': 1.05000000}
         self.assertIn(flow, tcx.bc_flows)
+
+    def test_bc_flows_duplicate_input_addresses(self):
+        """
+        Tests that multiple inputs with same address are dedupliated.
+        """
+        t = "d8066858142abfae59964da1ec29c26e30af52091dd7b5145fa9a953aa1f072e"
+        tx = self.blockchain.get_transaction(t)
+        self.assertEqual(tx.get_input_count(), 2)
+        sources = ['1PJnjo4n2Rt5jWTUrCRr4inK2XmFPXqFC7']
+        flow_sources = [flow['src_list'] for flow in tx.bc_flows]
+        for src_list in flow_sources:
+            self.assertEqual(src_list, sources)
 
 
 class TestBlockchain(TestBlockchainObject):
