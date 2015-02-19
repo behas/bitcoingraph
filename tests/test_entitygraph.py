@@ -463,6 +463,16 @@ bbbb;C2;XX;0.1;1417611696;111
         self.assertIn("B1",r)
         self.assertNotIn("E1",r)
         self.assertNotIn("E2",r)
+        
+        r = etg.get_entity_info("2")
+        self.assertTrue(isinstance(r,set))
+        self.assertTrue(len(r) == 8)
+        self.assertIn("F2",r)
+        self.assertIn("F1",r)
+        self.assertIn("C2",r)
+        self.assertIn("B1",r)
+        self.assertNotIn("E1",r)
+        self.assertNotIn("E2",r)
 
         r = etg.get_entity_info(88)
         self.assertTrue(isinstance(r,set))

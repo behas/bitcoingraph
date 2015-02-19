@@ -627,14 +627,14 @@ class EntityGraph(Graph):
         return 0
 
     def get_entity_info(self,et):
-        if et in self._etdict.keys():
-            return self._etdict.get(et)
+        if int(et) in self._etdict.keys():
+            return self._etdict.get(int(et))
         else:
             return set() #undefined
 
     def get_btcaddr_info(self,addr):
-        if addr in self._btcdict.keys():
-            return self._btcdict.get(addr)
+        if str(addr) in self._btcdict.keys():
+            return self._btcdict.get(str(addr))
         else:
             return 0 #undefined
 
