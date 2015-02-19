@@ -298,8 +298,8 @@ class TransactionGraph(Graph):
                                         quoting=csv.QUOTE_MINIMAL)
             csv_writer.writeheader()
 
-            for block in self._blockchain.get_blocks_in_range(start_block,
-                                                              end_block):
+            for idx, block in enumerate(
+                self._blockchain.get_blocks_in_range(start_block, end_block)):
                 for tx in block.transactions:
                     try:
                         for bc_flow in tx.bc_flows:
@@ -316,7 +316,10 @@ class TransactionGraph(Graph):
                             entry[BLOCKID] = block.height
                             csv_writer.writerow(entry)
                             if progress:
-                                progress(entry[BLOCKID] / (end_block - start_block))
+                                block_range = end_block - start_block
+                                if block_range == 0:
+                                    block_range = 1
+                                progress(idx / block_range)
                     except BlockchainException as exc:
                         raise GraphException("Transaction graph \
                             generation failed", exc)
