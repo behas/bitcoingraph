@@ -76,7 +76,7 @@ class Graph(object):
         """
         Add edge to graph.
         Structure ist as follows, where "$srcX" is
-        either bitcoin address or entity:
+        either bitcoin address or entity id but allways of type str!
         {
           "$src1": [
                     {
@@ -197,6 +197,9 @@ class Graph(object):
         for edge in self._edges[x]:
             if edge[SRC] == edge[DST]:
                 # self reference loop detection
+                continue 
+            if edge[DST] == y and len(path) == 0:
+                # dont list one-hop matches
                 continue
             path.append(edge)
             if (edge[DST] is not None and edge[DST] == y):

@@ -1,0 +1,191 @@
+#!/usr/bin/env python
+"""
+Script to perform basic graph queries
+
+Example invocation:
+$ bcgraph-analyse -l DEBUG --logfile /tmp/error.log -e ../etgdir -x 1 -y 2
+"""
+import argparse
+import sys
+
+import logging
+import logging.handlers
+logger = logging.getLogger("bcgraph-analyse")
+
+import bitcoingraph as bcgraph
+from bitcoingraph import BitcoingraphException
+
+def setup_logger(args):
+    if args.logging:
+        formatter = logging.Formatter('%(levelname)s - %(asctime)s - %(name)s - %(message)s')
+
+        # Set loglevel
+        numeric_level = getattr(logging, args.logging.upper(), None)
+        if not isinstance(numeric_level, int):
+            logger.error("Invalid log level: {}, defaulting to 'DEBUG'".format(args.loglevel,))
+            numeric_level = getattr(logging, "DEBUG", None)
+
+        logger.setLevel(level=numeric_level)
+
+        if args.logfile:
+            rf = logging.handlers.RotatingFileHandler(args.logfile,
+                                                      maxBytes=104857600,
+                                                      backupCount=10)
+            rf.setLevel(numeric_level)
+            rf.setFormatter(formatter)
+            logger.addHandler(rf)
+        else:
+            # create stdout stream handler
+            ch = logging.StreamHandler()
+            ch.setLevel(numeric_level)
+            ch.setFormatter(formatter)
+            logger.addHandler(ch)
+        logger.debug('Set up logger for loglevel: {}'.format(numeric_level))
+    return logger
+
+def print_edge_hdr(edge):
+    keylst = list()
+    for key in edge.keys():
+        keylst.append(key)
+    print(",".join(str(item) for item in keylst))
+    return
+
+def print_edge(edge):
+    linelst = list()
+    for key in edge.keys():
+        linelst.append(edge[key])
+    print(",".join(str(item) for item in linelst))
+    return
+
+def print_path(path):
+    print("hop,",end='')
+    print_edge_hdr(path[0])
+    i = 1
+    for edge in path:
+        print(str(i) + ",",end='')
+        i += 1
+        print_edge(edge)
+
+def analyse(args):
+    if args.etgdir and not args.txfile:
+        analyse_et_graph(args)
+    elif args.txfile and not args.etgdir:
+        analyse_tx_graph(args)
+    else:
+        parser.print_help() 
+
+def analyse_tx_graph(args):
+    #TODO
+    pass
+
+def analyse_et_graph(args):
+    logger.info("Starting transaction graph analyseis")
+    try:
+        etg = bcgraph.load_et_graph_from_directory(args.etgdir, customlogger=logger)   
+        if args.fet:
+            rslt = etg.find_edges(str(args.fet))
+            if isinstance(rslt,list) and len(rslt) > 0:
+                print_edge_hdr(rslt[0])
+                for edge in rslt:
+                    print_edge(edge)
+                sys.exit(0)
+            else:
+                print("Entity not found")
+                sys.exit(1)
+        elif args.ffet: 
+            rslt = etg.find_edge(str(args.ffet))
+            if rslt is not None and isinstance(rslt,dict) :
+                print_edge_hdr(rslt)
+                print_edge(rslt)
+                sys.exit(0)
+            else:
+                print("Entity not found")
+                sys.exit(1)
+        elif ( (args.x and args.y) and not 
+               (args.fet or args.ffet or args.i or args.d) ):
+            rslt = etg.find_edges_xy(str(args.x),str(args.y))
+            if isinstance(rslt,list) and len(rslt) > 0:
+                print_edge_hdr(rslt[0])
+                for edge in rslt:
+                    print_edge(edge)
+                sys.exit(0)
+            else:
+                print("No direct edge found")
+                sys.exit(1)
+        elif ( (args.x and args.y and args.i) and not 
+               (args.fet or args.ffet or args.d) ):
+            rslt = etg.find_edge_x2y(str(args.x),str(args.y),int(args.i))    
+            if isinstance(rslt,list) and len(rslt) > 0:
+                print_path(rslt)
+                sys.exit(0)
+            else:
+                print("No indirect path of depth {} found".format(args.i))
+                sys.exit(1)
+        elif ( (args.x and args.y and args.d) and not 
+               (args.fet or args.ffet or args.i) ):
+            rslt = etg.find_edges_x2y(str(args.x),str(args.y),int(args.d))    
+            if ( isinstance(rslt,list) and len(rslt) > 0 and
+                 isinstance(rslt[0],list) ):
+                for path in rslt:
+                    print_path(path)
+                sys.exit(0)
+            else:
+                print("No indirect path of depth {} found".format(args.i))
+                sys.exit(1)
+        else:
+            parser.print_help()   
+
+    except BitcoingraphException as exc:
+        logger.error(exc)
+        sys.exit(1)
+
+parser = argparse.ArgumentParser(
+    description="Analyses graph data sets from bcgraph-generate")
+parser.add_argument("-l", "--log", dest='logging',
+                    help="Enable logging (Default=DEBUG)")
+parser.add_argument("--logfile", dest='logfile',
+                    help="Write logs to logfile")
+
+parser.add_argument('-e', '--etgraph', action='store',
+                             default=None, dest='etgdir',
+                             type=str,
+                             help='Input entity graph csv directory')
+parser.add_argument('-t', '--txgraph', action='store',
+                             default=None, dest='txfile',
+                             type=str,
+                             help='Input transaction graph csv file')
+
+parser.add_argument('-f', '--find', action='store',
+                             default=None, dest='fet',
+                             type=str,
+                             help='Find entity')
+parser.add_argument('-F', '--findfirst', action='store',
+                             default=None, dest='ffet',
+                             type=str,
+                             help='Find first entity')
+parser.add_argument('-x', '--src', action='store',
+                             default=None, dest='x',
+                             type=str,
+                             help='Find path(s) from this src (use with --dst)')
+parser.add_argument('-y', '--dst', action='store',
+                             default=None, dest='y',
+                             type=str,
+                             help='Find path(s) to this dst (use with --src)')
+parser.add_argument('-i', '--indirect', action='store',
+                             default=None, dest='i',
+                             type=str,
+                             help='Find one indirect path between x and y with max depth i')
+parser.add_argument('-d', '--deep', action='store',
+                             default=None, dest='d',
+                             type=str,
+                             help='Find all paths between x and y with max depth d')
+parser.set_defaults(func=analyse)
+
+
+if len(sys.argv) <= 2:
+    parser.print_help()
+    sys.exit(1)
+
+args = parser.parse_args()
+setup_logger(args)
+args.func(args)
