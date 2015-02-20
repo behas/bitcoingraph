@@ -158,10 +158,13 @@ class TestTxOutput(TestBlockchainObject):
                          tx.get_output_by_index(1).addresses[0])
 
     def test_empty_addresses(self):
+        """
+        Test if empty list is return when no output addresses are present.
+        """
         tx = self.blockchain.get_transaction(TXE)
-        self.assertEqual("152hHAq6kHoLw2FCT8G37uLEts6oFVjZKt",
-                         tx.get_output_by_index(0).addresses[0])
-        self.assertIsNone(tx.get_output_by_index(1).addresses)
+        self.assertEqual(["152hHAq6kHoLw2FCT8G37uLEts6oFVjZKt"],
+                         tx.get_output_by_index(0).addresses)
+        self.assertFalse(tx.get_output_by_index(1).addresses)
 
 
 class TestTransaction(TestBlockchainObject):
@@ -217,32 +220,42 @@ class TestTransaction(TestBlockchainObject):
 
     def test_bc_flows(self):
         tx = self.blockchain.get_transaction(TX2)
-        f1 = {'src': '1BNwxHGaFbeUBitpjy2AsKpJ29Ybxntqvb',
-              'tgt': '1JqDybm2nWTENrHvMyafbSXXtTk5Uv5QAn',
+        f1 = {'src_list': ['1BNwxHGaFbeUBitpjy2AsKpJ29Ybxntqvb'],
+              'tgt_list': ['1JqDybm2nWTENrHvMyafbSXXtTk5Uv5QAn'],
               'value': 5.56000000}
-        f2 = {'src': '1BNwxHGaFbeUBitpjy2AsKpJ29Ybxntqvb',
-              'tgt': '1EYTGtG4LnFfiMvjJdsU7GMGCQvsRSjYhx',
+        f2 = {'src_list': ['1BNwxHGaFbeUBitpjy2AsKpJ29Ybxntqvb'],
+              'tgt_list': ['1EYTGtG4LnFfiMvjJdsU7GMGCQvsRSjYhx'],
               'value': 44.44000000}
-        self.assertTrue(f1 in tx.bc_flows)
-        self.assertTrue(f2 in tx.bc_flows)
+        self.assertIn(f1, tx.bc_flows)
+        self.assertIn(f2, tx.bc_flows)
 
     def test_bc_flows_coinbase(self):
         tx = self.blockchain.get_transaction(TX1)
-        f1 = {'src': None,
-              'tgt': '1HWqMzw1jfpXb3xyuUZ4uWXY4tqL2cW47J',
+        f1 = {'src_list': ['COINBASE'],
+              'tgt_list': ['1HWqMzw1jfpXb3xyuUZ4uWXY4tqL2cW47J'],
               'value': 50.00000000}
-        self.assertTrue(f1 in tx.bc_flows)
+        self.assertIn(f1, tx.bc_flows)
 
     def test_bc_flows_multiple_inputs(self):
         tcx = self.blockchain.get_transaction(TXM)
-        f1 = {'src': '1Nj6ssafuCe8JqDaR1n3Jw61gZ9FXJim5x',
-              'tgt': '1BWwKwTM6phe45zwUVGQq6WipmWZsVbK8h',
-              'value': 1.05000000}
-        self.assertTrue(f1 in tcx.bc_flows)
-        f2 = {'src': '1LjzLspWYZHgBECKvrMKDY5myM2kkCrtKu',
-              'tgt': '1BWwKwTM6phe45zwUVGQq6WipmWZsVbK8h',
-              'value': 1.05000000}
-        self.assertTrue(f2 in tcx.bc_flows)
+        sources = ['1Nj6ssafuCe8JqDaR1n3Jw61gZ9FXJim5x',
+                   '1LjzLspWYZHgBECKvrMKDY5myM2kkCrtKu']
+        flow = {'src_list': sources,
+                'tgt_list': ['1BWwKwTM6phe45zwUVGQq6WipmWZsVbK8h'],
+                'value': 1.05000000}
+        self.assertIn(flow, tcx.bc_flows)
+
+    def test_bc_flows_duplicate_input_addresses(self):
+        """
+        Tests that multiple inputs with same address are dedupliated.
+        """
+        t = "d8066858142abfae59964da1ec29c26e30af52091dd7b5145fa9a953aa1f072e"
+        tx = self.blockchain.get_transaction(t)
+        self.assertEqual(tx.get_input_count(), 2)
+        sources = ['1PJnjo4n2Rt5jWTUrCRr4inK2XmFPXqFC7']
+        flow_sources = [flow['src_list'] for flow in tx.bc_flows]
+        for src_list in flow_sources:
+            self.assertEqual(src_list, sources)
 
 
 class TestBlockchain(TestBlockchainObject):

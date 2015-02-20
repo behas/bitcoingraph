@@ -314,17 +314,23 @@ class TxOutput(object):
     @property
     def addresses(self):
         """
-        Returns transaction output addresses or `None` if output has
-        no recorded addresses.
+        Returns (possibly empty) transaction output addresses list.
 
         :return: output addresses
         :rtype: array
         """
+        addresses = []
+
         scriptPubKey = self._raw_data.get('scriptPubKey')
-        if scriptPubKey is not None:
-            return scriptPubKey.get('addresses')
+        if scriptPubKey is None:
+            return addresses
+        output_addresses = scriptPubKey.get('addresses')
+        if output_addresses is None:
+            return addresses
         else:
-            return None
+            addresses += [address for address in output_addresses]
+
+        return addresses
 
 
 class Transaction(BlockchainObject):
@@ -445,27 +451,33 @@ class Transaction(BlockchainObject):
         """
         Returns flows of Bitcoins between source and target addresses.
 
-        :return: bitcoin flows (src, tgt, value)
+        :return: bitcoin flows ([src1, src2, ...], [tgt1, tgt2, ...], value)
         :rtype: array
         """
         bc_flows = []
-        for tx_input in self.get_inputs():
-            src = None
-            if not self.is_coinbase_tx:
-                if tx_input.addresses is not None:
-                    if tx_input.addresses[0] is not None:
-                        src = tx_input.addresses[0]
-                else:
-                    src = tx_input.addresses[0]
-            for tx_output in self.get_outputs():
-                tgt = None
-                if tx_output.addresses is not None:
-                    if tx_output.addresses[0] is not None:
-                        tgt = tx_output.addresses[0]
-                flow = {'src': src, 'tgt': tgt,
-                        'value': tx_output.value}
-                bc_flows += [flow]
+        # collect input addresses
+        if self.is_coinbase_tx:
+            src_list = ['COINBASE']
+        else:
+            src_list = []
+            for tx_input in self.get_inputs():
+                src_list += [address for address in tx_input.addresses
+                                     if address not in src_list]
+        # collect output addresses
+        for tx_output in self.get_outputs():
+            tgt_list = [address for address in tx_output.addresses]
+            flow = {'src_list': src_list, 'tgt_list': tgt_list,
+                    'value': tx_output.value}
+            bc_flows += [flow]
+
         return bc_flows
+
+    @property
+    def flow_sum(self):
+        """
+        Returns sum of BTC transferred
+        """
+        return sum([tx_output.value for tx_output in self.get_outputs()])
 
 
 class BlockChain(object):
