@@ -79,10 +79,35 @@ def analyse_tx_graph(args):
     pass
 
 def analyse_et_graph(args):
-    logger.info("Starting transaction graph analyseis")
+    logger.info("Starting entity graph analyseis")
     try:
         etg = bcgraph.load_et_graph_from_directory(args.etgdir, customlogger=logger)   
-        if args.fet:
+        if ( args.et2addr and not 
+            (args.ffet or args.i or args.d or args.x or args.y or 
+             args.fet or args.addr2et) ):        
+            rslt = etg.get_entity_info(str(args.et2addr))
+            if isinstance(rslt,set) and len(rslt) > 0:
+                for addr in rslt:
+                    print(addr)    
+                sys.exit(0)
+            else:
+                print("Entity not found")
+                sys.exit(1)
+
+        if ( args.addr2et and not 
+            (args.ffet or args.i or args.d or args.x or args.y or 
+             args.fet or args.et2addr) ):        
+            rslt = etg.get_btcaddr_info(str(args.addr2et))
+            if isinstance(rslt,int):
+                print(rslt)    
+                sys.exit(0)
+            else:
+                print("Bitcoin address not found")
+                sys.exit(1)
+
+        if ( args.fet and not 
+            (args.ffet or args.i or args.d or args.x or args.y or 
+             args.et2addr or args.addr2et) ):
             rslt = etg.find_edges(str(args.fet))
             if isinstance(rslt,list) and len(rslt) > 0:
                 print_edge_hdr(rslt[0])
@@ -92,7 +117,10 @@ def analyse_et_graph(args):
             else:
                 print("Entity not found")
                 sys.exit(1)
-        elif args.ffet: 
+
+        elif ( args.ffet and not 
+              (args.fet or args.i or args.d or args.x or args.y or 
+               args.et2addr or args.addr2et) ):
             rslt = etg.find_edge(str(args.ffet))
             if rslt is not None and isinstance(rslt,dict) :
                 print_edge_hdr(rslt)
@@ -101,8 +129,10 @@ def analyse_et_graph(args):
             else:
                 print("Entity not found")
                 sys.exit(1)
+
         elif ( (args.x and args.y) and not 
-               (args.fet or args.ffet or args.i or args.d) ):
+               (args.fet or args.ffet or args.i or args.d or
+                args.et2addr or args.addr2et) ):
             rslt = etg.find_edges_xy(str(args.x),str(args.y))
             if isinstance(rslt,list) and len(rslt) > 0:
                 print_edge_hdr(rslt[0])
@@ -112,8 +142,10 @@ def analyse_et_graph(args):
             else:
                 print("No direct edge found")
                 sys.exit(1)
+
         elif ( (args.x and args.y and args.i) and not 
-               (args.fet or args.ffet or args.d) ):
+               (args.fet or args.ffet or args.d or args.et2addr or
+                args.addr2et) ):
             rslt = etg.find_edge_x2y(str(args.x),str(args.y),int(args.i))    
             if isinstance(rslt,list) and len(rslt) > 0:
                 print_path(rslt)
@@ -121,8 +153,10 @@ def analyse_et_graph(args):
             else:
                 print("No indirect path of depth {} found".format(args.i))
                 sys.exit(1)
+
         elif ( (args.x and args.y and args.d) and not 
-               (args.fet or args.ffet or args.i) ):
+               (args.fet or args.ffet or args.i or args.et2addr or 
+                args.addr2et) ):
             rslt = etg.find_edges_x2y(str(args.x),str(args.y),int(args.d))    
             if ( isinstance(rslt,list) and len(rslt) > 0 and
                  isinstance(rslt[0],list) ):
@@ -150,10 +184,21 @@ parser.add_argument('-e', '--etgraph', action='store',
                              default=None, dest='etgdir',
                              type=str,
                              help='Input entity graph csv directory')
+parser.add_argument('--et2addr', action='store',
+                             default=None, dest='et2addr',
+                             type=str,
+                             help='Convert entity to Bitcoin address(es)')
+parser.add_argument('--addr2et', action='store',
+                             default=None, dest='addr2et',
+                             type=str,
+                             help='Convert entity to Bitcoin address')
+
+
 parser.add_argument('-t', '--txgraph', action='store',
                              default=None, dest='txfile',
                              type=str,
                              help='Input transaction graph csv file')
+
 
 parser.add_argument('-f', '--find', action='store',
                              default=None, dest='fet',

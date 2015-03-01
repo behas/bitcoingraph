@@ -40,7 +40,10 @@ LISTSEP = ','
 EDGESORT = True
 
 import os
+import sys
 import csv
+csv.field_size_limit(sys.maxsize) # Fixes issue with very large csv fields 
+
 import operator
 import logging
 logger = logging.getLogger("graph")
@@ -522,6 +525,7 @@ class EntityGraph(Graph):
         if tx_data:
             self._tx_data = tx_data
         elif tx_graph_file:
+            self._logger.info("Generating entity graph form tx_graph_file")
             with open(tx_graph_file, newline='') as csvfile:
                 csv_reader = csv.DictReader(csvfile, delimiter=DELIMCHR,
                                             quotechar=QUOTECHR,
@@ -548,7 +552,8 @@ class EntityGraph(Graph):
         generator = self._generate_edges()
         for edge in generator:
             self.add_edge(edge)
-
+        
+        self._logger("Generated entity graph with {} entities and {} addresses".format(len(self._etdict),len(self._btcdict)))
         return 0
 
     def load_from_dir(self, et_graph_dir):
@@ -558,6 +563,7 @@ class EntityGraph(Graph):
         if not os.path.isdir(et_graph_dir):
             self._logger.error("Input entity graph directory is not a directory")
             return 1
+        self._logger.info("Loading entity graph from directory {}".format(et_graph_dir))
 
         # clear all data structures
         self._edges.clear()
@@ -582,11 +588,12 @@ class EntityGraph(Graph):
                     self._etdict[int(etmap[ENTITYID])] = btcaddrset
 
         # load bitcoin address mapping dict()
-        with open(et_graph_dir + "/btcmap.csv", 'r') as btcmapfp:
+        with open(et_graph_dir + "/" + BTCMAP, 'r') as btcmapfp:
             btcmapreader = csv.DictReader(btcmapfp,delimiter=DELIMCHR, quotechar=QUOTECHR)
             for btcmap in btcmapreader:
                 self._btcdict[str(btcmap[BTCADDR])] = int(btcmap[ENTITYID])
-
+        
+        self._logger.info("Loaded entiy graph with {} entities and {} addresses".format(len(self._etdict),len(self._btcdict)))
         return 0
 
     def export_to_csv(self, output_dir):
@@ -602,6 +609,8 @@ class EntityGraph(Graph):
         except OSError as exc:
             if not os.path.isdir(output_dir):
                 raise GraphException("Output direcotry is not a directory", exc)
+
+        self._logger.info("Exporting entity graph to directory {}".format(output_dir))
 
         # write entity graph
         with open(output_dir + "/" + ETG,'w') as etgfp:
@@ -633,6 +642,7 @@ class EntityGraph(Graph):
             for btcaddr in self._btcdict.items():
                 print(str(btcaddr[0]) + DELIMCHR + str(btcaddr[1]),file=btcmapfp)
 
+        self._logger.info("Exported entity graph with {} entities and {} addresses".format(len(self._etdict),len(self._btcdict)))
         return 0
 
     def get_entity_info(self,et):
