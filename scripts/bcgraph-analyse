@@ -68,23 +68,22 @@ def print_path(path):
 
 def analyse(args):
     if args.etgdir and not args.txfile:
-        analyse_et_graph(args)
+        logger.info("Starting entity graph analysis")
+        etg = bcgraph.load_et_graph_from_directory(args.etgdir, customlogger=logger)   
+        analyse_graph(etg,args)
     elif args.txfile and not args.etgdir:
-        analyse_tx_graph(args)
+        logger.info("Starting transaction graph analysis")
+        txg = bcgraph.load_tx_graph_from_file(args.txfile)
+        analyse_graph(txg,args)
     else:
         parser.print_help() 
 
-def analyse_tx_graph(args):
-    #TODO
-    pass
-
-def analyse_et_graph(args):
-    logger.info("Starting entity graph analyseis")
+def analyse_graph(graph,args):
     try:
-        etg = bcgraph.load_et_graph_from_directory(args.etgdir, customlogger=logger)   
+        etg = graph   
         if ( args.et2addr and not 
             (args.ffet or args.i or args.d or args.x or args.y or 
-             args.fet or args.addr2et) ):        
+             args.fet or args.addr2et or args.txfile) ):        
             rslt = etg.get_entity_info(str(args.et2addr))
             if isinstance(rslt,set) and len(rslt) > 0:
                 for addr in rslt:
@@ -96,7 +95,7 @@ def analyse_et_graph(args):
 
         if ( args.addr2et and not 
             (args.ffet or args.i or args.d or args.x or args.y or 
-             args.fet or args.et2addr) ):        
+             args.fet or args.et2addr or args.txfile) ):        
             rslt = etg.get_btcaddr_info(str(args.addr2et))
             if isinstance(rslt,int):
                 print(rslt)    
