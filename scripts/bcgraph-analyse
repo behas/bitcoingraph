@@ -45,14 +45,14 @@ def setup_logger(args):
 
 def print_edge_hdr(edge):
     keylst = list()
-    for key in edge.keys():
+    for key in sorted(edge.keys()):
         keylst.append(key)
     print(",".join(str(item) for item in keylst))
     return
 
 def print_edge(edge):
     linelst = list()
-    for key in edge.keys():
+    for key in sorted(edge.keys()):
         linelst.append(edge[key])
     print(",".join(str(item) for item in linelst))
     return
