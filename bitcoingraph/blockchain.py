@@ -372,6 +372,29 @@ class Transaction(BlockchainObject):
         """
         return self._raw_data['txid']
 
+    @property
+    def blockhash(self):
+        """
+        Returns hash of included block.
+
+        :return: block hash
+        :rtype: str
+        """
+        return self._raw_data['blockhash']
+
+    # Included block properties
+
+    def get_included_block_height(self):
+        """
+        Returns height of block this transaction is included in.
+
+        :return: block height
+        :rtype: int
+        """
+        block = self._blockchain.get_block_by_hash(self.blockhash)
+        return block.height
+
+
     # Input properties
 
     def get_inputs(self):
