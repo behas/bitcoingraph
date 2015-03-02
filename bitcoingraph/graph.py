@@ -553,7 +553,7 @@ class EntityGraph(Graph):
         for edge in generator:
             self.add_edge(edge)
         
-        self._logger("Generated entity graph with {} entities and {} addresses".format(len(self._etdict),len(self._btcdict)))
+        self._logger.info("Generated entity graph with {} entities and {} addresses".format(len(self._etdict),len(self._btcdict)))
         return 0
 
     def load_from_dir(self, et_graph_dir):
