@@ -130,6 +130,16 @@ class Block(BlockchainObject):
         return self._raw_data['hash']
 
     @property
+    def previousblockhash(self):
+        """
+        Reference to the previous block.
+
+        :return: previous block hash
+        :rtype: str
+        """
+        return self._raw_data['previousblockhash']
+
+    @property
     def nextblockhash(self):
         """
         Reference to the next block.
