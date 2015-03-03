@@ -137,7 +137,8 @@ block_height,edge,src,tgt,timestamp,txid,value
 ...
 183,102,2,2,1231742062,12b5633bad1f9c167d523ad1aa1947b2732a865bf5414eab2f9e5ae5d5c191ba,28.0
 248,178,2,2,1231790660,828ef3b079f9c23829c56fe86e85b4a69d9e06e5b54ea597eef5fb3ffef509fe,18.0
-
+```
+```
 $ python3.4 scripts/bcgraph-analyse -l DEBUG --logfile /tmp/analyse.log -t $PATHTOTESTDATA/tx_graph_1-1000.csv -f 12cbQLTFMXRnSzktFkuoG3eHoMeFtpTu3S
 block_height,edge,src,tgt,timestamp,txid,value
 170,171,12cbQLTFMXRnSzktFkuoG3eHoMeFtpTu3S,1Q2TWHE3GMdB6BZKafqwxXtWAWgFt5Jvm3,1231731025,f4184fc596403b9d638783cf57adfe4c75c605f6356fbc91338530e9831e9e16,10.0
@@ -154,7 +155,8 @@ $ python3.4 scripts/bcgraph-analyse -l DEBUG --logfile /tmp/analyse.log -t $PATH
 block_height,edge,src,tgt,timestamp,txid,value
 586,617,1ELmSkQWnqgbBZNzxAZHts3MEYCngqRBeD,19QKDUJtx9n7Vaga6nX1bVHdsnT4Khfyi6,1232029520,4d6edbeb62735d45ff1565385a8b0045f066055c9425e21540ea7a8060f08bf2,250.0
 417,429,COINBASE,1ELmSkQWnqgbBZNzxAZHts3MEYCngqRBeD,1231913658,193b51cd0c5a44bf6593e69fea91e9ddd311f610c5c23187552e3347b275b81b,50.0
-
+```
+```
 $ python3.4 scripts/bcgraph-analyse -l DEBUG --logfile /tmp/analyse.log -t $PATHTOTESTDATA/tx_graph_1-1000.csv -f 19QKDUJtx9n7Vaga6nX1bVHdsnT4Khfyi6
 block_height,edge,src,tgt,timestamp,txid,value
 586,620,1LfjLrBDYyPbvGMiD9jURxyAupdYujsBdK,19QKDUJtx9n7Vaga6nX1bVHdsnT4Khfyi6,1232029520,4d6edbeb62735d45ff1565385a8b0045f066055c9425e21540ea7a8060f08bf2,250.0
@@ -176,7 +178,8 @@ To only get the first occurence of a Bitcoin entitiy/address:
 $ python3.4 scripts/bcgraph-analyse -l DEBUG --logfile /tmp/analyse.log -e $PATHTOTESTDATA/et_graph_1-1000 -F 2
 block_height,edge,src,tgt,timestamp,txid,value
 9,919,1,2,1231473279,0437cd7f8525ceed2324359c2d0ba26006d92d856a9c20fa0241106ee5a597c9,50.0
-
+```
+```
 $ python3.4 scripts/bcgraph-analyse -l DEBUG --logfile /tmp/analyse.log -t $PATHTOTESTDATA/tx_graph_1-1000.csv -F 12cbQLTFMXRnSzktFkuoG3eHoMeFtpTu3S
 block_height,edge,src,tgt,timestamp,txid,value
 9,9,COINBASE,12cbQLTFMXRnSzktFkuoG3eHoMeFtpTu3S,1231473279,0437cd7f8525ceed2324359c2d0ba26006d92d856a9c20fa0241106ee5a597c9,50.0
@@ -189,11 +192,13 @@ Find a direct flow/edge between to bitcoin addresses or entities:
 $python3.4 scripts/bcgraph-analyse -l DEBUG --logfile /tmp/analyse.log -t $PATHTOTESTDATA/tx_graph_1-1000.csv -x 12cbQLTFMXRnSzktFkuoG3eHoMeFtpTu3S -y 1ByLSV2gLRcuqUmfdYcpPQH8Npm8cccsFg
 block_height,edge,src,tgt,timestamp,txid,value
 248,259,12cbQLTFMXRnSzktFkuoG3eHoMeFtpTu3S,1ByLSV2gLRcuqUmfdYcpPQH8Npm8cccsFg,1231790660,828ef3b079f9c23829c56fe86e85b4a69d9e06e5b54ea597eef5fb3ffef509fe,10.0
-
+```
+```
 $ python3.4 scripts/bcgraph-analyse -l DEBUG --logfile /tmp/analyse.log -e $PATHTOTESTDATA/et_graph_1-1000 -x 2 -y 5
 block_height,edge,src,tgt,timestamp,txid,value
 248,177,2,5,1231790660,828ef3b079f9c23829c56fe86e85b4a69d9e06e5b54ea597eef5fb3ffef509fe,10.0
-
+```
+```
 $ python3.4 scripts/bcgraph-analyse -l DEBUG --logfile /tmp/analyse.log -e $PATHTOTESTDATA/et_graph_1-1000 -x 2 -y 450
 No direct edge found
 ```
@@ -234,3 +239,17 @@ hop,block_height,edge,src,tgt,timestamp,txid,value
 1,248,177,2,5,1231790660,828ef3b079f9c23829c56fe86e85b4a69d9e06e5b54ea597eef5fb3ffef509fe,10.0
 2,496,455,5,450,1231965655,a3b0e9e7cddbbe78270fa4182a7675ff00b92872d8df7d14265a2b1e379a9d33,61.0
 ```
+
+
+
+# Contributors
+
+* [Bernhard Haslhofer](mailto:bernhard.haslhofer@ait.ac.at)
+
+# License
+
+This library is release Open Source under the [MIT license](http://opensource.org/licenses/MIT).
+ 
+[bc_core]: https://github.com/bitcoin/bitcoin "Bitcoin Core"
+[bc_conf]: https://en.bitcoin.it/wiki/Running_Bitcoin#Bitcoin.conf_Configuration_File "Bitcoin Core configuration file"
+
