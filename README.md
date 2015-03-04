@@ -92,6 +92,7 @@ The respective graphs can be found in the `./tests/data` directory. It is asumed
 
 ```
 export PATHTOTESTDATA="`pwd`/tests/data" #execute form git root dir
+export BCGANALYSE="python3.4 `pwd`scripts/bcgraph-analyse -l DEBUG --logfile /tmp/analyse.log"
 ``` 
 
 The examples use the following randomly chosen bitcoin addresses and entities:
@@ -103,9 +104,9 @@ The examples use the following randomly chosen bitcoin addresses and entities:
 To get the current entity mappings a valid entity graph in an apropriatly formated entity graph direcetory is required. 
 An example entity graph containing data from Bitcoin block 1 to 1000 can be found in `./tests/data/et_graph_1-1000`.
 ```
-$ python3.4 scripts/bcgraph-analyse -l DEBUG --logfile /tmp/analyse.log -e $PATHTOTESTDATA/et_graph_1-1000 --addr2et 12cbQLTFMXRnSzktFkuoG3eHoMeFtpTu3S
+$ $BCGANALYSE -e $PATHTOTESTDATA/et_graph_1-1000 --addr2et 12cbQLTFMXRnSzktFkuoG3eHoMeFtpTu3S
 2
-$ python3.4 scripts/bcgraph-analyse -l DEBUG --logfile /tmp/analyse.log -e $PATHTOTESTDATA/et_graph_1-1000 --et2addr 2
+$ $BCGANALYSE -e $PATHTOTESTDATA/et_graph_1-1000 --et2addr 2
 12cbQLTFMXRnSzktFkuoG3eHoMeFtpTu3S
 ```
 
@@ -130,7 +131,7 @@ One flow is composed as follows:
 
 Simple search for enity/address:
 ```
-$ python3.4 scripts/bcgraph-analyse -l DEBUG --logfile /tmp/analyse.log -e $PATHTOTESTDATA/et_graph_1-1000 -f 2
+$ $BCGANALYSE -e $PATHTOTESTDATA/et_graph_1-1000 -f 2
 block_height,edge,src,tgt,timestamp,txid,value
 170,82,2,96,1231731025,f4184fc596403b9d638783cf57adfe4c75c605f6356fbc91338530e9831e9e16,10.0
 170,83,2,2,1231731025,f4184fc596403b9d638783cf57adfe4c75c605f6356fbc91338530e9831e9e16,40.0
@@ -139,7 +140,7 @@ block_height,edge,src,tgt,timestamp,txid,value
 248,178,2,2,1231790660,828ef3b079f9c23829c56fe86e85b4a69d9e06e5b54ea597eef5fb3ffef509fe,18.0
 ```
 ```
-$ python3.4 scripts/bcgraph-analyse -l DEBUG --logfile /tmp/analyse.log -t $PATHTOTESTDATA/tx_graph_1-1000.csv -f 12cbQLTFMXRnSzktFkuoG3eHoMeFtpTu3S
+$ $BCGANALYSE -t $PATHTOTESTDATA/tx_graph_1-1000.csv -f 12cbQLTFMXRnSzktFkuoG3eHoMeFtpTu3S
 block_height,edge,src,tgt,timestamp,txid,value
 170,171,12cbQLTFMXRnSzktFkuoG3eHoMeFtpTu3S,1Q2TWHE3GMdB6BZKafqwxXtWAWgFt5Jvm3,1231731025,f4184fc596403b9d638783cf57adfe4c75c605f6356fbc91338530e9831e9e16,10.0
 170,172,12cbQLTFMXRnSzktFkuoG3eHoMeFtpTu3S,12cbQLTFMXRnSzktFkuoG3eHoMeFtpTu3S,1231731025,f4184fc596403b9d638783cf57adfe4c75c605f6356fbc91338530e9831e9e16,40.0
@@ -148,16 +149,16 @@ block_height,edge,src,tgt,timestamp,txid,value
 9,9,COINBASE,12cbQLTFMXRnSzktFkuoG3eHoMeFtpTu3S,1231473279,0437cd7f8525ceed2324359c2d0ba26006d92d856a9c20fa0241106ee5a597c9,50.0
 ```
 
-When working with an tranaction graph it is importent to know that there is no direct mapping from bitcoin address input to bitcoin address output in the Bitcoin protokoll.
+When working with an tranaction graph it is importent to know that there is **no** direct mapping from bitcoin address input to bitcoin address output in the Bitcoin protokoll.
 Therefore, if a bitcoin address is searched and found in as source addresse, it might be possible that there are also other source addresses within the respective tranaction e.g.:
 ```
-$ python3.4 scripts/bcgraph-analyse -l DEBUG --logfile /tmp/analyse.log -t $PATHTOTESTDATA/tx_graph_1-1000.csv -f 1ELmSkQWnqgbBZNzxAZHts3MEYCngqRBeD
+$ $BCGANALYSE -t $PATHTOTESTDATA/tx_graph_1-1000.csv -f 1ELmSkQWnqgbBZNzxAZHts3MEYCngqRBeD
 block_height,edge,src,tgt,timestamp,txid,value
 586,617,1ELmSkQWnqgbBZNzxAZHts3MEYCngqRBeD,19QKDUJtx9n7Vaga6nX1bVHdsnT4Khfyi6,1232029520,4d6edbeb62735d45ff1565385a8b0045f066055c9425e21540ea7a8060f08bf2,250.0
 417,429,COINBASE,1ELmSkQWnqgbBZNzxAZHts3MEYCngqRBeD,1231913658,193b51cd0c5a44bf6593e69fea91e9ddd311f610c5c23187552e3347b275b81b,50.0
 ```
 ```
-$ python3.4 scripts/bcgraph-analyse -l DEBUG --logfile /tmp/analyse.log -t $PATHTOTESTDATA/tx_graph_1-1000.csv -f 19QKDUJtx9n7Vaga6nX1bVHdsnT4Khfyi6
+$ $BCGANALYSE -t $PATHTOTESTDATA/tx_graph_1-1000.csv -f 19QKDUJtx9n7Vaga6nX1bVHdsnT4Khfyi6
 block_height,edge,src,tgt,timestamp,txid,value
 586,620,1LfjLrBDYyPbvGMiD9jURxyAupdYujsBdK,19QKDUJtx9n7Vaga6nX1bVHdsnT4Khfyi6,1232029520,4d6edbeb62735d45ff1565385a8b0045f066055c9425e21540ea7a8060f08bf2,250.0
 586,617,1ELmSkQWnqgbBZNzxAZHts3MEYCngqRBeD,19QKDUJtx9n7Vaga6nX1bVHdsnT4Khfyi6,1232029520,4d6edbeb62735d45ff1565385a8b0045f066055c9425e21540ea7a8060f08bf2,250.0
@@ -175,12 +176,12 @@ BDYyPbvGMiD9jURxyAupdYujsBdK;19QKDUJtx9n7Vaga6nX1bVHdsnT4Khfyi6;250.0;1232029520
 
 To only get the first occurence of a Bitcoin entitiy/address:
 ```
-$ python3.4 scripts/bcgraph-analyse -l DEBUG --logfile /tmp/analyse.log -e $PATHTOTESTDATA/et_graph_1-1000 -F 2
+$ $BCGANALYSE -e $PATHTOTESTDATA/et_graph_1-1000 -F 2
 block_height,edge,src,tgt,timestamp,txid,value
 9,919,1,2,1231473279,0437cd7f8525ceed2324359c2d0ba26006d92d856a9c20fa0241106ee5a597c9,50.0
 ```
 ```
-$ python3.4 scripts/bcgraph-analyse -l DEBUG --logfile /tmp/analyse.log -t $PATHTOTESTDATA/tx_graph_1-1000.csv -F 12cbQLTFMXRnSzktFkuoG3eHoMeFtpTu3S
+$ $BCGANALYSE -t $PATHTOTESTDATA/tx_graph_1-1000.csv -F 12cbQLTFMXRnSzktFkuoG3eHoMeFtpTu3S
 block_height,edge,src,tgt,timestamp,txid,value
 9,9,COINBASE,12cbQLTFMXRnSzktFkuoG3eHoMeFtpTu3S,1231473279,0437cd7f8525ceed2324359c2d0ba26006d92d856a9c20fa0241106ee5a597c9,50.0
 ```
@@ -189,23 +190,23 @@ block_height,edge,src,tgt,timestamp,txid,value
 
 Find a direct flow/edge between to bitcoin addresses or entities:
 ```
-$python3.4 scripts/bcgraph-analyse -l DEBUG --logfile /tmp/analyse.log -t $PATHTOTESTDATA/tx_graph_1-1000.csv -x 12cbQLTFMXRnSzktFkuoG3eHoMeFtpTu3S -y 1ByLSV2gLRcuqUmfdYcpPQH8Npm8cccsFg
+$$BCGANALYSE -t $PATHTOTESTDATA/tx_graph_1-1000.csv -x 12cbQLTFMXRnSzktFkuoG3eHoMeFtpTu3S -y 1ByLSV2gLRcuqUmfdYcpPQH8Npm8cccsFg
 block_height,edge,src,tgt,timestamp,txid,value
 248,259,12cbQLTFMXRnSzktFkuoG3eHoMeFtpTu3S,1ByLSV2gLRcuqUmfdYcpPQH8Npm8cccsFg,1231790660,828ef3b079f9c23829c56fe86e85b4a69d9e06e5b54ea597eef5fb3ffef509fe,10.0
 ```
 ```
-$ python3.4 scripts/bcgraph-analyse -l DEBUG --logfile /tmp/analyse.log -e $PATHTOTESTDATA/et_graph_1-1000 -x 2 -y 5
+$ $BCGANALYSE -e $PATHTOTESTDATA/et_graph_1-1000 -x 2 -y 5
 block_height,edge,src,tgt,timestamp,txid,value
 248,177,2,5,1231790660,828ef3b079f9c23829c56fe86e85b4a69d9e06e5b54ea597eef5fb3ffef509fe,10.0
 ```
 ```
-$ python3.4 scripts/bcgraph-analyse -l DEBUG --logfile /tmp/analyse.log -e $PATHTOTESTDATA/et_graph_1-1000 -x 2 -y 450
+$ $BCGANALYSE -e $PATHTOTESTDATA/et_graph_1-1000 -x 2 -y 450
 No direct edge found
 ```
 
 Find all `COINBASE` flows from mining to entity:
 ```
-$ python3.4 scripts/bcgraph-analyse -l DEBUG --logfile /tmp/analyse.log -e $PATHTOTESTDATA/et_graph_1-1000 -x 1 -y 9
+$ $BCGANALYSE -e $PATHTOTESTDATA/et_graph_1-1000 -x 1 -y 9
 block_height,edge,src,tgt,timestamp,txid,value
 268,201,1,9,1231807132,c3f0bb699bcc8a4e0716de45aef74c40aabeb80f7f00b3bdb45e115ee6f5400f,50.0
 417,367,1,9,1231913658,193b51cd0c5a44bf6593e69fea91e9ddd311f610c5c23187552e3347b275b81b,50.0
@@ -218,7 +219,7 @@ block_height,edge,src,tgt,timestamp,txid,value
 
 Find one indirect flow/edge between two bitcoin addresses or entities:
 ```
-$ python3.4 scripts/bcgraph-analyse -l DEBUG --logfile /tmp/analyse.log -e $PATHTOTESTDATA/et_graph_1-1000 -x 2 -y 450 -i 3
+$ $BCGANALYSE -e $PATHTOTESTDATA/et_graph_1-1000 -x 2 -y 450 -i 3
 hop,block_height,edge,src,tgt,timestamp,txid,value
 1,183,101,2,3,1231742062,12b5633bad1f9c167d523ad1aa1947b2732a865bf5414eab2f9e5ae5d5c191ba,1.0
 2,187,107,3,5,1231744600,4385fcf8b14497d0659adccfe06ae7e38e0b5dc95ff8a13d7c62035994a0cd79,1.0
@@ -230,7 +231,7 @@ The time complexity of this search is `O(b^d)` where `b` is the branching factor
 
 The following search shows two possible paths:
 ```
-$ python3.4 scripts/bcgraph-analyse -l DEBUG --logfile /tmp/analyse.log -e $PATHTOTESTDATA/et_graph_1-1000 -x 2 -y 450 -d 3
+$ $BCGANALYSE -e $PATHTOTESTDATA/et_graph_1-1000 -x 2 -y 450 -d 3
 hop,block_height,edge,src,tgt,timestamp,txid,value
 1,183,101,2,3,1231742062,12b5633bad1f9c167d523ad1aa1947b2732a865bf5414eab2f9e5ae5d5c191ba,1.0
 2,187,107,3,5,1231744600,4385fcf8b14497d0659adccfe06ae7e38e0b5dc95ff8a13d7c62035994a0cd79,1.0
