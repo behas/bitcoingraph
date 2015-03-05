@@ -256,8 +256,9 @@ class TestGraph(unittest.TestCase):
         self.graph.add_edge(edge888)
 
         edgeslist = self.graph.find_edges_x2y("A","F",4)
-        self.assertTrue(len(edgeslist) == 5, "Invalid number of Paths")
+        self.assertTrue(len(edgeslist) == 3, "Invalid number of Paths")
 
+        #invalid contition
         #self.assertIn(edge7, edgeslist)
 
         for edges in edgeslist:
