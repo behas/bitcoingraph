@@ -222,15 +222,18 @@ class Graph(object):
         depth of d.
         This uses a modified IDDFS (Iterative Deepening Depth-First Search).
         """
+        if x == y:
+            return list()
         path = list()
         self._paths = list()
         loopset = set()
-        self._find_all_x2y(x,y,d,path,loopset)
+        #loopset.add(x) # to add starting node to set 
+        self._find_all_x2y(x,y,d,path,loopset.copy())
         return self._paths
 
     def _find_all_x2y(self,x,y,d,path,loopset):
         if d <= 0 or not self._edges.get(x):
-            # stop if depth reached or edge not found error
+            # stop if depth reached or source not found error
             return
 
         for edge in self._edges[x]:
@@ -239,7 +242,8 @@ class Graph(object):
                 continue
             if edge[DST] in loopset:
                 # detect loop
-                continue 
+                continue
+            loopset.add(edge[SRC]) # to add starting node to set 
             loopset.add(edge[DST])
             path.append(edge)
             if (edge[DST] is not None and edge[DST] == y):
@@ -247,6 +251,7 @@ class Graph(object):
             else:
                 self._find_all_x2y(edge[DST],y,d-1,path.copy(),loopset.copy())
             path.pop()
+            loopset.pop()
         return
 
 
