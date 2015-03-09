@@ -70,10 +70,11 @@ class Graph(object):
 
     TODO: wrap third party library
     """
-    def __init__(self,copydata=False):
+    def __init__(self,copydata=False,customlogger=logger):
         self._edges = dict()
         self._edge_ids = list()
         self._copydata = copydata
+        self._logger = customlogger
 
     def add_edge(self, edge):
         """
@@ -227,7 +228,7 @@ class Graph(object):
         path = list()
         self._paths = list()
         loopset = set()
-        #loopset.add(x) # to add starting node to set 
+        loopset.add(x) # to add starting node to set 
         self._find_all_x2y(x,y,d,path,loopset.copy())
         return self._paths
 
@@ -243,7 +244,6 @@ class Graph(object):
             if edge[DST] in loopset:
                 # detect loop
                 continue
-            loopset.add(edge[SRC]) # to add starting node to set 
             loopset.add(edge[DST])
             path.append(edge)
             if (edge[DST] is not None and edge[DST] == y):
@@ -251,7 +251,7 @@ class Graph(object):
             else:
                 self._find_all_x2y(edge[DST],y,d-1,path.copy(),loopset.copy())
             path.pop()
-            loopset.pop()
+            loopset.remove(edge[DST])
         return
 
 
@@ -269,7 +269,8 @@ class TransactionGraph(Graph):
         """
         if blockchain is not None:
             self._blockchain = blockchain
-        super().__init__()
+
+        super().__init__(customlogger = logger)
 
     def generate_from_blockchain(self, start_block=None, end_block=None):
         """
@@ -394,7 +395,7 @@ class EntityGraph(Graph):
     Generator for Entity Graphs from transaction graphs
     Memory intensive variant.
     """
-    def __init__(self, customlogger=None, map_all_txout=True):
+    def __init__(self, customlogger=logger, map_all_txout=True):
         """
         Creates entity graph view based on transaction graph.
         """
@@ -403,12 +404,8 @@ class EntityGraph(Graph):
         self._btcdict = dict()  # dict() with btc addresses as key
         self._txoutset = set()
         self._map_all_txout = map_all_txout # Flag for mapping all txoutputs
-        if customlogger:
-            self._logger = customlogger
-        else:
-            self._logger = logger
 
-        super().__init__()
+        super().__init__(customlogger=customlogger)
 
         return
 

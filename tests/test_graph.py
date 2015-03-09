@@ -7,15 +7,47 @@ from bitcoingraph.blockchain import BlockChain
 from tests.rpc_mock import BitcoinProxyMock
 
 
-TEST_CSV = 'tests/data/tx_graph.csv'
+LOG = True
+LOGFILE = "/tmp/test_graph.log"
+LOGLVL = "DEBUG"
 
+TEST_CSV = 'tests/data/tx_graph.csv'
 
 class TestGraph(unittest.TestCase):
 
     def setUp(self):
-        self.graph = Graph()
+        self.graph = Graph(customlogger=self._logger)
+
+    @classmethod
+    def setUpClass(cls):
+        """ 
+        config logging if available and initialize edges 
+        """
+        if LOG:
+            formatter = logging.Formatter( '%(levelname)s \t- %(message)s' )
+            numeric_level = getattr(logging, LOGLVL , None)
+            cls._logger = logging.getLogger("test")
+            cls._logger.setLevel(level=numeric_level)
+
+            cls._logfile = logging.FileHandler( LOGFILE,mode='a',encoding=None,delay=False)
+            cls._logfile.setLevel( numeric_level )
+            cls._logfile.setFormatter( formatter )
+            cls._logger.addHandler( cls._logfile )
+
+    @classmethod
+    def tearDownClass(cls):
+        """
+        close logger if available and delete edges
+        """
+        if LOG:
+            cls._logfile.close()
+            logging.shutdown()
+            del cls._logfile
+            del cls._logger
+
 
     def test_add_edge(self):
+        
         edge1 = { SRC: 'A', DST: 'B' }
         self.graph.add_edge(edge1)
         self.assertEqual(1, self.graph.count_edges())
@@ -256,7 +288,13 @@ class TestGraph(unittest.TestCase):
         self.graph.add_edge(edge888)
 
         edgeslist = self.graph.find_edges_x2y("A","F",4)
-        self.assertTrue(len(edgeslist) == 3, "Invalid number of Paths")
+        n = 0
+        for edges in edgeslist:
+            self._logger.debug("Path {} of {}".format(n,len(edgeslist)))
+            n += 1
+            for edge in edges:
+                self._logger.debug("\t{}".format(edge))
+        self.assertTrue(len(edgeslist) == 4, "Invalid number of Paths")
 
         #invalid contition
         #self.assertIn(edge7, edgeslist)
