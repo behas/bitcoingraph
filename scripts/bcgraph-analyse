@@ -96,7 +96,7 @@ def analyse_graph(graph,args):
         if ( args.addr2et and not 
             (args.ffet or args.i or args.d or args.x or args.y or 
              args.fet or args.et2addr or args.txfile) ):        
-            rslt = etg.get_btcaddr_info(str(args.addr2et))
+            rslt = etg.get_btcaddr_entity(str(args.addr2et))
             if isinstance(rslt,int):
                 print(rslt)    
                 sys.exit(0)

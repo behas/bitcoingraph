@@ -26,15 +26,25 @@ BTCADDRS = "btc_addrs"
 # btcmap specific csv header field
 BTCADDR = "btc_addr"
 
+# etid map specific csv header fields
+META = "meta"
+
 # entity graph output files
 ETG = "etg.csv"
 ETMAP = "etmap.csv"
 BTCMAP = "btcmap.csv"
+BTCIDMAP = "etidmap.csv"
 
 # csv special chars
 DELIMCHR = ';'
 QUOTECHR = '|'
 LISTSEP = ','
+
+# self._btc mapping specific fields
+BTCET = "entity"     # current entity mapping
+BTCID = "id"         # id reference or None
+BTCMCOUNT = "mcount" # mapping counter
+from collections import defaultdict 
 
 # ensure list is sorted, has an impact on performance
 EDGESORT = True
@@ -400,14 +410,33 @@ class EntityGraph(Graph):
         Creates entity graph view based on transaction graph.
         """
         self._tx_data = list()
-        self._etdict = dict()   # dict() with entities as key
-        self._btcdict = dict()  # dict() with btc addresses as key
-        self._txoutset = set()
+        self._etbtc = dict() # { entity_id: [ btcaddr,btcaddr,... ] }
+        #self._btcet = dict() # { btcaddr: entity_id }
+        self._btcet = defaultdict( dict ) # { btcaddr: { "entity": entity_id , "id": id or None, "mapcount": count }
+        #self._etid = dict()  # { entity_id: [ btcaddr,btcaddr,... ] } # subset of btcaddresses
         self._map_all_txout = map_all_txout # Flag for mapping all txoutputs
 
         super().__init__(customlogger=customlogger)
 
         return
+
+    def get_entity_info(self,et):
+        if int(et) in self._etbtc.keys():
+            return self._etbtc.get(int(et))
+        else:
+            return set() #undefined
+
+    def get_btcaddr_info(self,addr):
+        if str(addr) in self._btcet.keys():
+            return self._btcet.get(str(addr))
+        else:
+            return dict() #undefined
+
+    def get_btcaddr_entity(self,addr):
+        if str(addr) in self._btcet.keys():
+            return self._btcet.get(str(addr))[BTCET]
+        else:
+            return 0 #undefined
 
     def sort_tx_data(self):
         """
@@ -416,6 +445,39 @@ class EntityGraph(Graph):
         low BLOCKIDs which should reduce entity changes
         """
         self._tx_data.sort(key = operator.itemgetter(BLOCKID, TXID))
+ 
+    def unite_entities(self,entitylist):
+        """
+        Unite alle given entities into the entity with the smales id
+        """
+        entityset = set(entitylist) # remove doublicates
+        entity_id = min(entityset)
+        for et in entityset:
+            if not et in self._etbtc.keys():
+                # skip unknown/invalid entity values
+                self._logger.error("Invalid entity detected during union: {}".format(et))
+                continue
+            if et != entity_id:
+                # update all entities dispite the minimum
+                for btcaddr in self._etbtc[et]:
+                    # update current btc->entity mapping
+                    self._btcet[btcaddr][BTCET] = entity_id
+
+                # union the entity mappings which merge to one single entity
+                self._etbtc[entity_id] = self._etbtc[entity_id].union(self._etbtc[et])
+                self._etbtc[et] = None
+            """
+            if ( len(self._etid) > 0  and 
+                 et in self._etid.keys() ): 
+                # merge entity id mapping if available 
+                if not entity_id in self._etid.keys() :
+                    # create empty set if new
+                    self._etid[entity_id] = set()
+                # union the entity id mappings to merge
+                self._etid[entity_id] = self._etid[entity_id].union(self._etid[et])
+                self._etid[et] = None
+            """
+        return entity_id
 
     def _handle_tx_inputs(self, record):
         """
@@ -434,35 +496,26 @@ class EntityGraph(Graph):
                 self._logger.debug("Found invalid tx input address. Ignoring input in record: {}".format(record))
                 continue
 
-            if addr in self._btcdict.keys():
-                entityset.add(self._btcdict[addr])
+            if addr in self._btcet.keys():
+                entityset.add(self._btcet[addr][BTCET])
             # create set of all unique source addresses
             btcaddrset.add(addr)
 
         if len(entityset) > 0:
             # handle entity collision and add new btc src addresses
-            entity_id = min(entityset)
-            for et in entityset:
-                if et != entity_id:
-                    for btcaddr in self._etdict[et]:
-                        # update current btc->entity mapping
-                        self._btcdict[btcaddr] = entity_id
-
-                    # union the entity mappings which merge to one single entity
-                    self._etdict[entity_id] = self._etdict[entity_id].union(self._etdict[et])
-                    self._etdict[et] = None
+            entity_id = self.unite_entities(entityset)
 
             # add new btc addresses to entity->btc dict
             for btcaddr in btcaddrset:
-                self._etdict[entity_id].add(btcaddr)
+                self._etbtc[entity_id].add(btcaddr)
         else:
             # generate new entity and add new btc src addresses
-            entity_id = len(self._etdict)+1
-            self._etdict[entity_id] = btcaddrset
+            entity_id = len(self._etbtc)+1
+            self._etbtc[entity_id] = btcaddrset
 
         # add Bitcoin source address to btc->entity dict
         for btcaddr in btcaddrset:
-            self._btcdict[btcaddr] = entity_id
+            self._btcet[btcaddr][BTCET] = entity_id
 
 
     def _generate_entity_mapping(self):
@@ -484,10 +537,10 @@ class EntityGraph(Graph):
             # map all remaining tx outputs which
             # have not been used as inputs
             for record in self._tx_data:
-                if record[DST] not in self._btcdict:
-                    entity_id = len(self._etdict)+1
-                    self._etdict[entity_id]  = set([record[DST]])
-                    self._btcdict[record[DST]] = entity_id
+                if record[DST] not in self._btcet.keys():
+                    entity_id = len(self._etbtc)+1
+                    self._etbtc[entity_id]  = set([record[DST]])
+                    self._btcet[record[DST]][BTCET] = entity_id
 
         self._logger.info("Finished entity graph generation.")
         return 0
@@ -507,15 +560,15 @@ class EntityGraph(Graph):
             entity_src = 0 # undefined entity
             entity_dst = 0
             for addr in record[SRC]:
-                if addr in self._btcdict.keys():
-                    entityset.add(self._btcdict[addr])
+                if addr in self._btcet.keys():
+                    entityset.add(self._btcet[addr][BTCET])
             if len(entityset) == 1:
                 entity_src = entityset.pop()
             elif len(entityset) > 1:
                 self._logger.error("Invalid entity mapping of record {}".format(record))
 
-            if record[DST] in self._btcdict.keys():
-                entity_dst = self._btcdict[record[DST]]
+            if record[DST] in self._btcet.keys():
+                entity_dst = self._btcet[record[DST]][BTCET]
             et_edge = dict()
             et_edge[TXID] = record[TXID]
             et_edge[SRC] = str(entity_src)
@@ -561,8 +614,10 @@ class EntityGraph(Graph):
         for edge in generator:
             self.add_edge(edge)
         
-        self._logger.info("Generated entity graph with {} entities and {} addresses".format(len(self._etdict),len(self._btcdict)))
+        self._logger.info("Generated entity graph with {} entities and {} addresses".format(len(self._etbtc),len(self._btcet)))
         return 0
+
+
 
     def load_from_dir(self, et_graph_dir):
         """
@@ -575,40 +630,71 @@ class EntityGraph(Graph):
 
         # clear all data structures
         self._edges.clear()
-        self._etdict.clear()
-        self._btcdict.clear()
+        self._etbtc.clear()
+        self._btcet.clear()
+        try:
+            path = et_graph_dir + "/" + ETG
+            self._import_etg(path)
+            path = et_graph_dir + "/" + ETMAP
+            self._import_etmap(path)      
+            path = et_graph_dir + "/" + BTCMAP
+            self._import_btcmap(path)
+            path = et_graph_dir + "/" + BTCIDMAP
+            if os.path.isfile(path):
+                self.import_btcidmap(path)
+        except:
+            e = sys.exc_info()[0]
+            self._logger.error("Error importing data: {}".format(e))
+            raise 
 
-        # load edges
-        with open(et_graph_dir + "/" + ETG,'r') as etgfp:
-            etgreader = csv.DictReader(etgfp,delimiter=DELIMCHR, quotechar=QUOTECHR)
-            for edge in etgreader:
+        self._logger.info("Loaded entiy graph with {} entities and {} addresses".format(len(self._etbtc),len(self._btcet)))
+        return 0
+
+    def _import_etg(self, etg_csv):
+        """ import entity graph edges from csv """
+        with open(etg_csv,'r') as fp:
+            fr = csv.DictReader(fp,delimiter=DELIMCHR, quotechar=QUOTECHR)
+            for edge in fr:
                 self.add_edge(edge)
 
-        # load entity mapping dict()
-        with open(et_graph_dir + "/" + ETMAP, 'r') as etmapfp:
-            etmapreader = csv.DictReader(etmapfp,delimiter=DELIMCHR, quotechar=QUOTECHR)
-            for etmap in etmapreader:
-                if etmap[BTCADDRS] == "None":
-                    self._etdict[int(etmap[ENTITYID])] = None
+    def _import_etmap(self, etmap_csv):
+        """ import entity mapping dict() """
+        with open(etmap_csv, 'r') as fp:
+            fr = csv.DictReader(fp,delimiter=DELIMCHR, quotechar=QUOTECHR)
+            for line in fr:
+                if line[BTCADDRS] == "None":
+                    self._etbtc[int(line[ENTITYID])] = None
                 else:
                     btcaddrset = set()
-                    for i in str(etmap[BTCADDRS]).split(): btcaddrset.add(i)
-                    self._etdict[int(etmap[ENTITYID])] = btcaddrset
+                    for i in str(line[BTCADDRS]).split(): btcaddrset.add(i)
+                    self._etbtc[int(line[ENTITYID])] = btcaddrset
 
-        # load bitcoin address mapping dict()
-        with open(et_graph_dir + "/" + BTCMAP, 'r') as btcmapfp:
-            btcmapreader = csv.DictReader(btcmapfp,delimiter=DELIMCHR, quotechar=QUOTECHR)
-            for btcmap in btcmapreader:
-                self._btcdict[str(btcmap[BTCADDR])] = int(btcmap[ENTITYID])
-        
-        self._logger.info("Loaded entiy graph with {} entities and {} addresses".format(len(self._etdict),len(self._btcdict)))
-        return 0
+    def _import_btcmap(self, btcmap_csv):
+        """ import bitcoin address mapping dict() """
+        n = 0
+        with open(btcmap_csv, 'r') as fp:
+            fr = csv.DictReader(fp,delimiter=DELIMCHR, quotechar=QUOTECHR)
+            for line in fr:
+                self._btcet[str(line[BTCADDR])][BTCET] = int(line[ENTITYID])
+
+    def import_btcidmap(self, btcidmap_csv):
+        """ Import etid mapping data from csv """
+        n = 0
+        with open(btcidmap_csv, 'r') as fp:
+            fr = csv.DictReader(fp,delimiter=DELIMCHR, quotechar=QUOTECHR)
+            for line in fr:
+                if line[BTCADDR] in self._btcet.keys():
+                    self._btcet[line[BTCADDR]][BTCID] = True
+                    n += 1
+        return n
+
+
 
     def export_to_csv(self, output_dir):
         """
         Export entity graph data to ouptput directory
         """
-        if (len(self._btcdict) == 0 or len(self._etdict) == 0 or len(self._edges) == 0):
+        if (len(self._btcet) == 0 or len(self._etbtc) == 0 or len(self._edges) == 0):
             self._logger.error("EntityGraph not initialized")
             return 1
 
@@ -620,49 +706,66 @@ class EntityGraph(Graph):
 
         self._logger.info("Exporting entity graph to directory {}".format(output_dir))
 
-        # write entity graph
-        with open(output_dir + "/" + ETG,'w') as etgfp:
-            fieldnames = [ SRC, DST, EDGE, TXID, BTC, TIMESTAMP, BLOCKID  ]
-            csv_writer = csv.DictWriter(etgfp,
-                                        delimiter=DELIMCHR,
-                                        quotechar=QUOTECHR,
-                                        fieldnames=fieldnames,
-                                        quoting=csv.QUOTE_MINIMAL)
-            csv_writer.writeheader()
-            for edge in self.list_edges():
-                csv_writer.writerow(edge)
+        try:
+            path = output_dir + "/" + ETG
+            self._export_etg(path) 
+            path = output_dir + "/" + ETMAP
+            self._export_etmap(path)
+            path = output_dir + "/" + BTCMAP
+            self._export_btcmap(path)
+            path = output_dir + "/" + BTCIDMAP
+            self._export_btcidmap(path)
+        except:     
+            e = sys.exc_info()[0]
+            self._logger.error("Error exporting data: {}".format(e))
+            raise 
 
-        # write entity mapping
-        with open(output_dir + "/" + ETMAP,'w') as etmapfp:
-            print(ENTITYID + DELIMCHR + BTCADDRS,file=etmapfp)
-            for entity in self._etdict.items():
-                print(str(entity[0]) + DELIMCHR,file=etmapfp,end='')
-                if (entity[1] == None):
-                    print('None',file=etmapfp)
-                else:
-                    for btcaddr in entity[1]:
-                        print(str(btcaddr) + " ",file=etmapfp,end='')
-                    print('',file=etmapfp)
-
-        # write btc mapping
-        with open(output_dir + "/" + BTCMAP ,'w') as btcmapfp:
-            print(BTCADDR + DELIMCHR + ENTITYID,file=btcmapfp)
-            for btcaddr in self._btcdict.items():
-                print(str(btcaddr[0]) + DELIMCHR + str(btcaddr[1]),file=btcmapfp)
-
-        self._logger.info("Exported entity graph with {} entities and {} addresses".format(len(self._etdict),len(self._btcdict)))
+        self._logger.info("Exported entity graph with {} entities and {} addresses".format(len(self._etbtc),len(self._btcet)))
         return 0
 
-    def get_entity_info(self,et):
-        if int(et) in self._etdict.keys():
-            return self._etdict.get(int(et))
-        else:
-            return set() #undefined
+    def _export_etg(self, etg_csv):
+        """ export entity graph edges to csv file """
+        with open(etg_csv,'w') as fp:
+           fieldnames = [ SRC, DST, EDGE, TXID, BTC, TIMESTAMP, BLOCKID  ]
+           csv_writer = csv.DictWriter(fp,
+                                       delimiter=DELIMCHR,
+                                       quotechar=QUOTECHR,
+                                       fieldnames=fieldnames,
+                                       quoting=csv.QUOTE_MINIMAL)
+           csv_writer.writeheader()
+           for edge in self.list_edges():
+               csv_writer.writerow(edge) 
 
-    def get_btcaddr_info(self,addr):
-        if str(addr) in self._btcdict.keys():
-            return self._btcdict.get(str(addr))
-        else:
-            return 0 #undefined
+    def _export_etmap(self, etmap_csv):
+        """ export entity mapping to csv file """
+        with open(etmap_csv,'w') as fp:
+            print(ENTITYID + DELIMCHR + BTCADDRS,file=fp)
+            for entity in self._etbtc.items():
+                print(str(entity[0]) + DELIMCHR,file=fp,end='')
+                if (entity[1] == None):
+                    print('None',file=fp)
+                else:
+                    for btcaddr in entity[1]:
+                        print(str(btcaddr) + " ",file=fp,end='')
+                    print('',file=fp)
 
+    def _export_btcmap(self, btcmap_csv):
+        """ export btcaddr mapping to csv file """
+        with open(btcmap_csv,'w') as fp:
+            print(BTCADDR + DELIMCHR + ENTITYID,file=fp)
+            for btcaddr in self._btcet.items():
+                #print(str(btcaddr[0]) + DELIMCHR + 
+                #      str(btcaddr[1][BTCET]) + DELIMCHR +
+                #      str(btcaddr[1][BTCID]),file=btcmapfp)
+                print(str(btcaddr[0]) + DELIMCHR + 
+                      str(btcaddr[1][BTCET]),file=fp)
 
+    def _export_btcidmap(self, btcidmap_csv):
+        """ export btcid mapping to csv file """
+        with open(btcidmap_csv, 'w') as fp:
+            print(BTCADDR + DELIMCHR, file=fp)
+            for btcaddr in self._btcet.items():
+                if ( BTCID in btcaddr[1].keys() and
+                     btcaddr[1][BTCID] ) :
+                    # if there is a btcid set, export btcaddr
+                    print(str(btcaddr[0]) + DELIMCHR,file=fp)
