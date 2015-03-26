@@ -405,7 +405,7 @@ class EntityGraph(Graph):
     Generator for Entity Graphs from transaction graphs
     Memory intensive variant.
     """
-    def __init__(self, customlogger=logger, map_all_txout=True):
+    def __init__(self, customlogger=None, map_all_txout=True):
         """
         Creates entity graph view based on transaction graph.
         """
@@ -415,8 +415,11 @@ class EntityGraph(Graph):
         self._btcet = defaultdict( dict ) # { btcaddr: { "entity": entity_id , "id": id or None, "mapcount": count }
         #self._etid = dict()  # { entity_id: [ btcaddr,btcaddr,... ] } # subset of btcaddresses
         self._map_all_txout = map_all_txout # Flag for mapping all txoutputs
-
-        super().__init__(customlogger=customlogger)
+    
+        if customlogger:
+            super().__init__(customlogger=customlogger)
+        else:
+            super().__init__()
 
         return
 
@@ -738,21 +741,21 @@ class EntityGraph(Graph):
 
     def _export_etmap(self, etmap_csv):
         """ export entity mapping to csv file """
-        with open(etmap_csv,'w') as fp:
-            print(ENTITYID + DELIMCHR + BTCADDRS,file=fp)
+        with open(etmap_csv, 'w') as fp:
+            print(ENTITYID + DELIMCHR + BTCADDRS, file=fp)
             for entity in self._etbtc.items():
-                print(str(entity[0]) + DELIMCHR,file=fp,end='')
+                print(str(entity[0]) + DELIMCHR, file=fp,end='')
                 if (entity[1] == None):
                     print('None',file=fp)
                 else:
                     for btcaddr in entity[1]:
-                        print(str(btcaddr) + " ",file=fp,end='')
+                        print(str(btcaddr) + " ", file=fp, end='')
                     print('',file=fp)
 
     def _export_btcmap(self, btcmap_csv):
         """ export btcaddr mapping to csv file """
         with open(btcmap_csv,'w') as fp:
-            print(BTCADDR + DELIMCHR + ENTITYID,file=fp)
+            print(BTCADDR + DELIMCHR + ENTITYID, file=fp)
             for btcaddr in self._btcet.items():
                 #print(str(btcaddr[0]) + DELIMCHR + 
                 #      str(btcaddr[1][BTCET]) + DELIMCHR +
