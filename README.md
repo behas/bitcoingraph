@@ -2,6 +2,7 @@ Bitcoingraph - A Python library for extracting and navigating graph structures f
 
 [![Build Status](https://travis-ci.org/behas/bitcoingraph.svg?branch=develop)](https://travis-ci.org/behas/bitcoingraph)
 
+[![Coverage Status](https://coveralls.io/repos/behas/bitcoingraph/badge.svg)](https://coveralls.io/r/behas/bitcoingraph)
 
 # Prerequesites
 
