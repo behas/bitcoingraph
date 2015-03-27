@@ -36,7 +36,7 @@ setup(
     # Basic info
     name='bitcoingraph',
     version=bitcoingraph.__version__,
-    url='https://bitbucket.org/bhaslhofer/bitcoingraph',
+    url='https://github.com/behas/bitcoingraph.git',
 
     # Author
     author='Bernhard Haslhofer',
@@ -49,7 +49,7 @@ setup(
 
     # Package information
     packages=['bitcoingraph'],
-    scripts=['scripts/bcgraph-generate'],
+    scripts=['scripts/bcgraph-generate', 'bcgraph-analyse'],
     platforms='any',
     install_requires=['requests>=2.5.0'],
 

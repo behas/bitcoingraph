@@ -56,12 +56,13 @@ Bitcoingraph is being developed in Python 3.4. Make sure it is running on your m
 
 Now clone Bitcoingraph...
 
-    git clone git@bitbucket.org:bhaslhofer/bitcoingraph.git
+    git clone https://github.com/behas/bitcoingraph.git
 
 
 ...test and install the Bitcoingraph library:
 
     cd bitcoingraph
+    pip install -r requirements.txt
     python setup.py test
     python setup.py install
 
@@ -70,30 +71,34 @@ Now clone Bitcoingraph...
 # bcgraph-generate usage
 
 
-## Export transaction graph CSV from blockchain
+## Export blockchain transactions to CSV
+
 The Bitcoin blockchain is a pretty large thing. It is recommended to export blockchain subsets, defined by block height range. The following command exports all transactions contained in block range 1 to 1000.
 
     bcgraph-generate tx_graph 1 1000 -s localhost:8332 -u your_rpcuser -p your_rpcpass -o tx_graph_1_1000.csv
 
 
-## Export entity graph CSVs from given transaction graph
+## Create entity graph from previously exported blockchain transactions
+
+Assuming you previously exported transactions to a file `tx_graph.csv`, then you can generate the entity graph. Associated graph files will be stored in a specific output directory (e.g., `etgraph`).
 
     bcgraph-generate et_graph -t tx_graph.csv -o etgraph
 
 
 
-
-# bcgraph-analyse usage 
-
+# bcgraph-analyse usage
 
 
-Some usage example for search queries. All examples are performed on the graphs containing infromation form the first 1000 Bitcoin blocks. 
+This script provides command line procedures for running basic analytics procedures on the extracted transaction and entity graphs.
+
+Here are some usage example for search queries. All examples are performed on the graphs containing infromation form the first 1000 Bitcoin blocks.
+
 The respective graphs can be found in the `./tests/data` directory. It is asumed the the complete path to the test directory is exported as `$PATHTOTESTDATA` for all following examples.
 
 ```
 export PATHTOTESTDATA="`pwd`/tests/data" #execute form git root dir
 export BCGANALYSE="python3.4 `pwd`scripts/bcgraph-analyse -l DEBUG --logfile /tmp/analyse.log"
-``` 
+```
 
 The examples use the following randomly chosen bitcoin addresses and entities:
 * `12cbQLTFMXRnSzktFkuoG3eHoMeFtpTu3S` mapped to entity `2` in the first 1000 blocks
@@ -101,7 +106,7 @@ The examples use the following randomly chosen bitcoin addresses and entities:
 * `1BBz9Z15YpELQ4QP5sEKb1SwxkcmPb5TMs` mapped to entity `450` in the first 1000 blocks
 
 ## Get current entity mappings
-To get the current entity mappings a valid entity graph in an apropriatly formated entity graph direcetory is required. 
+To get the current entity mappings a valid entity graph in an apropriatly formated entity graph direcetory is required.
 An example entity graph containing data from Bitcoin block 1 to 1000 can be found in `./tests/data/et_graph_1-1000`.
 ```
 $ $BCGANALYSE -e $PATHTOTESTDATA/et_graph_1-1000 --addr2et 12cbQLTFMXRnSzktFkuoG3eHoMeFtpTu3S
@@ -110,15 +115,15 @@ $ $BCGANALYSE -e $PATHTOTESTDATA/et_graph_1-1000 --et2addr 2
 12cbQLTFMXRnSzktFkuoG3eHoMeFtpTu3S
 ```
 
-## Find flow/edge by bitcoin address or entity 
-Both graphs (tranaction and entity) can be searched for entities or bitcoin addresses the same way. 
+## Find flow/edge by bitcoin address or entity
+Both graphs (tranaction and entity) can be searched for entities or bitcoin addresses the same way.
 It should be noted, that the order of the results is not necessaryly the same for tranaction graph and entity graph.
-Moreover the order can change over time since the entity graph as well as the transaction graph evolve. 
-So do not except the order to be stable. 
+Moreover the order can change over time since the entity graph as well as the transaction graph evolve.
+So do not except the order to be stable.
 
 The repective results are in *csv* format, where one line represents an edge in the tranaction/entity graph.
-In both graphs a line represents a bitcoin flow form source to destination, but the fields 
-are slightly different depening on the queried graph. 
+In both graphs a line represents a bitcoin flow form source to destination, but the fields
+are slightly different depening on the queried graph.
 
 One flow is composed as follows:
 * *block_height* The block id of the respective block containing the summarized information of this line.
@@ -226,7 +231,7 @@ hop,block_height,edge,src,tgt,timestamp,txid,value
 3,496,455,5,450,1231965655,a3b0e9e7cddbbe78270fa4182a7675ff00b92872d8df7d14265a2b1e379a9d33,61.0
 ```
 
-Find all indirect or direct flows/edges between two bitcoin addresses or entities with depth `d`. 
+Find all indirect or direct flows/edges between two bitcoin addresses or entities with depth `d`.
 The time complexity of this search is `O(b^d)` where `b` is the branching factor of the graph.
 
 The following search shows two possible paths:
@@ -250,7 +255,7 @@ hop,block_height,edge,src,tgt,timestamp,txid,value
 # License
 
 This library is release Open Source under the [MIT license](http://opensource.org/licenses/MIT).
- 
+
 [bc_core]: https://github.com/bitcoin/bitcoin "Bitcoin Core"
 [bc_conf]: https://en.bitcoin.it/wiki/Running_Bitcoin#Bitcoin.conf_Configuration_File "Bitcoin Core configuration file"
 
