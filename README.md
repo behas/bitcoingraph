@@ -1,11 +1,6 @@
 Bitcoingraph - A Python library for extracting and navigating graph structures from the Bitcoin block chain.
 
-.. image:: https://travis-ci.org/bitcoingraph/bitcoingraph.png?branch=develop
-  :target: https://travis-ci.org/bitcoingraph/bitcoingraph
-  :alt: Build status
-.. image:: https://coveralls.io/repos/bitcoingraph/bitcoingraph/badge.svg?branch=develop
-  :target: https://coveralls.io/r/bitcoingraph/bitcoingraph
-  :alt: Test coverage
+[![Build Status](https://travis-ci.org/behas/bitcoingraph.svg?branch=develop)](https://travis-ci.org/behas/bitcoingraph)
 
 
 # Prerequesites
