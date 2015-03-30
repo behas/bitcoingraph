@@ -26,25 +26,25 @@ BTCADDRS = "btc_addrs"
 # btcmap specific csv header field
 BTCADDR = "btc_addr"
 
-# etid map specific csv header fields
-META = "meta"
+# btc map specific csv header fields
+BTCDATA = "btc_data" 
+
+# self._btc mapping specific fields
+BTCET = "entity"     # current entity mapping
+BTCMDATA = BTCDATA   # data reference or None
+BTCMCOUNT = "mcount" # mapping counter
+from collections import defaultdict 
 
 # entity graph output files
 ETG = "etg.csv"
 ETMAP = "etmap.csv"
 BTCMAP = "btcmap.csv"
-BTCIDMAP = "etidmap.csv"
+BTCDATAMAP = "btcdatamap.csv"
 
 # csv special chars
 DELIMCHR = ';'
 QUOTECHR = '|'
 LISTSEP = ','
-
-# self._btc mapping specific fields
-BTCET = "entity"     # current entity mapping
-BTCID = "id"         # id reference or None
-BTCMCOUNT = "mcount" # mapping counter
-from collections import defaultdict 
 
 # ensure list is sorted, has an impact on performance
 EDGESORT = True
@@ -105,9 +105,11 @@ class Graph(object):
                   ]
         }
         """
-        if ( not edge.get(SRC) or
-             not edge.get(DST) ):
-            raise GraphException("Invalid 'edge' given")
+        if ( ( not edge.get(SRC) or not edge.get(DST) ) and 
+             ( not edge.get(SRC) == "" or not edge.get(DST) == "" ) ):
+            self._logger.error("Invalid edge: {}".format(edge))
+            #raise GraphException("Invalid edge given")
+            return 1
 
         src = edge.get(SRC) # extract SRC from edge to use as key
         if not edge.get(EDGE):
@@ -127,6 +129,8 @@ class Graph(object):
                 self._edges[src].append(edge.copy())
             else:    
                 self._edges[src].append(edge)
+
+        return 0
 
     def count_edges(self):
         """
@@ -642,9 +646,9 @@ class EntityGraph(Graph):
             self._import_etmap(path)      
             path = et_graph_dir + "/" + BTCMAP
             self._import_btcmap(path)
-            path = et_graph_dir + "/" + BTCIDMAP
+            path = et_graph_dir + "/" + BTCDATAMAP
             if os.path.isfile(path):
-                self.import_btcidmap(path)
+                self.import_btcdatamap(path)
         except:
             e = sys.exc_info()[0]
             self._logger.error("Error importing data: {}".format(e))
@@ -680,17 +684,18 @@ class EntityGraph(Graph):
             for line in fr:
                 self._btcet[str(line[BTCADDR])][BTCET] = int(line[ENTITYID])
 
-    def import_btcidmap(self, btcidmap_csv):
+    def import_btcdatamap(self, btcdatamap_csv):
         """ Import etid mapping data from csv """
         n = 0
-        with open(btcidmap_csv, 'r') as fp:
+        with open(btcdatamap_csv, 'r') as fp:
             fr = csv.DictReader(fp,delimiter=DELIMCHR, quotechar=QUOTECHR)
             for line in fr:
-                if line[BTCADDR] in self._btcet.keys():
-                    self._btcet[line[BTCADDR]][BTCID] = True
-                    n += 1
+                if ( ( line[BTCADDR] in self._btcet.keys() ) and 
+                     ( BTCDATA in line.keys() ) and 
+                     ( line[BTCDATA] is not None ) ):
+                        self._btcet[line[BTCADDR]][BTCDATA] = str(line[BTCDATA])
+                        n += 1
         return n
-
 
 
     def export_to_csv(self, output_dir):
@@ -716,8 +721,8 @@ class EntityGraph(Graph):
             self._export_etmap(path)
             path = output_dir + "/" + BTCMAP
             self._export_btcmap(path)
-            path = output_dir + "/" + BTCIDMAP
-            self._export_btcidmap(path)
+            path = output_dir + "/" + BTCDATAMAP
+            self._export_btcdatamap(path)
         except:     
             e = sys.exc_info()[0]
             self._logger.error("Error exporting data: {}".format(e))
@@ -759,16 +764,16 @@ class EntityGraph(Graph):
             for btcaddr in self._btcet.items():
                 #print(str(btcaddr[0]) + DELIMCHR + 
                 #      str(btcaddr[1][BTCET]) + DELIMCHR +
-                #      str(btcaddr[1][BTCID]),file=btcmapfp)
+                #      str(btcaddr[1][BTCDATA]),file=btcmapfp)
                 print(str(btcaddr[0]) + DELIMCHR + 
                       str(btcaddr[1][BTCET]),file=fp)
 
-    def _export_btcidmap(self, btcidmap_csv):
-        """ export btcid mapping to csv file """
-        with open(btcidmap_csv, 'w') as fp:
-            print(BTCADDR + DELIMCHR, file=fp)
+    def _export_btcdatamap(self, btcdatamap_csv):
+        """ export BTCDATA mapping to csv file """
+        with open(btcdatamap_csv, 'w') as fp:
+            print(BTCADDR + DELIMCHR + BTCDATA, file=fp)
             for btcaddr in self._btcet.items():
-                if ( BTCID in btcaddr[1].keys() and
-                     btcaddr[1][BTCID] ) :
-                    # if there is a btcid set, export btcaddr
-                    print(str(btcaddr[0]) + DELIMCHR,file=fp)
+                if ( BTCDATA in btcaddr[1].keys() and
+                     btcaddr[1][BTCDATA] is not None ) :
+                    # if there is a BTCDATA set, export btcaddr
+                    print(str(btcaddr[0]) + DELIMCHR + str(btcaddr[1][BTCDATA]),file=fp)
