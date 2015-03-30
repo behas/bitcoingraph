@@ -9,9 +9,10 @@ the Bitcoin block chain.
 __author__ = 'Bernhard Haslhofer (bernhard.haslhofer@ait.ac.at)'
 __copyright__ = 'Copyright 2015, Bernhard Haslhofer'
 __license__ = "MIT"
-__version__ = '0.1'
+__version__ = '0.2dev'
 
-__all__ = ['export_tx_graph']
+__all__ = ['create_blockchain', 'export_tx_graph', 'load_tx_graph_from_file',
+           'export_et_graph', 'load_et_graph_from_directory']
 
 import logging
 logger = logging.getLogger('bitcoingraph')
@@ -88,11 +89,10 @@ def export_et_graph(tx_graph_file, output_dir, customlogger=None):
     et_graph.export_to_csv(output_dir)
 
 
-def load_et_graph_from_directory(et_graph_directory,customlogger=None):
+def load_et_graph_from_directory(et_graph_directory, customlogger=None):
     """
     Loads entity graph and mapping info from directory containing CSV files.
     """
     et_graph = EntityGraph(customlogger=customlogger)
     et_graph.load_from_dir(et_graph_directory)
     return et_graph
-
