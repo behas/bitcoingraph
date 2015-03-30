@@ -61,3 +61,9 @@ class BitcoinProxyMock(BitcoinProxy):
             raise JSONRPCException("Unknown transaction", tx_id)
         else:
             return self.txs[tx_id]
+
+    def getrawtransactions(self, tx_ids, verbose=1):
+        results = []
+        for tx_id in tx_ids:
+            results.append(self.getrawtransaction(tx_id, verbose))
+        return results

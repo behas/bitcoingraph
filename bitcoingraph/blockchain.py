@@ -198,8 +198,8 @@ class Block(BlockchainObject):
         :yield: transaction
         :rtype: Transaction
         """
-        for tx_id in self.tx_ids:
-            yield self._blockchain.get_transaction(tx_id)
+        for tx in self._blockchain.get_transactions(self.tx_ids):
+            yield tx
 
 
 class TxInput(object):
@@ -404,7 +404,6 @@ class Transaction(BlockchainObject):
         block = self._blockchain.get_block_by_hash(self.blockhash)
         return block.height
 
-
     # Input properties
 
     def get_inputs(self):
@@ -495,7 +494,7 @@ class Transaction(BlockchainObject):
             src_list = []
             for tx_input in self.get_inputs():
                 src_list += [address for address in tx_input.addresses
-                                     if address not in src_list]
+                             if address not in src_list]
         # collect output addresses
         for tx_output in self.get_outputs():
             tgt_list = [address for address in tx_output.addresses]
@@ -594,6 +593,24 @@ class BlockChain(object):
         except JSONRPCException as exc:
             raise BlockchainException("Cannot retrieve transaction with id %s"
                                       % (tx_id), exc)
+
+    def get_transactions(self, tx_ids):
+        """
+        Returns transactions for given transaction ids.
+
+        :param tx_ids: list of transaction ids
+        :return: list of transaction objects
+        :rtype: Transaction list
+        """
+        try:
+            txs = []
+            raw_txs_data = self._bitcoin_proxy.getrawtransactions(tx_ids)
+            for raw_tx_data in raw_txs_data:
+                txs.append(Transaction(raw_tx_data, self))
+            return txs
+        except JSONRPCException as exc:
+            raise BlockchainException("Cannot retrieve transactions %s"
+                                      % (tx_ids), exc)
 
     def get_max_blockheight(self):
         """

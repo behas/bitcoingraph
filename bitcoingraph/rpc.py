@@ -38,8 +38,33 @@ class JSONRPCProxy(object):
         self._headers = {'content-type': 'application/json'}
 
     def _call(self, rpcMethod, *params):
-        payload = json.dumps({"method": rpcMethod, "params": list(params),
-                              "jsonrpc": "2.0"})
+        """
+        Execute a single request against a JSON-RPC interface
+        """
+        request = {"jsonrpc": "2.0",
+                   "method": rpcMethod,
+                   "params": list(params)}
+        responseJSON = self._execute(request)
+        return responseJSON['result']
+
+    def _batch(self, calls):
+        """
+        Executes a batch request (with same method) but different parameters
+        against a JONS-RPC interface
+        """
+        requests = []
+        for call in calls:
+            request = {"jsonrpc": "2.0",
+                       "method": call['method'],
+                       "params": call['params'],
+                       "id": call['id']}
+            requests.append(request)
+        responseJSON = self._execute(requests)
+        return responseJSON
+
+    def _execute(self, request):
+        payload = json.dumps(request)
+
         tries = 5
         hadConnectionFailures = False
         while True:
@@ -66,7 +91,7 @@ class JSONRPCProxy(object):
         if 'error' in responseJSON and responseJSON['error'] is not None:
             raise JSONRPCException('Error in RPC call: ' +
                                    str(responseJSON['error']))
-        return responseJSON['result']
+        return responseJSON
 
 
 class BitcoinProxy(JSONRPCProxy):
@@ -140,3 +165,42 @@ class BitcoinProxy(JSONRPCProxy):
         """
         r = self._call('getrawtransaction', tx_id, verbose)
         return r
+
+    def getrawtransactions(self, tx_ids, verbose=1):
+        """
+        Returns raw transaction representation for a given list of transaction
+        ids.
+
+        :param tx_ids: list of transaction ids
+        :param int verbose: complete transaction record (0 = false, 1 = true)
+        :return: array of raw transaction data as JSON
+        :rtype: dictionary (key=id, value=result)
+        """
+        calls = []
+        for tx_id in tx_ids:
+            call = {'method': 'getrawtransaction',
+                    'params': [tx_id, verbose],
+                    'id': tx_id}
+            calls.append(call)
+        r = self._batch(calls)
+
+        results = []
+        for entry in r:
+            results.append(entry['result'])
+        return results
+
+
+if __name__ == '__main__':
+    # proxy = JSONRPCProxy("http://rpcuser:rpcpass@node6:8332")
+    # info = proxy._call("getinfo")
+    # print(info)
+
+    proxy = BitcoinProxy("http://rpcuser:rpcpass@node6:8332")
+    print(proxy.getinfo())
+
+    TX1 = '110ed92f558a1e3a94976ddea5c32f030670b5c58c3cc4d857ac14d7a1547a90'
+    TX2 = '6359f0868171b1d194cbee1af2f16ea598ae8fad666d9b012c8ed2b79a236ec4'
+    tx_ids = [TX1, TX2]
+    print(proxy.getrawtransaction(TX1))
+    print(proxy.getrawtransactions(tx_ids)[0])
+

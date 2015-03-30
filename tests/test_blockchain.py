@@ -280,6 +280,11 @@ class TestBlockchain(TestBlockchainObject):
         tx = self.blockchain.get_transaction(TX1)
         self.assertEqual(tx.id, TX1)
 
+    def test_get_transactions(self):
+        tx_ids = [TX1, TX2]
+        txs = self.blockchain.get_transactions(tx_ids)
+        self.assertEqual(2, len(txs))
+
     def test_get_max_blockheight(self):
         max_height = self.blockchain.get_max_blockheight()
         self.assertEqual(max_height, 100001)
