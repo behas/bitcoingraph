@@ -1,3 +1,8 @@
+= v0.2 2015-03-30 =
+
+* Added graph abstraction and graph pattern search methods
+* Entity graph generation support
+
 = v0.1 2015-01-15 =
 
 * First release supporting transaction graph generation

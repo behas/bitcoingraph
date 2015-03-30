@@ -2,7 +2,7 @@ language: python
 python:
   - "3.4"
 # command to install dependencies
-# need "python setup.py install" to install bitcoingraph so that client tests work
+# need "python setup.py install" to install bitcoingraph so that tests work
 install:
   - pip install -r requirements.txt
   - pip install coveralls

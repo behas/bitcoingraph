@@ -255,6 +255,7 @@ hop,block_height,edge,src,tgt,timestamp,txid,value
 # Contributors
 
 * [Bernhard Haslhofer](mailto:bernhard.haslhofer@ait.ac.at)
+* [Aljosha Judmaier](mailto:judmayer@xylem-technologies.com)
 
 # License
 

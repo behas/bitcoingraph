@@ -1,0 +1,12 @@
+# How to release
+
+
+* git flow release start v0.X (start a release by creating release branch from develop)
+* Update CHANGELOG
+* Update version in __init__.py
+* pandoc README.md -o README.rst
+* commit changes
+* git flow release finish v0.X (finishes release)
+* git push --tags
+* git checkout develop
+* Update version in __init__.py to v0.X+1
