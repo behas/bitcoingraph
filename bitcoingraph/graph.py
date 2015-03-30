@@ -240,17 +240,19 @@ class Graph(object):
         if x == y:
             return list()
         path = list()
-        self._paths = list()
-        loopset = set()
+        self._paths = list()    # global path storage list()
+        self._maxedges = 100    # maximum number of found edges, should limit large searches
+        loopset = set()         
         loopset.add(x) # to add starting node to set 
-        self._find_all_x2y(x,y,d,path,loopset.copy())
+        self._find_all_x2y(x,y,d,path.copy(),loopset.copy())
         return self._paths
 
     def _find_all_x2y(self,x,y,d,path,loopset):
-        if d <= 0 or not self._edges.get(x):
+        if d <= 0 or not self._edges.get(x) or self._maxedges <= 0:
             # stop if depth reached or source not found error
             return
 
+        #self._logger.debug("Find x={} y={} d={} len(path)={} len(loopset)={} path[last]={}".format(x,y,d,len(path),len(loopset),path[len(path)-1] if len(path) > 0 else None))
         for edge in self._edges[x]:
             if edge[SRC] == edge[DST]:
                 # self reference loop detection
@@ -262,6 +264,7 @@ class Graph(object):
             path.append(edge)
             if (edge[DST] is not None and edge[DST] == y):
                 self._paths.append(path.copy()) # copy value of list
+                self._maxedges -= 1
             else:
                 self._find_all_x2y(edge[DST],y,d-1,path.copy(),loopset.copy())
             path.pop()

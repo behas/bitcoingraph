@@ -61,10 +61,12 @@ class TestGraph(unittest.TestCase):
         self.assertTrue(i == 1)
 
         edge2 = { DST: 'C', EDGE: '2' }
-        self.assertRaises(GraphException, self.graph.add_edge, edge2)
+        #self.assertRaises(GraphException, self.graph.add_edge, edge2)
+        self.assertEqual(self.graph.add_edge(edge2),1)
 
         edge3 = { SRC: 'A', EDGE: '3' }
-        self.assertRaises(GraphException, self.graph.add_edge, edge3)
+        #self.assertRaises(GraphException, self.graph.add_edge, edge3)
+        self.assertEqual(self.graph.add_edge(edge3),1)
 
 
     def test_count_edges(self):
