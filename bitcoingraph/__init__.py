@@ -9,7 +9,7 @@ the Bitcoin block chain.
 __author__ = 'Bernhard Haslhofer (bernhard.haslhofer@ait.ac.at)'
 __copyright__ = 'Copyright 2015, Bernhard Haslhofer'
 __license__ = "MIT"
-__version__ = '0.2'
+__version__ = '0.3dev'
 
 __all__ = ['create_blockchain', 'export_tx_graph', 'load_tx_graph_from_file',
            'export_et_graph', 'load_et_graph_from_directory']
