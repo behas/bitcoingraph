@@ -8,7 +8,7 @@
 * sphinx-apidoc -f -o docs bitcoingraph
 * cd docs && make html
 * commit changes
-* git flow release finish v0.X (finishes release)
+* git flow release finish 'v0.X' (finishes release)
 * git push --tags
 * git checkout develop
 * Update version in __init__.py to v0.X+1
