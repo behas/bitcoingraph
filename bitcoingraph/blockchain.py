@@ -130,6 +130,16 @@ class Block(BlockchainObject):
         return self._raw_data['hash']
 
     @property
+    def previousblockhash(self):
+        """
+        Reference to the previous block.
+
+        :return: previous block hash
+        :rtype: str
+        """
+        return self._raw_data['previousblockhash']
+
+    @property
     def nextblockhash(self):
         """
         Reference to the next block.
@@ -188,8 +198,8 @@ class Block(BlockchainObject):
         :yield: transaction
         :rtype: Transaction
         """
-        for tx_id in self.tx_ids:
-            yield self._blockchain.get_transaction(tx_id)
+        for tx in self._blockchain.get_transactions(self.tx_ids):
+            yield tx
 
 
 class TxInput(object):
@@ -314,17 +324,23 @@ class TxOutput(object):
     @property
     def addresses(self):
         """
-        Returns transaction output addresses or `None` if output has
-        no recorded addresses.
+        Returns (possibly empty) transaction output addresses list.
 
         :return: output addresses
         :rtype: array
         """
+        addresses = []
+
         scriptPubKey = self._raw_data.get('scriptPubKey')
-        if scriptPubKey is not None:
-            return scriptPubKey.get('addresses')
+        if scriptPubKey is None:
+            return addresses
+        output_addresses = scriptPubKey.get('addresses')
+        if output_addresses is None:
+            return addresses
         else:
-            return None
+            addresses += [address for address in output_addresses]
+
+        return addresses
 
 
 class Transaction(BlockchainObject):
@@ -365,6 +381,28 @@ class Transaction(BlockchainObject):
         :rtype: str
         """
         return self._raw_data['txid']
+
+    @property
+    def blockhash(self):
+        """
+        Returns hash of included block.
+
+        :return: block hash
+        :rtype: str
+        """
+        return self._raw_data['blockhash']
+
+    # Included block properties
+
+    def get_included_block_height(self):
+        """
+        Returns height of block this transaction is included in.
+
+        :return: block height
+        :rtype: int
+        """
+        block = self._blockchain.get_block_by_hash(self.blockhash)
+        return block.height
 
     # Input properties
 
@@ -445,27 +483,33 @@ class Transaction(BlockchainObject):
         """
         Returns flows of Bitcoins between source and target addresses.
 
-        :return: bitcoin flows (src, tgt, value)
+        :return: bitcoin flows ([src1, src2, ...], [tgt1, tgt2, ...], value)
         :rtype: array
         """
         bc_flows = []
-        for tx_input in self.get_inputs():
-            src = None
-            if not self.is_coinbase_tx:
-                if tx_input is None or tx_input.addresses is None:
-                    src = None
-                else:
-                    src = tx_input.addresses[0]
-            for tx_output in self.get_outputs():
-                tgt = None
-                if tx_output is None or tx_output.addresses is None or tx_output.addresses[0] is None:
-                    tgt = None
-                else:
-                    tgt = tx_output.addresses[0]
-                flow = {'src': src, 'tgt': tgt,
-                        'value': tx_output.value}
-                bc_flows += [flow]
+        # collect input addresses
+        if self.is_coinbase_tx:
+            src_list = ['COINBASE']
+        else:
+            src_list = []
+            for tx_input in self.get_inputs():
+                src_list += [address for address in tx_input.addresses
+                             if address not in src_list]
+        # collect output addresses
+        for tx_output in self.get_outputs():
+            tgt_list = [address for address in tx_output.addresses]
+            flow = {'src_list': src_list, 'tgt_list': tgt_list,
+                    'value': tx_output.value}
+            bc_flows += [flow]
+
         return bc_flows
+
+    @property
+    def flow_sum(self):
+        """
+        Returns sum of BTC transferred
+        """
+        return sum([tx_output.value for tx_output in self.get_outputs()])
 
 
 class BlockChain(object):
@@ -549,3 +593,35 @@ class BlockChain(object):
         except JSONRPCException as exc:
             raise BlockchainException("Cannot retrieve transaction with id %s"
                                       % (tx_id), exc)
+
+    def get_transactions(self, tx_ids):
+        """
+        Returns transactions for given transaction ids.
+
+        :param tx_ids: list of transaction ids
+        :return: list of transaction objects
+        :rtype: Transaction list
+        """
+        try:
+            txs = []
+            raw_txs_data = self._bitcoin_proxy.getrawtransactions(tx_ids)
+            for raw_tx_data in raw_txs_data:
+                txs.append(Transaction(raw_tx_data, self))
+            return txs
+        except JSONRPCException as exc:
+            raise BlockchainException("Cannot retrieve transactions %s"
+                                      % (tx_ids), exc)
+
+    def get_max_blockheight(self):
+        """
+        Returns maximum known block height.
+
+        :return: maximum block height
+        :rtype: int
+        """
+        try:
+            max_height = self._bitcoin_proxy.getblockcount()
+            return max_height
+        except JSONRPCException as exc:
+            raise BlockchainException("Error when retrieving maximum\
+                block height", exc)

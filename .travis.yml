@@ -1,0 +1,14 @@
+language: python
+python:
+  - "3.4"
+# command to install dependencies
+# need "python setup.py install" to install bitcoingraph so that tests work
+install:
+  - pip install -r requirements.txt
+  - pip install coveralls
+  - python setup.py install
+script:
+  - py.test
+  - coverage run --source=bitcoingraph setup.py test
+after_success:
+  - coveralls
