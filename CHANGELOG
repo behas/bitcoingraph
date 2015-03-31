@@ -2,6 +2,7 @@
 
 * Added graph abstraction and graph pattern search methods
 * Entity graph generation support
+* Improved transaction extraction performance
 
 = v0.1 2015-01-15 =
 
