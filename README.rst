@@ -1,10 +1,6 @@
 Bitcoingraph - A Python library for extracting and navigating graph
 structures from the Bitcoin block chain.
 
-|Build Status|
-
-|Coverage Status|
-
 Prerequesites
 =============
 
@@ -99,7 +95,7 @@ Now clone Bitcoingraph...
 
     cd bitcoingraph
     pip install -r requirements.txt
-    python setup.py test
+    py.test
     python setup.py install
 
 bcgraph-generate usage
@@ -333,6 +329,7 @@ Contributors
 ============
 
 -  `Bernhard Haslhofer <mailto:bernhard.haslhofer@ait.ac.at>`__
+-  `Aljosha Judmaier <mailto:judmayer@xylem-technologies.com>`__
 
 License
 =======
@@ -340,7 +337,7 @@ License
 This library is release Open Source under the `MIT
 license <http://opensource.org/licenses/MIT>`__.
 
-.. |Build Status| image:: https://travis-ci.org/behas/bitcoingraph.svg?branch=develop
+.. |Build Status| image:: https://travis-ci.org/behas/bitcoingraph.svg?branch=master
    :target: https://travis-ci.org/behas/bitcoingraph
-.. |Coverage Status| image:: https://coveralls.io/repos/behas/bitcoingraph/badge.svg?branch=develop
-   :target: https://coveralls.io/r/behas/bitcoingraph?branch=develop
+.. |Coverage Status| image:: https://coveralls.io/repos/behas/bitcoingraph/badge.svg?branch=master
+   :target: https://coveralls.io/r/behas/bitcoingraph?branch=master
