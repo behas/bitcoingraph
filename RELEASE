@@ -1,10 +1,12 @@
 # How to release
 
-
 * git flow release start v0.X (start a release by creating release branch from develop)
 * Update CHANGELOG
 * Update version in __init__.py
+* Update README.md -> change button URIs to master branch
 * pandoc README.md -o README.rst
+* sphinx-apidoc -f -o docs bitcoingraph
+* cd docs && make html
 * commit changes
 * git flow release finish v0.X (finishes release)
 * git push --tags

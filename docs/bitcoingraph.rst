@@ -12,6 +12,14 @@ bitcoingraph.blockchain module
     :undoc-members:
     :show-inheritance:
 
+bitcoingraph.graph module
+-------------------------
+
+.. automodule:: bitcoingraph.graph
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 bitcoingraph.rpc module
 -----------------------
 
