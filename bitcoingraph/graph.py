@@ -49,6 +49,9 @@ LISTSEP = ','
 # ensure list is sorted, has an impact on performance
 EDGESORT = True
 
+# max number of find_all_x2y() results
+MAXRESULTS = 100
+
 import os
 import sys
 import csv
@@ -241,7 +244,7 @@ class Graph(object):
             return list()
         path = list()
         self._paths = list()    # global path storage list()
-        self._maxedges = 100    # maximum number of found edges, should limit large searches
+        self._maxedges = MAXRESULTS    # maximum number of found edges, should limit large searches
         loopset = set()         
         loopset.add(x) # to add starting node to set 
         self._find_all_x2y(x,y,d,path.copy(),loopset.copy())
