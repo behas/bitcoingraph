@@ -74,12 +74,12 @@ def export_transactions(blockchain, start_block, end_block,
     tx_input_file = output_path + "/" + "inputs.csv"
     tx_output_file = output_path + "/" + "outputs.csv"
 
-    fn_tx_file = ['txid', 'timestamp', 'total']
+    fn_tx_file = ['txid', 'block', 'timestamp', 'total']
     fn_input_output_file = ['txid', 'address', 'value']
 
-    with open(tx_file, 'w', newline='') as tx_csv_file, \
-            open(tx_input_file, 'w', newline='') as input_csv_file, \
-            open(tx_output_file, 'w', newline='') as output_csv_file:
+    with open(tx_file, 'w') as tx_csv_file, \
+            open(tx_input_file, 'w') as input_csv_file, \
+            open(tx_output_file, 'w') as output_csv_file:
 
         tx_writer = csv.DictWriter(tx_csv_file, fieldnames=fn_tx_file)
         input_writer = csv.DictWriter(input_csv_file,
@@ -97,6 +97,7 @@ def export_transactions(blockchain, start_block, end_block,
                 # transactions
                 for tx in block.transactions:
                     tx_writer.writerow({'txid': tx.id,
+                                        'block': block.height,
                                         'timestamp': tx.time,
                                         'total': tx.flow_sum})
                 # inputs
