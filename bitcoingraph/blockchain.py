@@ -1,18 +1,19 @@
 """
 blockchain
 
-An API for traversing the Bitcoin block chain
+An API for traversing the Bitcoin blockchain
 
 """
-
-__author__ = 'Bernhard Haslhofer (bernhard.haslhofer@ait.ac.at)'
-__copyright__ = 'Copyright 2015, Bernhard Haslhofer'
-__license__ = "MIT"
 
 import json
 import datetime as dt
 
 from bitcoingraph.rpc import JSONRPCException
+
+
+__author__ = 'Bernhard Haslhofer (bernhard.haslhofer@ait.ac.at)'
+__copyright__ = 'Copyright 2015, Bernhard Haslhofer'
+__license__ = "MIT"
 
 
 def to_json(raw_data):
@@ -58,7 +59,7 @@ class BlockchainObject(object):
         Creates a generic block chain object.
 
         :param str raw_data: raw JSON data extracted from block chain
-        :param BlockChain blockchain: instantiated blockchain object
+        :param Blockchain blockchain: instantiated blockchain object
         :return: block chain object
         :rtype: BlockchainObject
         """
@@ -103,7 +104,7 @@ class Block(BlockchainObject):
         Creates a block object.
 
         :param str raw_data: raw JSON data extracted from block chain
-        :param BlockChain blockchain: instantiated blockchain object
+        :param Blockchain blockchain: instantiated blockchain object
         :return: block object
         :rtype: Block
         """
@@ -213,7 +214,7 @@ class TxInput(object):
         Creates a transaction input object.
 
         :param str raw_data: raw JSON data extracted from block chain
-        :param BlockChain blockchain: instantiated blockchain object
+        :param Blockchain blockchain: instantiated blockchain object
         :return: transaction input object
         :rtype: TxInput
         """
@@ -322,6 +323,17 @@ class TxOutput(object):
         return float(self._raw_data['value'])
 
     @property
+    def address(self):
+        """
+        Returns the first output address or None if there is none.
+        """
+        addresses = self.addresses
+        if len(addresses) == 0:
+            return None
+        else:
+            return addresses[0]
+
+    @property
     def addresses(self):
         """
         Returns (possibly empty) transaction output addresses list.
@@ -354,7 +366,7 @@ class Transaction(BlockchainObject):
         Creates a transaction object.
 
         :param str raw_data: raw JSON data extracted from block chain
-        :param BlockChain blockchain: instantiated blockchain object
+        :param Blockchain blockchain: instantiated blockchain object
         :return: transaction object
         :rtype: Transaction
         """
@@ -512,7 +524,7 @@ class Transaction(BlockchainObject):
         return sum([tx_output.value for tx_output in self.get_outputs()])
 
 
-class BlockChain(object):
+class Blockchain(object):
 
     """
     Bitcoin block chain.
@@ -524,7 +536,7 @@ class BlockChain(object):
 
         :param BitcoinProxy bitcoin_proxy: reference to Bitcoin proxy
         :return: block chain object
-        :rtype: BlockChain
+        :rtype: Blockchain
         """
         self._bitcoin_proxy = bitcoin_proxy
 

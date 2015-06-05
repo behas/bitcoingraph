@@ -27,7 +27,7 @@ class TestBlockchainObject(unittest.TestCase):
 
     def setUp(self):
         self.bitcoin_proxy = BitcoinProxyMock()
-        self.blockchain = BlockChain(self.bitcoin_proxy)
+        self.blockchain = Blockchain(self.bitcoin_proxy)
 
     def test_init(self):
         self.assertIsNotNone(self.blockchain)

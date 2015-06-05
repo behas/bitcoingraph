@@ -1,3 +1,7 @@
+# Generated dirs
+tx_*/
+
+
 # Backup files
 *.~
 .*.swp

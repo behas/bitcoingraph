@@ -6,20 +6,22 @@ the Bitcoin block chain.
 
 """
 
+import csv
+import logging
+import os
+
+from bitcoingraph.blockchain import Blockchain, BlockchainException
+from bitcoingraph.rpc import BitcoinProxy, JSONRPCException
+
+
 __author__ = 'Bernhard Haslhofer (bernhard.haslhofer@ait.ac.at)'
 __copyright__ = 'Copyright 2015, Bernhard Haslhofer'
 __license__ = "MIT"
 __version__ = '0.3dev'
 
-__all__ = ['create_blockchain', 'export_tx_graph', 'load_tx_graph_from_file',
-           'export_et_graph', 'load_et_graph_from_directory']
+__all__ = ['conncect_blockchain', 'export_transactions']
 
-import logging
 logger = logging.getLogger('bitcoingraph')
-
-from bitcoingraph.blockchain import BlockChain
-from bitcoingraph.rpc import BitcoinProxy, JSONRPCException
-from bitcoingraph.graph import TransactionGraph, EntityGraph
 
 
 class BitcoingraphException(Exception):
@@ -37,62 +39,90 @@ class BitcoingraphException(Exception):
 
 # Blockchain interfaces
 
-def create_blockchain(service_uri):
+def get_blockchain(service_uri):
     """
-    Creates a blockchain object for a given Bitcoin Core JSON-RPC Service.
+    Connects to Bitcoin Core (via JSON-RPC) and returns a Blockchain object.
     """
     try:
         logger.debug("Connecting to Bitcoin Core at {}".format(service_uri))
         bc_proxy = BitcoinProxy(service_uri)
         bc_proxy.getinfo()
         logger.debug("Connection successful.")
-        blockchain = BlockChain(bc_proxy)
+        blockchain = Blockchain(bc_proxy)
         return blockchain
     except JSONRPCException as exc:
-        raise BitcoingraphException("Couldn't connect to {}.".format(service_uri), exc)
+        raise BitcoingraphException("Couldn't connect to {}.".format(
+                                        service_uri), exc)
 
 
-# Transaction graph interfaces
-
-def export_tx_graph(service_uri, start_block, end_block,
-                    output_file, progress=None):
+def export_transactions(blockchain, start_block, end_block,
+                        output_path=None, progress=None):
     """
-    Generates transaction graph from the Blockchain and exports it to a
-    CSV file.
-
-    :param BlockChain blockchain: instantiated blockchain object
-    :param int start_block: start block of transaction export range
-    :param int end_block: end block of transaction export range
+    Exports transactions in a given block range to CSV file.
     """
-    blockchain = create_blockchain(service_uri)
-    tx_graph = TransactionGraph(blockchain)
-    tx_graph.export_to_csv(start_block, end_block, output_file, progress)
+    if start_block is None:
+        start_block = 1
+    if end_block is None:
+        end_block = blockchain.get_max_blockheight()
 
+    if output_path is None:
+        output_path = 'tx_{}_{}'.format(start_block, end_block)
+    if not os.path.exists(output_path):
+        os.makedirs(output_path)
 
-def load_tx_graph_from_file(tx_graph_file):
-    """
-    Loads transaction graph from given CSV file.
-    """
-    tx_graph = TransactionGraph()
-    tx_graph.load_from_file(tx_graph_file)
-    return tx_graph
+    tx_file = output_path + "/" + "transactions.csv"
+    tx_input_file = output_path + "/" + "inputs.csv"
+    tx_output_file = output_path + "/" + "outputs.csv"
 
+    fn_tx_file = ['txid', 'timestamp', 'total']
+    fn_input_output_file = ['txid', 'address', 'value']
 
-# Entity graph interfaces
+    with open(tx_file, 'w', newline='') as tx_csv_file, \
+            open(tx_input_file, 'w', newline='') as input_csv_file, \
+            open(tx_output_file, 'w', newline='') as output_csv_file:
 
-def export_et_graph(tx_graph_file, output_dir, customlogger=None):
-    """
-    Export entity graph from transaction graph.
-    """
-    et_graph = EntityGraph(customlogger=customlogger)
-    et_graph.generate_from_tx_data(tx_graph_file=tx_graph_file)
-    et_graph.export_to_csv(output_dir)
+        tx_writer = csv.DictWriter(tx_csv_file, fieldnames=fn_tx_file)
+        input_writer = csv.DictWriter(input_csv_file,
+                                      fieldnames=fn_input_output_file)
+        output_writer = csv.DictWriter(output_csv_file,
+                                       fieldnames=fn_input_output_file)
 
+        tx_writer.writeheader()
+        input_writer.writeheader()
+        output_writer.writeheader()
 
-def load_et_graph_from_directory(et_graph_directory, customlogger=None):
-    """
-    Loads entity graph and mapping info from directory containing CSV files.
-    """
-    et_graph = EntityGraph(customlogger=customlogger)
-    et_graph.load_from_dir(et_graph_directory)
-    return et_graph
+        try:
+            for idx, block in enumerate(blockchain.get_blocks_in_range(
+                                        start_block, end_block)):
+                # transactions
+                for tx in block.transactions:
+                    tx_writer.writerow({'txid': tx.id,
+                                        'timestamp': tx.time,
+                                        'total': tx.flow_sum})
+                # inputs
+                if tx.is_coinbase_tx:
+                    input_writer.writerow({'txid': tx.id,
+                                           'address': 'COINBASE',
+                                           'value': tx.flow_sum})
+                else:
+                    for tx_input in tx.get_inputs():
+                        referenced_output = tx_input.prev_tx_output
+                        if referenced_output.address is not None:
+                            input_writer.writerow({'txid': tx.id,
+                                                   'address':
+                                                   referenced_output.address,
+                                                   'value':
+                                                   referenced_output.value})
+                # outputs
+                for tx_output in tx.get_outputs():
+                    if tx_output.address is not None:
+                        output_writer.writerow({'txid': tx.id,
+                                                'address': tx_output.address,
+                                                'value': tx_output.value})
+                if progress:
+                    block_range = end_block - start_block
+                    if block_range == 0:
+                        block_range = 1
+                    progress(idx / block_range)
+        except BlockchainException as exc:
+            raise BitcoingraphException("Transaction export failed", exc)

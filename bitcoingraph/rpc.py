@@ -3,14 +3,15 @@ Bitcoin Core JSON-RPC interface.
 
 """
 
-__author__ = 'Bernhard Haslhofer (bernhard.haslhofer@ait.ac.at)'
-__copyright__ = 'Copyright 2015, Bernhard Haslhofer'
-__license__ = "MIT"
-
 import requests
 import json
 
 import time
+
+
+__author__ = 'Bernhard Haslhofer (bernhard.haslhofer@ait.ac.at)'
+__copyright__ = 'Copyright 2015, Bernhard Haslhofer'
+__license__ = "MIT"
 
 
 class JSONRPCException(Exception):
@@ -50,7 +51,7 @@ class JSONRPCProxy(object):
     def _batch(self, calls):
         """
         Executes a batch request (with same method) but different parameters
-        against a JONS-RPC interface
+        against a JSON-RPC interface
         """
         requests = []
         for call in calls:
@@ -71,7 +72,9 @@ class JSONRPCProxy(object):
             try:
                 response = self._session.get(self._url, headers=self._headers,
                                              data=payload)
-            except requests.exceptions.ConnectionError:
+            except requests.exceptions.ConnectionError as e:
+                print(self._url)
+                print(e)
                 tries -= 1
                 if tries == 0:
                     raise JSONRPCException('Failed to connect for RPC call.')
@@ -188,19 +191,3 @@ class BitcoinProxy(JSONRPCProxy):
         for entry in r:
             results.append(entry['result'])
         return results
-
-
-if __name__ == '__main__':
-    # proxy = JSONRPCProxy("http://rpcuser:rpcpass@node6:8332")
-    # info = proxy._call("getinfo")
-    # print(info)
-
-    proxy = BitcoinProxy("http://rpcuser:rpcpass@node6:8332")
-    print(proxy.getinfo())
-
-    TX1 = '110ed92f558a1e3a94976ddea5c32f030670b5c58c3cc4d857ac14d7a1547a90'
-    TX2 = '6359f0868171b1d194cbee1af2f16ea598ae8fad666d9b012c8ed2b79a236ec4'
-    tx_ids = [TX1, TX2]
-    print(proxy.getrawtransaction(TX1))
-    print(proxy.getrawtransactions(tx_ids)[0])
-

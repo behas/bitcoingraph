@@ -1,0 +1,98 @@
+#!/usr/bin/env python
+
+import argparse
+import sys
+
+import logging
+import logging.handlers
+
+import bitcoingraph as bcgraph
+from bitcoingraph import BitcoingraphException
+
+logger = logging.getLogger("bcgraph-generate")
+
+
+DEFAULT_SERVICE = 'localhost:8332'
+
+
+def progress(progress=0):
+    progress = int(progress * 100)
+    sys.stdout.write("\rProgress: {0}%".format(progress))
+    sys.stdout.flush()
+
+
+def setup_logger(args):
+
+    if args.logging:
+        log_format = '%(levelname)s - %(asctime)s - %(name)s - %(message)s'
+        formatter = logging.Formatter(log_format)
+
+        # Set loglevel
+        numeric_level = getattr(logging, args.logging.upper(), None)
+        if not isinstance(numeric_level, int):
+            logger.error("Invalid log level: {}, defaulting to 'DEBUG'".format(
+                         args.loglevel,))
+            numeric_level = getattr(logging, "DEBUG", None)
+
+        logger.setLevel(level=numeric_level)
+
+        if args.logfile:
+            rf = logging.handlers.RotatingFileHandler(args.logfile,
+                                                      maxBytes=104857600,
+                                                      backupCount=10)
+            rf.setLevel(numeric_level)
+            rf.setFormatter(formatter)
+            logger.addHandler(rf)
+        else:
+            # create stdout stream handler
+            ch = logging.StreamHandler()
+            ch.setLevel(numeric_level)
+            ch.setFormatter(formatter)
+            logger.addHandler(ch)
+        logger.debug('Set up logger for loglevel: {}'.format(numeric_level))
+    return logger
+
+
+def export_transactions(args):
+    logger.info("Starting transaction export.")
+    service_cred = args.user + ':' + args.password
+    service_uri = 'http://' + service_cred + '@' + args.service + '/'
+    try:
+        blockchain = bcgraph.get_blockchain(service_uri)
+        bcgraph.export_transactions(blockchain, args.startheight,
+                                    args.endheight, args.output_path, progress)
+        logger.info("Finished transaction export.")
+    except BitcoingraphException as exc:
+        logger.error(exc)
+        sys.exit(1)
+
+
+parser = argparse.ArgumentParser(
+    description="Export transactions from blockchain")
+parser.add_argument("-l", "--log", dest='logging',
+                    help="Enable logging (Default=DEBUG)")
+parser.add_argument("--logfile", dest='logfile',
+                    help="Write logs to logfile")
+parser.add_argument("startheight", type=int,
+                    help="Start block height")
+parser.add_argument("endheight", type=int,
+                    help="End block height")
+parser.add_argument("-s", "--service",
+                    default=DEFAULT_SERVICE,
+                    help="Address of Bitcoin JSON RPC Service")
+parser.add_argument("-u", "--user", required=True,
+                    help="Bitcoin Core RPC username")
+parser.add_argument("-p", "--password", required=True,
+                    help="Bitcoin Core RPC password")
+parser.add_argument("-o", "--output_path", type=str,
+                    help="Output path")
+parser.set_defaults(func=export_transactions)
+
+
+if len(sys.argv) <= 2:
+    parser.print_help()
+    sys.exit(1)
+
+args = parser.parse_args()
+setup_logger(args)
+args.func(args)
