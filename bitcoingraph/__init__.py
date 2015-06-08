@@ -55,7 +55,7 @@ def get_blockchain(service_uri):
                                         service_uri), exc)
 
 
-def export_transactions(blockchain, start_block, end_block,
+def export_transactions(blockchain, start_block, end_block, neo4j=False,
                         output_path=None, progress=None):
     """
     Exports transactions in a given block range to CSV file.
@@ -71,55 +71,61 @@ def export_transactions(blockchain, start_block, end_block,
         os.makedirs(output_path)
 
     tx_file = output_path + "/" + "transactions.csv"
+    tx_address_file = output_path + "/" + "addresses.csv"
     tx_input_file = output_path + "/" + "inputs.csv"
     tx_output_file = output_path + "/" + "outputs.csv"
 
-    fn_tx_file = ['txid', 'block', 'timestamp', 'total']
-    fn_input_output_file = ['txid', 'address', 'value']
+    if neo4j:
+        fn_tx_file = ['txid:ID(Transaction)', 'block', 'timestamp', 'total']
+        fn_address_file = ['address:ID(Address)']
+        fn_input_file = [':START_ID(Address)', ':END_ID(Transaction)', 'value']
+        fn_output_file = ['START_ID(Transaction)', 'END_ID(Address)', 'value']
+    else:
+        fn_tx_file = ['txid', 'block', 'timestamp', 'total']
+        fn_address_file = ['address']
+        fn_input_file = ['address', 'txid', 'value']
+        fn_output_file = ['txid', 'address', 'value']
 
     with open(tx_file, 'w') as tx_csv_file, \
+            open(tx_address_file, 'w') as address_csv_file, \
             open(tx_input_file, 'w') as input_csv_file, \
             open(tx_output_file, 'w') as output_csv_file:
 
-        tx_writer = csv.DictWriter(tx_csv_file, fieldnames=fn_tx_file)
-        input_writer = csv.DictWriter(input_csv_file,
-                                      fieldnames=fn_input_output_file)
-        output_writer = csv.DictWriter(output_csv_file,
-                                       fieldnames=fn_input_output_file)
+        tx_writer = csv.writer(tx_csv_file)
+        addr_writer = csv.writer(address_csv_file)
+        input_writer = csv.writer(input_csv_file)
+        output_writer = csv.writer(output_csv_file)
 
-        tx_writer.writeheader()
-        input_writer.writeheader()
-        output_writer.writeheader()
+        tx_writer.writerow(fn_tx_file)
+        addr_writer.writerow(fn_address_file)
+        input_writer.writerow(fn_input_file)
+        output_writer.writerow(fn_output_file)
 
         try:
             for idx, block in enumerate(blockchain.get_blocks_in_range(
                                         start_block, end_block)):
                 # transactions
                 for tx in block.transactions:
-                    tx_writer.writerow({'txid': tx.id,
-                                        'block': block.height,
-                                        'timestamp': tx.time,
-                                        'total': tx.flow_sum})
+                    tx_writer.writerow([tx.id, block.height,
+                                        tx.time, tx.flow_sum])
                 # inputs
                 if tx.is_coinbase_tx:
-                    input_writer.writerow({'txid': tx.id,
-                                           'address': 'COINBASE',
-                                           'value': tx.flow_sum})
+                    input_writer.writerow(['COINBASE', tx.id, tx.flow_sum])
+                    addr_writer.writerow(['COINBASE'])
                 else:
                     for tx_input in tx.get_inputs():
                         referenced_output = tx_input.prev_tx_output
-                        if referenced_output.address is not None:
-                            input_writer.writerow({'txid': tx.id,
-                                                   'address':
-                                                   referenced_output.address,
-                                                   'value':
-                                                   referenced_output.value})
+                        input_writer.writerow([referenced_output.address,
+                                               tx.id,
+                                               referenced_output.value])
+                        addr_writer.writerow([referenced_output.address])
                 # outputs
                 for tx_output in tx.get_outputs():
                     if tx_output.address is not None:
-                        output_writer.writerow({'txid': tx.id,
-                                                'address': tx_output.address,
-                                                'value': tx_output.value})
+                        output_writer.writerow([tx.id,
+                                                tx_output.address,
+                                                tx_output.value])
+                        addr_writer.writerow([tx_output.address])
                 if progress:
                     block_range = end_block - start_block
                     if block_range == 0:

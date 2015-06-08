@@ -60,7 +60,8 @@ def export_transactions(args):
     try:
         blockchain = bcgraph.get_blockchain(service_uri)
         bcgraph.export_transactions(blockchain, args.startheight,
-                                    args.endheight, args.output_path, progress)
+                                    args.endheight, args.neo4j,
+                                    args.output_path, progress)
         logger.info("Finished transaction export.")
     except BitcoingraphException as exc:
         logger.error(exc)
@@ -86,6 +87,8 @@ parser.add_argument("-p", "--password", required=True,
                     help="Bitcoin Core RPC password")
 parser.add_argument("-o", "--output_path", type=str,
                     help="Output path")
+parser.add_argument("-n", "--neo4j", action='store_true',
+                    help="Neo4J CSV import tool dialect")
 parser.set_defaults(func=export_transactions)
 
 
