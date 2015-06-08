@@ -86,7 +86,6 @@ The following files are generated in a directory callyed `tx_{START_BLOCK}_{END_
 + outputs.csv: all outptut relationships (Transaction -> Address)
 
 
-
 ## Neo4J graph database setup
 
 Bitcoingraph uses Neo4J as graph database backend. Exported transactions can be imported as follows:
@@ -95,6 +94,21 @@ First the list of addresses need to be deduplicated:
 
     ./util/dedupe_tx_dump.sh tx_{START_BLOCK}_{END_BLOCK}
 
+
+Make sure Neo4J is not running an pre-existing databases are removed:
+
+    ./bin/neo4j stop
+    rm -rf data/*
+
+
+The import the dump using Neo4J's CSV importer tool:
+
+    bin/neo4j-import --into data/graph.db --id-type string --nodes:Transaction dump/transactions.csv --nodes:Address dump/addresses_unique.csv --relationships:INPUT dump/inputs.csv --relationships:OUTPUT dump/outputs.csv
+
+
+Then start Neo4J
+
+    ./bin/neo4j start
 
 
 # Contributors

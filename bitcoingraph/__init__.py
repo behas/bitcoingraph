@@ -78,13 +78,13 @@ def export_transactions(blockchain, start_block, end_block, neo4j=False,
     if neo4j:
         fn_tx_file = ['txid:ID(Transaction)', 'block', 'timestamp', 'total']
         fn_address_file = ['address:ID(Address)']
-        fn_input_file = [':START_ID(Address)', ':END_ID(Transaction)', 'value']
-        fn_output_file = ['START_ID(Transaction)', 'END_ID(Address)', 'value']
+        fn_in_file = [':START_ID(Address)', ':END_ID(Transaction)', 'value']
+        fn_out_file = [':START_ID(Transaction)', ':END_ID(Address)', 'value']
     else:
         fn_tx_file = ['txid', 'block', 'timestamp', 'total']
         fn_address_file = ['address']
-        fn_input_file = ['address', 'txid', 'value']
-        fn_output_file = ['txid', 'address', 'value']
+        fn_in_file = ['address', 'txid', 'value']
+        fn_out_file = ['txid', 'address', 'value']
 
     with open(tx_file, 'w') as tx_csv_file, \
             open(tx_address_file, 'w') as address_csv_file, \
@@ -98,8 +98,8 @@ def export_transactions(blockchain, start_block, end_block, neo4j=False,
 
         tx_writer.writerow(fn_tx_file)
         addr_writer.writerow(fn_address_file)
-        input_writer.writerow(fn_input_file)
-        output_writer.writerow(fn_output_file)
+        input_writer.writerow(fn_in_file)
+        output_writer.writerow(fn_out_file)
 
         try:
             for idx, block in enumerate(blockchain.get_blocks_in_range(
