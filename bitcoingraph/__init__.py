@@ -108,24 +108,33 @@ def export_transactions(blockchain, start_block, end_block, neo4j=False,
                 for tx in block.transactions:
                     tx_writer.writerow([tx.id, block.height,
                                         tx.time, tx.flow_sum])
-                # inputs
-                if tx.is_coinbase_tx:
-                    input_writer.writerow(['COINBASE', tx.id, tx.flow_sum])
-                    addr_writer.writerow(['COINBASE'])
-                else:
-                    for tx_input in tx.get_inputs():
-                        referenced_output = tx_input.prev_tx_output
-                        input_writer.writerow([referenced_output.address,
-                                               tx.id,
-                                               referenced_output.value])
-                        addr_writer.writerow([referenced_output.address])
-                # outputs
-                for tx_output in tx.get_outputs():
-                    if tx_output.address is not None:
+                    # inputs
+                    if tx.is_coinbase_tx:
+                        input_writer.writerow(['COINBASE', tx.id, tx.flow_sum])
+                        addr_writer.writerow(['COINBASE'])
+                    else:
+                        for tx_input in tx.get_inputs():
+                            referenced_output = tx_input.prev_tx_output
+                            if referenced_output is None:
+                                continue
+                            input_address = referenced_output.address
+                            value = referenced_output.value
+                            if input_address is None or value is None:
+                                continue
+                            input_writer.writerow([input_address,
+                                                   tx.id,
+                                                   value])
+                            addr_writer.writerow([input_address])
+                    # outputs
+                    for tx_output in tx.get_outputs():
+                        output_address = tx_output.address
+                        value = tx_output.value
+                        if output_address is None or value is None:
+                            continue
                         output_writer.writerow([tx.id,
-                                                tx_output.address,
-                                                tx_output.value])
-                        addr_writer.writerow([tx_output.address])
+                                                output_address,
+                                                value])
+                        addr_writer.writerow([output_address])
                 if progress:
                     block_range = end_block - start_block
                     if block_range == 0:
