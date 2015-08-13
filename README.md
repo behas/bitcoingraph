@@ -90,7 +90,7 @@ The following files are generated in a directory callyed `tx_{START_BLOCK}_{END_
 
 Bitcoingraph uses Neo4J as graph database backend. Exported transactions can be imported as follows:
 
-First the list of addresses need to be deduplicated:
+First the list of addresses needs to be deduplicated:
 
     cat <(head -n 1 addresses.csv) <(tail -n +2 addresses.csv | sort | uniq) > addresses_unique.csv
 
