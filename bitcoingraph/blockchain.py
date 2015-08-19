@@ -323,6 +323,16 @@ class TxOutput(object):
         return float(self._raw_data['value'])
 
     @property
+    def type(self):
+        """
+        Returns the type of the transaction output.
+
+        :return: 'pubkey', 'pubkeyhash', 'scripthash', 'multisig' or 'nulldata'
+        """
+        script_pub_key = self._raw_data.get('scriptPubKey')
+        return script_pub_key.get('type')
+
+    @property
     def address(self):
         """
         Returns the first output address or None if there is none.
@@ -332,6 +342,7 @@ class TxOutput(object):
             return None
         else:
             return addresses[0]
+
 
     @property
     def addresses(self):

@@ -76,15 +76,15 @@ def export_transactions(blockchain, start_block, end_block, neo4j=False,
     tx_output_file = output_path + "/" + "outputs.csv"
 
     if neo4j:
-        fn_tx_file = ['txid:ID(Transaction)', 'block', 'timestamp', 'total']
+        fn_tx_file = ['txid:ID(Transaction)', 'block:int', 'timestamp:int', 'total:double']
         fn_address_file = ['address:ID(Address)']
-        fn_in_file = [':START_ID(Address)', ':END_ID(Transaction)', 'value']
-        fn_out_file = [':START_ID(Transaction)', ':END_ID(Address)', 'value']
+        fn_in_file = [':START_ID(Address)', ':END_ID(Transaction)', 'type', 'addresses:int', 'value:double']
+        fn_out_file = [':START_ID(Transaction)', ':END_ID(Address)', 'type', 'addresses:int', 'value:double']
     else:
         fn_tx_file = ['txid', 'block', 'timestamp', 'total']
         fn_address_file = ['address']
-        fn_in_file = ['address', 'txid', 'value']
-        fn_out_file = ['txid', 'address', 'value']
+        fn_in_file = ['address', 'txid', 'type', 'addresses', 'value']
+        fn_out_file = ['txid', 'address', 'type', 'addresses', 'value']
 
     with open(tx_file, 'w') as tx_csv_file, \
             open(tx_address_file, 'w') as address_csv_file, \
@@ -110,7 +110,7 @@ def export_transactions(blockchain, start_block, end_block, neo4j=False,
                                         tx.time, tx.flow_sum])
                     # inputs
                     if tx.is_coinbase_tx:
-                        input_writer.writerow(['COINBASE', tx.id, tx.flow_sum])
+                        input_writer.writerow(['COINBASE', tx.id, 'coinbase', 0, tx.flow_sum])
                         addr_writer.writerow(['COINBASE'])
                     else:
                         for tx_input in tx.get_inputs():
@@ -119,20 +119,24 @@ def export_transactions(blockchain, start_block, end_block, neo4j=False,
                                 continue
                             input_address = referenced_output.address
                             value = referenced_output.value
-                            if input_address is None or value is None:
+                            if input_address is None:
                                 continue
                             input_writer.writerow([input_address,
                                                    tx.id,
+                                                   referenced_output.type,
+                                                   len(referenced_output.addresses),
                                                    value])
                             addr_writer.writerow([input_address])
                     # outputs
                     for tx_output in tx.get_outputs():
                         output_address = tx_output.address
                         value = tx_output.value
-                        if output_address is None or value is None:
+                        if output_address is None:
                             continue
                         output_writer.writerow([tx.id,
                                                 output_address,
+                                                tx_output.type,
+                                                len(tx_output.addresses),
                                                 value])
                         addr_writer.writerow([output_address])
                 if progress:
