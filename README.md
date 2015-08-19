@@ -111,6 +111,12 @@ Then start Neo4J
 
     ./bin/neo4j start
 
+and create indexes with the Cypher commands:
+
+    CREATE INDEX ON :Transaction(txid)
+    CREATE INDEX ON :Address(address)
+
+Cypher commands can be entered either in the Neo4j shell or in the web interface (see http://neo4j.com/docs/stable/tools.html).
 
 # Contributors
 
