@@ -78,6 +78,8 @@ Bitcoin graph provides the `bcgraph-export` tool for exporting transactions in a
 
     bcgraph-export 1 1000 -s localhost:8332 -u your_rpcuser -p your_rpcpass
 
+Furthermore, the `-n` option can be used to write the CSV headers in Neo4J's input format.
+
 The following files are generated in a directory callyed `tx_{START_BLOCK}_{END_BLOCK}`:
 
 + transactions.csv: data related to transactions
