@@ -11,6 +11,7 @@ import logging
 import os
 
 from bitcoingraph.blockchain import Blockchain, BlockchainException
+from bitcoingraph.graphdb import GraphDB
 from bitcoingraph.rpc import BitcoinProxy, JSONRPCException
 
 
@@ -53,6 +54,10 @@ def get_blockchain(service_uri):
     except JSONRPCException as exc:
         raise BitcoingraphException("Couldn't connect to {}.".format(
                                         service_uri), exc)
+
+
+def get_graph_db(host, port, user, password):
+    return GraphDB(host, port, user, password)
 
 
 def export_transactions(blockchain, start_block, end_block, neo4j=False,

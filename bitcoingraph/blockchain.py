@@ -535,6 +535,28 @@ class Transaction(BlockchainObject):
         return sum([tx_output.value for tx_output in self.get_outputs()])
 
 
+class Address:
+
+    def __init__(self, raw_data):
+        self._raw_data = raw_data
+
+    @property
+    def data(self):
+        return self._raw_data['results'][0]['data']
+
+    @property
+    def address(self):
+        return self.data[0]['row'][0]
+
+    @property
+    def bc_flows(self):
+        return map(self.convert_row, self.data)
+
+    @staticmethod
+    def convert_row(raw_data):
+        row = raw_data['row']
+        return {'txid': row[1], 'type': row[2], 'value': row[3]}
+
 class Blockchain(object):
 
     """
