@@ -31,6 +31,8 @@ class GraphDB:
             'Content-Type': 'application/json'
         }
         r = requests.post(self.url, auth=(self.user, self.password), headers=headers, json=payload)
+        if r.status_code != 200:
+            pass # maybe raise an exception here
         return r.json()
 
 
@@ -45,6 +47,8 @@ class Address:
 
     @property
     def address(self):
+        if not self.data:
+            return None
         return self.data[0]['row'][0]
 
     @property
