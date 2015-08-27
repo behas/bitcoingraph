@@ -94,7 +94,7 @@ Bitcoingraph uses Neo4J as graph database backend. Exported transactions can be 
 
 First the list of addresses needs to be deduplicated:
 
-    cat <(head -n 1 addresses.csv) <(tail -n +2 addresses.csv | sort | uniq) > addresses_unique.csv
+    cat <(head -n 1 addresses.csv) <(tail -n +2 addresses.csv | LC_ALL=C sort -u) > addresses_unique.csv
 
 Make sure Neo4J is not running an pre-existing databases are removed:
 
