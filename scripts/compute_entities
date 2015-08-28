@@ -116,7 +116,7 @@ def compute_entities(input_path):
 
 
 parser = argparse.ArgumentParser(
-    description='Cumpute entities from exported block chain data')
+    description='Compute entities from exported block chain data')
 parser.add_argument('-i', '--input_path', type=str,
                     help='Input path')
 parser.set_defaults(func=compute_entities)
