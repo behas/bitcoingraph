@@ -1,6 +1,6 @@
 
 import requests
-
+from bitcoingraph.blockchain import to_json
 
 class GraphDB:
 
@@ -60,6 +60,20 @@ class Address:
         row = raw_data['row']
         return {'txid': row[1], 'type': row[2], 'value': row[3]}
 
+    def get_transactions(self):
+        return self.bc_flows
+
+    def get_graph_json(self):
+        nodes = [{'label': 'Address', 'address': self.address}]
+        links = []
+        for transaction in self.get_transactions():
+            if transaction['type'] == 'OUTPUT':
+                nodes.append({'label': 'Transaction', 'txid': transaction['txid'], 'type': 'source'})
+                links.append({'source': len(nodes) - 1, 'target': 0, 'type': transaction['type'], 'value': transaction['value']})
+            else:
+                nodes.append({'label': 'Transaction', 'txid': transaction['txid'], 'type': 'target'})
+                links.append({'source': 0, 'target': len(nodes) - 1, 'type': transaction['type'], 'value': transaction['value']})
+        return to_json({'nodes': nodes, 'links': links})
 
 class Path:
 

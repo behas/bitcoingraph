@@ -534,6 +534,22 @@ class Transaction(BlockchainObject):
         """
         return sum([tx_output.value for tx_output in self.get_outputs()])
 
+    def get_graph_json(self):
+        nodes = [{'label': 'Transaction', 'txid': self.id}]
+        links = []
+        for input in self.get_inputs():
+            if input.is_coinbase:
+                address = 'COINBASE'
+            else:
+                output = input.prev_tx_output
+                address = output.addresses[0]
+            nodes.append({'label': 'Address', 'address': address, 'type': 'source'})
+            links.append({'source': len(nodes) - 1, 'target': 0, 'type': 'INPUT', 'value': output.value})
+        for output in self.get_outputs():
+            nodes.append({'label': 'Address', 'address': output.addresses[0], 'type': 'target'})
+            links.append({'source': 0, 'target': len(nodes) - 1, 'type': 'OUTPUT', 'value': output.value})
+        return to_json({'nodes': nodes, 'links': links})
+
 
 class Blockchain(object):
 
