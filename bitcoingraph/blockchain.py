@@ -540,11 +540,13 @@ class Transaction(BlockchainObject):
         for input in self.get_inputs():
             if input.is_coinbase:
                 address = 'COINBASE'
+                value = self.flow_sum
             else:
                 output = input.prev_tx_output
                 address = output.addresses[0]
+                value = output.value
             nodes.append({'label': 'Address', 'address': address, 'type': 'source'})
-            links.append({'source': len(nodes) - 1, 'target': 0, 'type': 'INPUT', 'value': output.value})
+            links.append({'source': len(nodes) - 1, 'target': 0, 'type': 'INPUT', 'value': value})
         for output in self.get_outputs():
             nodes.append({'label': 'Address', 'address': output.addresses[0], 'type': 'target'})
             links.append({'source': 0, 'target': len(nodes) - 1, 'type': 'OUTPUT', 'value': output.value})

@@ -12,7 +12,7 @@ class GraphDB:
         self.url = 'http://{}:{}/db/data/transaction/commit'.format(host, port)
 
     def get_address(self, address):
-        statement = 'MATCH (a:Address {address: {address}})-[r]-t RETURN a.address, t.txid, type(r), r.value'
+        statement = 'MATCH (a:Address {address: {address}})-[r]-t WHERE type(r) = "INPUT" OR type(r) = "OUTPUT"  RETURN a.address, t.txid, type(r), r.value'
         return Address(self.query(statement, {'address': address}))
 
     def get_path(self, address1, address2):
