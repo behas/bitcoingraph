@@ -537,19 +537,29 @@ class Transaction(BlockchainObject):
     def get_graph_json(self):
         nodes = [{'label': 'Transaction', 'txid': self.id}]
         links = []
-        for input in self.get_inputs():
-            if input.is_coinbase:
-                address = 'COINBASE'
-                value = self.flow_sum
-            else:
-                output = input.prev_tx_output
-                address = output.addresses[0]
-                value = output.value
-            nodes.append({'label': 'Address', 'address': address, 'type': 'source'})
-            links.append({'source': len(nodes) - 1, 'target': 0, 'type': 'INPUT', 'value': value})
-        for output in self.get_outputs():
-            nodes.append({'label': 'Address', 'address': output.addresses[0], 'type': 'target'})
-            links.append({'source': 0, 'target': len(nodes) - 1, 'type': 'OUTPUT', 'value': output.value})
+        inputs = list(self.get_inputs())
+        outputs = list(self.get_outputs())
+        if len(inputs) <= 10:
+            for input in inputs:
+                if input.is_coinbase:
+                    address = 'COINBASE'
+                    value = self.flow_sum
+                else:
+                    output = input.prev_tx_output
+                    address = output.addresses[0]
+                    value = output.value
+                nodes.append({'label': 'Address', 'address': address, 'type': 'source'})
+                links.append({'source': len(nodes) - 1, 'target': 0, 'type': 'INPUT', 'value': value})
+        else:
+            nodes.append({'label': 'Address', 'amount': len(inputs), 'type': 'source'})
+            links.append({'source': len(nodes) - 1, 'target': 0, 'type': 'INPUT', 'value': self.flow_sum})
+        if len(outputs) <= 10:
+            for output in outputs:
+                nodes.append({'label': 'Address', 'address': output.addresses[0], 'type': 'target'})
+                links.append({'source': 0, 'target': len(nodes) - 1, 'type': 'OUTPUT', 'value': output.value})
+        else:
+            nodes.append({'label': 'Address', 'amount': len(outputs), 'type': 'target'})
+            links.append({'source': 0, 'target': len(nodes) - 1, 'type': 'OUTPUT', 'value': self.flow_sum})
         return to_json({'nodes': nodes, 'links': links})
 
 
