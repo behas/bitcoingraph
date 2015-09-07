@@ -537,28 +537,35 @@ class Transaction(BlockchainObject):
     def get_graph_json(self):
         nodes = [{'label': 'Transaction', 'txid': self.id}]
         links = []
-        inputs = list(self.get_inputs())
-        outputs = list(self.get_outputs())
-        if len(inputs) <= 10:
-            for input in inputs:
-                if input.is_coinbase:
-                    address = 'COINBASE'
-                    value = self.flow_sum
-                else:
-                    output = input.prev_tx_output
-                    address = output.addresses[0]
-                    value = output.value
-                nodes.append({'label': 'Address', 'address': address, 'type': 'source'})
-                links.append({'source': len(nodes) - 1, 'target': 0, 'type': 'INPUT', 'value': value})
+        aggregated_inputs = {}
+        aggregated_outputs = {}
+        for input in self.get_inputs():
+            output = input.prev_tx_output
+            if input.is_coinbase:
+                aggregated_inputs['COINBASE'] = self.flow_sum
+            elif output.addresses[0] in aggregated_inputs:
+                aggregated_inputs[output.addresses[0]] += output.value
+            else:
+                aggregated_inputs[output.addresses[0]] = output.value
+        for output in self.get_outputs():
+            if output.addresses[0] in aggregated_outputs:
+                aggregated_outputs[output.addresses[0]] += output.value
+            else:
+                aggregated_outputs[output.addresses[0]] = output.value
+
+        if len(aggregated_inputs) <= 10:
+            for k, v in aggregated_inputs.items():
+                nodes.append({'label': 'Address', 'address': k, 'type': 'source'})
+                links.append({'source': len(nodes) - 1, 'target': 0, 'type': 'INPUT', 'value': v})
         else:
-            nodes.append({'label': 'Address', 'amount': len(inputs), 'type': 'source'})
+            nodes.append({'label': 'Address', 'amount': len(aggregated_inputs), 'type': 'source'})
             links.append({'source': len(nodes) - 1, 'target': 0, 'type': 'INPUT', 'value': self.flow_sum})
-        if len(outputs) <= 10:
-            for output in outputs:
-                nodes.append({'label': 'Address', 'address': output.addresses[0], 'type': 'target'})
-                links.append({'source': 0, 'target': len(nodes) - 1, 'type': 'OUTPUT', 'value': output.value})
+        if len(aggregated_outputs) <= 10:
+            for k, v in aggregated_outputs.items():
+                nodes.append({'label': 'Address', 'address': k, 'type': 'target'})
+                links.append({'source': 0, 'target': len(nodes) - 1, 'type': 'OUTPUT', 'value': v})
         else:
-            nodes.append({'label': 'Address', 'amount': len(outputs), 'type': 'target'})
+            nodes.append({'label': 'Address', 'amount': len(aggregated_outputs), 'type': 'target'})
             links.append({'source': 0, 'target': len(nodes) - 1, 'type': 'OUTPUT', 'value': self.flow_sum})
         return to_json({'nodes': nodes, 'links': links})
 

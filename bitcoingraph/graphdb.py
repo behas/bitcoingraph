@@ -7,8 +7,9 @@ class GraphDB:
 
     address_match = '''MATCH (a:Address {address: {address}})-[r]-t
                 WHERE type(r) = "INPUT" OR type(r) = "OUTPUT"
+                WITH a, t, type(r) AS rel_type, sum(r.value) AS value
                 '''
-    rows_per_page_default = 100
+    rows_per_page_default = 20
 
     def __init__(self, host, port, user, password):
         self.host = host
@@ -22,7 +23,7 @@ class GraphDB:
         return (count + rows_per_page - 1) // rows_per_page
 
     def get_address(self, address, page, rows_per_page=rows_per_page_default):
-        statement = GraphDB.address_match + '''RETURN a.address, t.txid, type(r), r.value, t.timestamp
+        statement = GraphDB.address_match + '''RETURN a.address, t.txid, rel_type, value, t.timestamp
                 ORDER BY t.timestamp desc'''
         parameters = {'address': address}
         if rows_per_page is not None:
