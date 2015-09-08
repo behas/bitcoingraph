@@ -1,4 +1,5 @@
 
+from datetime import date, datetime, timezone
 import requests
 from bitcoingraph.blockchain import to_json, to_time
 
@@ -6,8 +7,11 @@ from bitcoingraph.blockchain import to_json, to_time
 class GraphDB:
 
     address_match = '''MATCH (a:Address {address: {address}})-[r]-t
-                WHERE type(r) = "INPUT" OR type(r) = "OUTPUT"
-                WITH a, t, type(r) AS rel_type, sum(r.value) AS value
+                WHERE (type(r) = "INPUT" OR type(r) = "OUTPUT")
+                '''
+
+    address_period_match = address_match + '''WITH a, t, type(r) AS rel_type, sum(r.value) AS value
+                WHERE t.timestamp > {from} AND t.timestamp < {to}
                 '''
     rows_per_page_default = 20
 
@@ -18,19 +22,36 @@ class GraphDB:
         self.password = password
         self.url = 'http://{}:{}/db/data/transaction/commit'.format(host, port)
 
-    def get_address_page_count(self, address, rows_per_page=rows_per_page_default):
-        count = self.single_result_query(GraphDB.address_match + 'RETURN count(*)', {'address': address})
-        return (count + rows_per_page - 1) // rows_per_page
+    def get_address_info(self, address, date_from=None, date_to=None, rows_per_page=rows_per_page_default):
+        parameter = self.as_parameter(address, date_from, date_to)
+        result_row = self.get_first_row(self.query(GraphDB.address_match + 'RETURN count(*), min(t.timestamp), max(t.timestamp)', parameter))
+        count = self.get_first_row(self.query(GraphDB.address_period_match + 'RETURN count(*)', parameter))[0]
+        return {'transactions': result_row[0], 'first': to_time(result_row[1], True), 'last': to_time(result_row[2], True),
+                'pages': (count + rows_per_page - 1) // rows_per_page}
 
-    def get_address(self, address, page, rows_per_page=rows_per_page_default):
-        statement = GraphDB.address_match + '''RETURN a.address, t.txid, rel_type, value, t.timestamp
+    def get_address(self, address, page, date_from=None, date_to=None, rows_per_page=rows_per_page_default):
+        statement = GraphDB.address_period_match + '''RETURN a.address, t.txid, rel_type, value, t.timestamp
                 ORDER BY t.timestamp desc'''
-        parameters = {'address': address}
+        parameter = self.as_parameter(address, date_from, date_to)
         if rows_per_page is not None:
             statement += '\nSKIP {skip} LIMIT {limit}'
-            parameters['skip'] = page * rows_per_page
-            parameters['limit'] = rows_per_page
-        return Address(self.query(statement, parameters))
+            parameter['skip'] = page * rows_per_page
+            parameter['limit'] = rows_per_page
+        return Address(self.query(statement, parameter))
+
+    @staticmethod
+    def as_parameter(address, date_from=None, date_to=None):
+        if date_from is None:
+            timestamp_from = 0
+        else:
+            timestamp_from = datetime.strptime(date_from, '%Y-%m-%d').replace(tzinfo=timezone.utc).timestamp()
+        if date_to is None:
+            timestamp_to = 2 ** 31 - 1
+        else:
+            d = datetime.strptime(date_to, '%Y-%m-%d').replace(tzinfo=timezone.utc)
+            d += date.resolution
+            timestamp_to = d.timestamp()
+        return {'address': address, 'from': timestamp_from, 'to': timestamp_to}
 
     def get_path(self, address1, address2):
         statement = '''MATCH p = shortestpath (
@@ -52,8 +73,9 @@ class GraphDB:
             pass  # maybe raise an exception here
         return r.json()
 
-    def single_result_query(self, statement, parameters):
-        return self.query(statement, parameters)['results'][0]['data'][0]['row'][0]
+    @staticmethod
+    def get_first_row(query_result):
+        return query_result['results'][0]['data'][0]['row']
 
 
 class Address:
