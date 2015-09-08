@@ -23,10 +23,16 @@ class GraphDB:
         self.url = 'http://{}:{}/db/data/transaction/commit'.format(host, port)
 
     def get_address_info(self, address, date_from=None, date_to=None, rows_per_page=rows_per_page_default):
+        statement = GraphDB.address_match + 'RETURN count(*), min(t.timestamp), max(t.timestamp)'
+        result_row = self.get_first_row(self.query(statement, {'address': address}))
+        num_transactions = result_row[0]
+        if num_transactions == 0:
+            return {'transactions': 0}
         parameter = self.as_parameter(address, date_from, date_to)
-        result_row = self.get_first_row(self.query(GraphDB.address_match + 'RETURN count(*), min(t.timestamp), max(t.timestamp)', parameter))
         count = self.get_first_row(self.query(GraphDB.address_period_match + 'RETURN count(*)', parameter))[0]
-        return {'transactions': result_row[0], 'first': to_time(result_row[1], True), 'last': to_time(result_row[2], True),
+        return {'transactions': num_transactions,
+                'first': to_time(result_row[1], True),
+                'last': to_time(result_row[2], True),
                 'pages': (count + rows_per_page - 1) // rows_per_page}
 
     def get_address(self, address, page, date_from=None, date_to=None, rows_per_page=rows_per_page_default):
