@@ -85,7 +85,7 @@ class AddressList:
 def compute_entities(input_path):
     address_list = AddressList()
     print('reading addresses')
-    with open(os.path.join(input_path, 'addresses_unique.csv'), 'r') as address_file:
+    with open(os.path.join(input_path, 'addresses.csv'), 'r') as address_file:
         address_file.readline()
         for line in address_file:
             line = line.strip()

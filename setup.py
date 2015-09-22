@@ -49,7 +49,7 @@ setup(
 
     # Package information
     packages=['bitcoingraph'],
-    scripts=['scripts/bcgraph-export'],
+    scripts=['scripts/bcgraph-export', 'scripts/bcgraph-compute-entities'],
     platforms='any',
     install_requires=['requests>=2.5.0'],
 

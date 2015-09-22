@@ -9,7 +9,7 @@ import logging.handlers
 import bitcoingraph as bcgraph
 from bitcoingraph import BitcoingraphException
 
-logger = logging.getLogger("bcgraph-generate")
+logger = logging.getLogger("bcgraph-export")
 
 
 DEFAULT_SERVICE = 'localhost:8332'

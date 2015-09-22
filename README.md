@@ -80,21 +80,34 @@ Bitcoin graph provides the `bcgraph-export` tool for exporting transactions in a
 
 Furthermore, the `-n` option can be used to write the CSV headers in Neo4J's input format.
 
-The following files are generated in a directory callyed `tx_{START_BLOCK}_{END_BLOCK}`:
+The following files are generated in a directory called `block_1_1000`:
 
 + transactions.csv: data related to transactions
 + addresses.csv: all addresses that were either part of inputs or outputs (Note: list contains duplicates)
 + inputs.csv: all input relationships (Address -> Transaction)
-+ outputs.csv: all outptut relationships (Transaction -> Address)
++ outputs.csv: all output relationships (Transaction -> Address)
+
+The address file (`addresses.csv`) contains duplicates. To deduplicate and sort the list of addresses, use the followinng command (and replace the original address file):
+
+    cat <(head -n 1 addresses.csv) <(tail -n +2 addresses.csv | LC_ALL=C sort -u) > addresses_unique.csv
+
+
+## Entity computation
+
+Bitcoingraph supprts computation of entites as described by [Ron and Shamir](https://eprint.iacr.org/2012/584.pdf). The following command computes entities for a given blockchain data dump:
+
+    bcgraph-compute-entities -i block_1_1000
+
+This creates two additional files:
+
+* entities.csv: list of entity identifiers
+* belongs_to_csv: assignment of addresses to entities
 
 
 ## Neo4J graph database setup
 
 Bitcoingraph uses Neo4J as graph database backend. Exported transactions can be imported as follows:
 
-First the list of addresses needs to be deduplicated:
-
-    cat <(head -n 1 addresses.csv) <(tail -n +2 addresses.csv | LC_ALL=C sort -u) > addresses_unique.csv
 
 Make sure Neo4J is not running an pre-existing databases are removed:
 
@@ -104,7 +117,7 @@ Make sure Neo4J is not running an pre-existing databases are removed:
 
 The import the dump using Neo4J's CSV importer tool:
 
-    bin/neo4j-import --into data/graph.db --id-type string --nodes:Transaction dump/transactions.csv --nodes:Address dump/addresses_unique.csv --relationships:INPUT dump/inputs.csv --relationships:OUTPUT dump/outputs.csv
+    bin/neo4j-import --into data/graph.db --id-type string --nodes:Transaction dump/transactions.csv --nodes:Address dump/addresses.csv --relationships:INPUT dump/inputs.csv --relationships:OUTPUT dump/outputs.csv
 
 
 Then start Neo4J
@@ -122,6 +135,7 @@ Cypher commands can be entered either in the Neo4j shell or in the web interface
 
 * [Bernhard Haslhofer](mailto:bernhard.haslhofer@ait.ac.at)
 * [Aljosha Judmaier](mailto:judmayer@xylem-technologies.com)
+* [Roman Karl](mailto:roman.karl@ait.ac.at)
 
 # License
 
