@@ -503,34 +503,6 @@ class Transaction(BlockchainObject):
                 return output
         return None
 
-    # Bitcoin flow properties
-
-    @property
-    def bc_flows(self):
-        """
-        Returns flows of Bitcoins between source and target addresses.
-
-        :return: bitcoin flows ([src1, src2, ...], [tgt1, tgt2, ...], value)
-        :rtype: array
-        """
-        bc_flows = []
-        # collect input addresses
-        if self.is_coinbase_tx:
-            src_list = ['COINBASE']
-        else:
-            src_list = []
-            for tx_input in self.get_inputs():
-                src_list += [address for address in tx_input.addresses
-                             if address not in src_list]
-        # collect output addresses
-        for tx_output in self.get_outputs():
-            tgt_list = [address for address in tx_output.addresses]
-            flow = {'src_list': src_list, 'tgt_list': tgt_list,
-                    'value': tx_output.value}
-            bc_flows += [flow]
-
-        return bc_flows
-
     @property
     def flow_sum(self):
         """
@@ -538,11 +510,8 @@ class Transaction(BlockchainObject):
         """
         return sum([tx_output.value for tx_output in self.get_outputs()])
 
-    def get_graph_json(self):
-        nodes = [{'label': 'Transaction', 'txid': self.id}]
-        links = []
+    def get_aggregated_inputs(self):
         aggregated_inputs = {}
-        aggregated_outputs = {}
         for input in self.get_inputs():
             output = input.prev_tx_output
             if input.is_coinbase:
@@ -551,11 +520,22 @@ class Transaction(BlockchainObject):
                 aggregated_inputs[output.addresses[0]] += output.value
             else:
                 aggregated_inputs[output.addresses[0]] = output.value
+        return aggregated_inputs
+
+    def get_aggregated_outputs(self):
+        aggregated_outputs = {}
         for output in self.get_outputs():
             if output.addresses[0] in aggregated_outputs:
                 aggregated_outputs[output.addresses[0]] += output.value
             else:
                 aggregated_outputs[output.addresses[0]] = output.value
+        return aggregated_outputs
+
+    def get_graph_json(self):
+        nodes = [{'label': 'Transaction', 'txid': self.id}]
+        links = []
+        aggregated_inputs = self.get_aggregated_inputs()
+        aggregated_outputs = self.get_aggregated_outputs()
 
         if len(aggregated_inputs) <= 10:
             for k, v in aggregated_inputs.items():
