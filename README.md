@@ -124,11 +124,10 @@ Then start Neo4J
 
     ./bin/neo4j start
 
-and create indexes with the Cypher commands:
+and create unique indexes with the Cypher commands:
 
-    CREATE INDEX ON :Transaction(txid)
-    CREATE INDEX ON :Address(address)
-    CREATE INDEX ON :Entity(id)
+    CREATE CONSTRAINT ON (t:Transaction) ASSERT t.txid IS UNIQUE
+    CREATE CONSTRAINT ON (a:Address) ASSERT a.address IS UNIQUE
 
 Cypher commands can be entered either in the Neo4j shell or in the web interface (see http://neo4j.com/docs/stable/tools.html).
 
