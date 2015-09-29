@@ -117,7 +117,7 @@ Make sure Neo4J is not running an pre-existing databases are removed:
 
 The import the dump using Neo4J's CSV importer tool:
 
-    bin/neo4j-import --into data/graph.db --id-type string --nodes:Transaction dump/transactions.csv --nodes:Address dump/addresses.csv --relationships:INPUT dump/inputs.csv --relationships:OUTPUT dump/outputs.csv
+    bin/neo4j-import --into data/graph.db --id-type string --nodes:Transaction dump/transactions.csv --nodes:Address dump/addresses.csv --nodes:Entity dump/entities.csv --relationships:INPUT dump/inputs.csv --relationships:OUTPUT dump/outputs.csv --relationships:BELONGS_TO dump/belongs_to.csv
 
 
 Then start Neo4J
@@ -128,6 +128,7 @@ and create indexes with the Cypher commands:
 
     CREATE INDEX ON :Transaction(txid)
     CREATE INDEX ON :Address(address)
+    CREATE INDEX ON :Entity(id)
 
 Cypher commands can be entered either in the Neo4j shell or in the web interface (see http://neo4j.com/docs/stable/tools.html).
 
