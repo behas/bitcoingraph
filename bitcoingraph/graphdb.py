@@ -24,21 +24,24 @@ class GraphDB:
 
     def get_address_info(self, address, date_from=None, date_to=None, rows_per_page=rows_per_page_default):
         statement = GraphDB.address_match + 'RETURN count(*), min(t.timestamp), max(t.timestamp)'
-        result_row = self.get_first_row(self.query(statement, {'address': address}))
+        result_row = self.single_row_query(statement, {'address': address})
         num_transactions = result_row[0]
         if num_transactions == 0:
             return {'transactions': 0}
-        parameter = self.as_parameter(address, date_from, date_to)
-        count = self.get_first_row(self.query(GraphDB.address_period_match + 'RETURN count(*)', parameter))[0]
+        parameter = self.as_address_query_parameter(address, date_from, date_to)
+        count = self.single_result_query(GraphDB.address_period_match + 'RETURN count(*)', parameter)
+        entity_statement = 'MATCH (a:Address {address: {address}})--(e:Entity) RETURN e'
+        entity = self.single_result_query(entity_statement, {'address': address})
         return {'transactions': num_transactions,
                 'first': to_time(result_row[1], True),
                 'last': to_time(result_row[2], True),
+                'entity': entity,
                 'pages': (count + rows_per_page - 1) // rows_per_page}
 
     def get_address(self, address, page, date_from=None, date_to=None, rows_per_page=rows_per_page_default):
         statement = GraphDB.address_period_match + '''RETURN a.address, t.txid, rel_type, value, t.timestamp
                 ORDER BY t.timestamp desc'''
-        parameter = self.as_parameter(address, date_from, date_to)
+        parameter = self.as_address_query_parameter(address, date_from, date_to)
         if rows_per_page is not None:
             statement += '\nSKIP {skip} LIMIT {limit}'
             parameter['skip'] = page * rows_per_page
@@ -46,7 +49,7 @@ class GraphDB:
         return Address(self.query(statement, parameter))
 
     @staticmethod
-    def as_parameter(address, date_from=None, date_to=None):
+    def as_address_query_parameter(address, date_from=None, date_to=None):
         if date_from is None:
             timestamp_from = 0
         else:
@@ -58,6 +61,17 @@ class GraphDB:
             d += date.resolution
             timestamp_to = d.timestamp()
         return {'address': address, 'from': timestamp_from, 'to': timestamp_to}
+
+    def get_entity(self, id):
+        entity_statement = 'MATCH (e:Entity {id: {id}})--a RETURN e, collect(a.address)'
+        result = self.single_row_query(entity_statement, {'id': id})
+        entity = result[0]
+        entity['addresses'] = result[1]
+        return entity
+
+    def change_entity_name(self, id, name):
+        entity_statement = 'MATCH (e:Entity {id: {id}})--a SET e.name = {name}'
+        self.query(entity_statement, {'id': id, 'name': name})
 
     def get_path(self, address1, address2):
         statement = '''MATCH p = shortestpath (
@@ -79,12 +93,23 @@ class GraphDB:
             pass  # maybe raise an exception here
         return r.json()
 
-    @staticmethod
-    def get_first_row(query_result):
-        return query_result['results'][0]['data'][0]['row']
+    def single_row_query(self, statement, parameters):
+        query_result = self.query(statement, parameters)
+        data = query_result['results'][0]['data']
+        if data:
+            return data[0]['row']
+        else:
+            return None
+
+    def single_result_query(self, statement, parameters):
+        first_row = self.single_row_query(statement, parameters)
+        if first_row is None:
+            return None
+        else:
+            return first_row[0]
 
 
-class Address:
+class QueryResult:
 
     def __init__(self, raw_data):
         self._raw_data = raw_data
@@ -92,6 +117,17 @@ class Address:
     @property
     def data(self):
         return self._raw_data['results'][0]['data']
+
+    @staticmethod
+    def convert_row(raw_data):
+        row = raw_data['row']
+        return row[0]
+
+    def get_list(self):
+        return map(self.convert_row, self.data)
+
+
+class Address(QueryResult):
 
     @property
     def address(self):
