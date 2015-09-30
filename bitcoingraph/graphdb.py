@@ -64,12 +64,15 @@ class GraphDB:
             timestamp_to = d.timestamp()
         return {'address': address, 'from': timestamp_from, 'to': timestamp_to}
 
-    def get_entity(self, id):
-        entity_statement = 'MATCH (e:Entity)--a WHERE id(e) = {id} RETURN e, id(e), collect(a.address)'
-        result = self.single_row_query(entity_statement, {'id': id})
+    def get_entity(self, id, max_addresses=rows_per_page_default):
+        count_statement = 'MATCH (e:Entity)--a WHERE id(e) = {id} RETURN count(*)'
+        statement = 'MATCH (e:Entity)--a WHERE id(e) = {id} WITH e, a LIMIT {limit} RETURN e, collect(a.address)'
+        count = self.single_result_query(count_statement, {'id': id})
+        result = self.single_row_query(statement, {'id': id, 'limit': max_addresses})
         entity = result[0]
-        entity['id'] = result[1]
-        entity['addresses'] = result[2]
+        entity['id'] = id
+        entity['addresses'] = result[1]
+        entity['number_of_addresses'] = count
         return entity
 
     def change_entity_name(self, id, name):
