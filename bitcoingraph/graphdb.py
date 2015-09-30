@@ -6,9 +6,7 @@ from bitcoingraph.blockchain import to_json, to_time
 
 class GraphDB:
 
-    address_match = '''MATCH (a:Address {address: {address}})-[r]-t
-                WHERE (type(r) = "INPUT" OR type(r) = "OUTPUT")
-                '''
+    address_match = 'MATCH (a:Address {address: {address}})-[r:INPUT|OUTPUT]-t\n'
 
     address_period_match = address_match + '''WITH a, t, type(r) AS rel_type, sum(r.value) AS value
                 WHERE t.timestamp > {from} AND t.timestamp < {to}
@@ -30,7 +28,7 @@ class GraphDB:
             return {'transactions': 0}
         parameter = self.as_address_query_parameter(address, date_from, date_to)
         count = self.single_result_query(GraphDB.address_period_match + 'RETURN count(*)', parameter)
-        entity_statement = 'MATCH (a:Address {address: {address}})--(e:Entity) RETURN e, id(e)'
+        entity_statement = 'MATCH (a:Address {address: {address}})-[:BELONGS_TO]->e RETURN e, id(e)'
         result = self.single_row_query(entity_statement, {'address': address})
         entity = result[0]
         entity['id'] = result[1]
