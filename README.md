@@ -87,10 +87,13 @@ The following files are generated in a directory called `block_1_1000`:
 + inputs.csv: all input relationships (Address -> Transaction)
 + outputs.csv: all output relationships (Transaction -> Address)
 
-The address file (`addresses.csv`) contains duplicates. To deduplicate and sort the list of addresses, use the followinng command (and replace the original address file):
+The address file (`addresses.csv`) contains duplicates. To deduplicate and sort the list of addresses, use the following command (and replace the original address file):
 
     cat <(head -n 1 addresses.csv) <(tail -n +2 addresses.csv | LC_ALL=C sort -u) > addresses_unique.csv
 
+Also the transaction file (`transactions.csv`) contains duplicates. These should also be removed in order to be able to create a unique index in Neo4j afterwards.
+
+    cat <(head -n 1 transactions.csv) <(tail -n +2 transactions.csv | sort | uniq -w 64) > transactions_unique.csv
 
 ## Entity computation
 

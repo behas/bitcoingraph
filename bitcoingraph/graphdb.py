@@ -30,8 +30,10 @@ class GraphDB:
             return {'transactions': 0}
         parameter = self.as_address_query_parameter(address, date_from, date_to)
         count = self.single_result_query(GraphDB.address_period_match + 'RETURN count(*)', parameter)
-        entity_statement = 'MATCH (a:Address {address: {address}})--(e:Entity) RETURN e'
-        entity = self.single_result_query(entity_statement, {'address': address})
+        entity_statement = 'MATCH (a:Address {address: {address}})--(e:Entity) RETURN e, id(e)'
+        result = self.single_row_query(entity_statement, {'address': address})
+        entity = result[0]
+        entity['id'] = result[1]
         return {'transactions': num_transactions,
                 'first': to_time(result_row[1], True),
                 'last': to_time(result_row[2], True),
@@ -63,14 +65,15 @@ class GraphDB:
         return {'address': address, 'from': timestamp_from, 'to': timestamp_to}
 
     def get_entity(self, id):
-        entity_statement = 'MATCH (e:Entity {id: {id}})--a RETURN e, collect(a.address)'
+        entity_statement = 'MATCH (e:Entity)--a WHERE id(e) = {id} RETURN e, id(e), collect(a.address)'
         result = self.single_row_query(entity_statement, {'id': id})
         entity = result[0]
-        entity['addresses'] = result[1]
+        entity['id'] = result[1]
+        entity['addresses'] = result[2]
         return entity
 
     def change_entity_name(self, id, name):
-        entity_statement = 'MATCH (e:Entity {id: {id}})--a SET e.name = {name}'
+        entity_statement = 'MATCH (e:Entity) WHERE id(e) = {id} SET e.name = {name}'
         self.query(entity_statement, {'id': id, 'name': name})
 
     def get_path(self, address1, address2):
