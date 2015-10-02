@@ -59,8 +59,14 @@ def export_transactions(args):
     service_uri = 'http://' + service_cred + '@' + args.service + '/'
     try:
         blockchain = bcgraph.get_blockchain(service_uri)
+        if args.no_header:
+            header = None
+        elif args.neo4j:
+            header = 'neo4j'
+        else:
+            header = 'plain'
         bcgraph.export_transactions(blockchain, args.startheight,
-                                    args.endheight, args.neo4j,
+                                    args.endheight, header,
                                     args.output_path, progress)
         logger.info("Finished transaction export.")
     except BitcoingraphException as exc:
@@ -89,6 +95,8 @@ parser.add_argument("-o", "--output_path", type=str,
                     help="Output path")
 parser.add_argument("-n", "--neo4j", action='store_true',
                     help="Neo4J CSV import tool dialect")
+parser.add_argument("--no-header", action='store_true',
+                    help="Write CSV files without any header")
 parser.set_defaults(func=export_transactions)
 
 

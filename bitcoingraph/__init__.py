@@ -60,7 +60,7 @@ def get_graph_db(host, port, user, password):
     return GraphDB(host, port, user, password)
 
 
-def export_transactions(blockchain, start_block, end_block, neo4j=False,
+def export_transactions(blockchain, start_block, end_block, header='plain',
                         output_path=None, progress=None):
     """
     Exports transactions in a given block range to CSV file.
@@ -80,7 +80,7 @@ def export_transactions(blockchain, start_block, end_block, neo4j=False,
     tx_input_file = output_path + "/" + "inputs.csv"
     tx_output_file = output_path + "/" + "outputs.csv"
 
-    if neo4j:
+    if header == 'neo4j':
         fn_tx_file = ['txid:ID(Transaction)', 'block:int', 'timestamp:int', 'total:double']
         fn_address_file = ['address:ID(Address)']
         fn_in_file = [':START_ID(Address)', ':END_ID(Transaction)', 'type', 'addresses:int', 'value:double']
@@ -101,10 +101,11 @@ def export_transactions(blockchain, start_block, end_block, neo4j=False,
         input_writer = csv.writer(input_csv_file)
         output_writer = csv.writer(output_csv_file)
 
-        tx_writer.writerow(fn_tx_file)
-        addr_writer.writerow(fn_address_file)
-        input_writer.writerow(fn_in_file)
-        output_writer.writerow(fn_out_file)
+        if header is not None:
+            tx_writer.writerow(fn_tx_file)
+            addr_writer.writerow(fn_address_file)
+            input_writer.writerow(fn_in_file)
+            output_writer.writerow(fn_out_file)
 
         try:
             for idx, block in enumerate(blockchain.get_blocks_in_range(
