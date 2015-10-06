@@ -73,6 +73,11 @@ class GraphDB:
         entity['number_of_addresses'] = count
         return entity
 
+    def search_entity_by_name(self, name):
+        statement = 'MATCH (e:Entity {name: {name}}) RETURN id(e)'
+        id = self.single_result_query(statement, {'name': name})
+        return id
+
     def change_entity_name(self, id, name):
         entity_statement = 'MATCH (e:Entity) WHERE id(e) = {id} SET e.name = {name}'
         self.query(entity_statement, {'id': id, 'name': name})
