@@ -6,11 +6,11 @@ from bitcoingraph.blockchain import to_json, to_time
 
 class GraphDB:
 
-    address_match = 'MATCH (a:Address {address: {address}})-[r:INPUT|OUTPUT]-t\n'
+    address_match = '''MATCH (a:Address {address: {address}})-[r:INPUT|OUTPUT]-t
+        WITH a, t, type(r) AS rel_type, sum(r.value) AS value
+        '''
 
-    address_period_match = address_match + '''WITH a, t, type(r) AS rel_type, sum(r.value) AS value
-                WHERE t.timestamp > {from} AND t.timestamp < {to}
-                '''
+    address_period_match = address_match + 'WHERE t.timestamp > {from} AND t.timestamp < {to}\n'
     rows_per_page_default = 20
 
     def __init__(self, host, port, user, password):
@@ -26,8 +26,11 @@ class GraphDB:
         num_transactions = result_row[0]
         if num_transactions == 0:
             return {'transactions': 0}
-        parameter = self.as_address_query_parameter(address, date_from, date_to)
-        count = self.single_result_query(GraphDB.address_period_match + 'RETURN count(*)', parameter)
+        if date_from is None and date_to is None:
+            count = num_transactions
+        else:
+            parameter = self.as_address_query_parameter(address, date_from, date_to)
+            count = self.single_result_query(GraphDB.address_period_match + 'RETURN count(*)', parameter)
         entity_statement = 'MATCH (a:Address {address: {address}})-[:BELONGS_TO]->e RETURN e, id(e)'
         result = self.single_row_query(entity_statement, {'address': address})
         entity = result[0]
@@ -78,9 +81,9 @@ class GraphDB:
         id = self.single_result_query(statement, {'name': name})
         return id
 
-    def change_entity_name(self, id, name):
-        entity_statement = 'MATCH (e:Entity) WHERE id(e) = {id} SET e.name = {name}'
-        self.query(entity_statement, {'id': id, 'name': name})
+    def update_entity(self, id, name, link):
+        entity_statement = 'MATCH (e:Entity) WHERE id(e) = {id} SET e.name = {name}, e.link = {link}'
+        self.query(entity_statement, {'id': id, 'name': name, 'link': link})
 
     def get_path(self, address1, address2):
         statement = '''MATCH p = shortestpath (
