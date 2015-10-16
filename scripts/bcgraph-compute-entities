@@ -86,27 +86,23 @@ def compute_entities(input_path):
     address_list = AddressList()
     print('reading addresses')
     with open(os.path.join(input_path, 'addresses.csv'), 'r') as address_file:
-        address_file.readline()
         for line in address_file:
             line = line.strip()
-            if line != 'COINBASE':
-                address_list.add(line)
+            address_list.add(line)
     print('reading inputs')
     input_counter = 0
-    with open(os.path.join(input_path, 'inputs.csv'), 'r') as input_file:
-        input_file.readline()
+    with open(os.path.join(input_path, 'input_addresses_sorted.csv'), 'r') as input_file:
         input_addresses = set()
         transaction = None
         for line in input_file:
-            entries = line.split(',')
-            address = entries[0]
-            if address != 'COINBASE':
-                if transaction is None or transaction == entries[1]:
-                    input_addresses.add(address)
-                else:
-                    address_list.group(input_addresses)
-                    input_addresses = {address}
-                transaction = entries[1]
+            entries = line.strip().split(',')
+            address = entries[1]
+            if transaction is None or transaction == entries[0]:
+                input_addresses.add(address)
+            else:
+                address_list.group(input_addresses)
+                input_addresses = {address}
+            transaction = entries[0]
             input_counter += 1
             if input_counter % 100000 == 0:
                 print('processed inputs: ' + str(input_counter))

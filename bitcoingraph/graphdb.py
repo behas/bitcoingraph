@@ -6,11 +6,11 @@ from bitcoingraph.blockchain import to_json, to_time
 
 class GraphDB:
 
-    address_match = '''MATCH (a:Address {address: {address}})-[r:INPUT|OUTPUT]-t
-        WITH a, t, type(r) AS rel_type, sum(r.value) AS value
+    address_match = '''MATCH (a:Address {address: {address}})<-[u:USES]-o-[r:INPUT|OUTPUT]-t<-[c:CONTAINS]-b
+        WITH a, t, type(r) AS rel_type, sum(o.value) AS value, b
         '''
 
-    address_period_match = address_match + 'WHERE t.timestamp > {from} AND t.timestamp < {to}\n'
+    address_period_match = address_match + 'WHERE b.timestamp > {from} AND b.timestamp < {to}\n'
     rows_per_page_default = 20
 
     def __init__(self, host, port, user, password):
@@ -21,7 +21,7 @@ class GraphDB:
         self.url = 'http://{}:{}/db/data/transaction/commit'.format(host, port)
 
     def get_address_info(self, address, date_from=None, date_to=None, rows_per_page=rows_per_page_default):
-        statement = GraphDB.address_match + 'RETURN count(*), min(t.timestamp), max(t.timestamp)'
+        statement = GraphDB.address_match + 'RETURN count(*), min(b.timestamp), max(b.timestamp)'
         result_row = self.single_row_query(statement, {'address': address})
         num_transactions = result_row[0]
         if num_transactions == 0:
@@ -42,8 +42,8 @@ class GraphDB:
                 'pages': (count + rows_per_page - 1) // rows_per_page}
 
     def get_address(self, address, page, date_from=None, date_to=None, rows_per_page=rows_per_page_default):
-        statement = GraphDB.address_period_match + '''RETURN a.address, t.txid, rel_type, value, t.timestamp
-                ORDER BY t.timestamp desc'''
+        statement = GraphDB.address_period_match + '''RETURN a.address, t.txid, rel_type, value, b.timestamp
+                ORDER BY b.timestamp desc'''
         parameter = self.as_address_query_parameter(address, date_from, date_to)
         if rows_per_page is not None:
             statement += '\nSKIP {skip} LIMIT {limit}'
