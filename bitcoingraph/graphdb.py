@@ -2,15 +2,11 @@
 from datetime import date, datetime, timezone
 import requests
 from bitcoingraph.blockchain import to_json, to_time
+from bitcoingraph import queries
 
 
 class GraphDB:
 
-    address_match = '''MATCH (a:Address {address: {address}})<-[u:USES]-o-[r:INPUT|OUTPUT]-t<-[c:CONTAINS]-b
-        WITH a, t, type(r) AS rel_type, sum(o.value) AS value, b
-        '''
-
-    address_period_match = address_match + 'WHERE b.timestamp > {from} AND b.timestamp < {to}\n'
     rows_per_page_default = 20
 
     def __init__(self, host, port, user, password):
@@ -21,8 +17,7 @@ class GraphDB:
         self.url = 'http://{}:{}/db/data/transaction/commit'.format(host, port)
 
     def get_address_info(self, address, date_from=None, date_to=None, rows_per_page=rows_per_page_default):
-        statement = GraphDB.address_match + 'RETURN count(*), min(b.timestamp), max(b.timestamp)'
-        result_row = self.single_row_query(statement, {'address': address})
+        result_row = self.single_row_query(queries.address_stats_query, {'address': address})
         num_transactions = result_row[0]
         if num_transactions == 0:
             return {'transactions': 0}
@@ -30,9 +25,8 @@ class GraphDB:
             count = num_transactions
         else:
             parameter = self.as_address_query_parameter(address, date_from, date_to)
-            count = self.single_result_query(GraphDB.address_period_match + 'RETURN count(*)', parameter)
-        entity_statement = 'MATCH (a:Address {address: {address}})-[:BELONGS_TO]->e RETURN e, id(e)'
-        result = self.single_row_query(entity_statement, {'address': address})
+            count = self.single_result_query(queries.address_count_query, parameter)
+        result = self.single_row_query(queries.entity_query, {'address': address})
         entity = result[0]
         entity['id'] = result[1]
         return {'transactions': num_transactions,
@@ -42,11 +36,10 @@ class GraphDB:
                 'pages': (count + rows_per_page - 1) // rows_per_page}
 
     def get_address(self, address, page, date_from=None, date_to=None, rows_per_page=rows_per_page_default):
-        statement = GraphDB.address_period_match + '''RETURN a.address, t.txid, rel_type, value, b.timestamp
-                ORDER BY b.timestamp desc'''
+        statement = queries.address_query
         parameter = self.as_address_query_parameter(address, date_from, date_to)
         if rows_per_page is not None:
-            statement += '\nSKIP {skip} LIMIT {limit}'
+            statement = queries.paginated_address_query
             parameter['skip'] = page * rows_per_page
             parameter['limit'] = rows_per_page
         return Address(self.query(statement, parameter))
@@ -66,46 +59,27 @@ class GraphDB:
         return {'address': address, 'from': timestamp_from, 'to': timestamp_to}
 
     def get_identities(self, address):
-        statement = '''MATCH (a:Address {address: {address}})-[:HAS]->i
-            RETURN collect({id: id(i), name: i.name, link: i.link, source: i.source})'''
-        identities = self.single_result_query(statement, {'address': address})
+        identities = self.single_result_query(queries.identity_query, {'address': address})
         return identities
 
     def get_entity(self, id, max_addresses=rows_per_page_default):
-        basic_statement = 'MATCH (e:Entity)<-[:BELONGS_TO]-a WHERE id(e) = {id}\n'
-        count_statement = basic_statement + 'RETURN count(*)'
-        statement = basic_statement + '''OPTIONAL MATCH a-[:HAS]->i
-            WITH e, a, collect(i) as is
-            ORDER BY length(is) desc
-            LIMIT 20
-            RETURN a.address as address, is as identities'''
-        count = self.single_result_query(count_statement, {'id': id})
-        result = QueryResult(self.query(statement, {'id': id, 'limit': max_addresses}))
+        count = self.single_result_query(queries.entity_count_query, {'id': id})
+        result = QueryResult(self.query(queries.entity_address_query, {'id': id, 'limit': max_addresses}))
         entity = {'id': id, 'addresses': result.get(), 'number_of_addresses': count}
         return entity
 
     def search_address_by_identity_name(self, name):
-        statement = 'MATCH (i:Identity {name: {name}})<-[:HAS]-a RETURN a.address'
-        address = self.single_result_query(statement, {'name': name})
+        address = self.single_result_query(queries.reverse_identity_query, {'name': name})
         return address
 
     def add_identity(self, address, name, link, source):
-        entity_statement = '''MATCH (a:Address {address: {address}})
-            CREATE a-[:HAS]->(i:Identity {name: {name}, link: {link}, source: {source}})'''
-        self.query(entity_statement, {'address': address, 'name': name, 'link': link, 'source': source})
+        self.query(queries.identity_add_query, {'address': address, 'name': name, 'link': link, 'source': source})
 
     def delete_identity(self, id):
-        entity_statement = 'MATCH (i:Identity)-[r]-() WHERE id(i) = {id} DELETE i, r'
-        self.query(entity_statement, {'id': id})
+        self.query(queries.identity_delete_query, {'id': id})
 
     def get_path(self, address1, address2):
-        statement = '''MATCH o1-[:USES]->(start:Address {address: {address1}}),
-                o2-[:USES]->(end:Address {address: {address2}}),
-                p = shortestpath(o1-[*]->o2)
-            UNWIND nodes(p) as n
-            OPTIONAL MATCH n-[:USES]->a
-            RETURN n, a'''
-        return Path(self.query(statement, {'address1': address1, 'address2': address2}))
+        return Path(self.query(queries.path_query, {'address1': address1, 'address2': address2}))
 
     def query(self, statement, parameters):
         payload = {'statements': [{
