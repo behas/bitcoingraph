@@ -11,7 +11,7 @@ import logging
 import os
 
 from bitcoingraph.blockchain import Blockchain, BlockchainException
-from bitcoingraph.graphdb import GraphDB
+from bitcoingraph.graph_controller import GraphController
 from bitcoingraph.rpc import BitcoinProxy, JSONRPCException
 
 
@@ -57,7 +57,7 @@ def get_blockchain(service_uri):
 
 
 def get_graph_db(host, port, user, password):
-    return GraphDB(host, port, user, password)
+    return GraphController(host, port, user, password)
 
 
 def export_transactions(blockchain, start_block, end_block, header='plain',
