@@ -65,30 +65,46 @@ class GraphDB:
             timestamp_to = d.timestamp()
         return {'address': address, 'from': timestamp_from, 'to': timestamp_to}
 
+    def get_identities(self, address):
+        statement = '''MATCH (a:Address {address: {address}})-[:HAS]->i
+            RETURN collect({id: id(i), name: i.name, link: i.link, source: i.source})'''
+        identities = self.single_result_query(statement, {'address': address})
+        return identities
+
     def get_entity(self, id, max_addresses=rows_per_page_default):
-        count_statement = 'MATCH (e:Entity)--a WHERE id(e) = {id} RETURN count(*)'
-        statement = 'MATCH (e:Entity)--a WHERE id(e) = {id} WITH e, a LIMIT {limit} RETURN e, collect(a.address)'
+        basic_statement = 'MATCH (e:Entity)<-[:BELONGS_TO]-a WHERE id(e) = {id}\n'
+        count_statement = basic_statement + 'RETURN count(*)'
+        statement = basic_statement + '''OPTIONAL MATCH a-[:HAS]->i
+            WITH e, a, collect(i) as is
+            ORDER BY length(is) desc
+            LIMIT 20
+            RETURN a.address as address, is as identities'''
         count = self.single_result_query(count_statement, {'id': id})
-        result = self.single_row_query(statement, {'id': id, 'limit': max_addresses})
-        entity = result[0]
-        entity['id'] = id
-        entity['addresses'] = result[1]
-        entity['number_of_addresses'] = count
+        result = QueryResult(self.query(statement, {'id': id, 'limit': max_addresses}))
+        entity = {'id': id, 'addresses': result.get(), 'number_of_addresses': count}
         return entity
 
-    def search_entity_by_name(self, name):
-        statement = 'MATCH (e:Entity {name: {name}}) RETURN id(e)'
-        id = self.single_result_query(statement, {'name': name})
-        return id
+    def search_address_by_identity_name(self, name):
+        statement = 'MATCH (i:Identity {name: {name}})<-[:HAS]-a RETURN a.address'
+        address = self.single_result_query(statement, {'name': name})
+        return address
 
-    def update_entity(self, id, name, link):
-        entity_statement = 'MATCH (e:Entity) WHERE id(e) = {id} SET e.name = {name}, e.link = {link}'
-        self.query(entity_statement, {'id': id, 'name': name, 'link': link})
+    def add_identity(self, address, name, link, source):
+        entity_statement = '''MATCH (a:Address {address: {address}})
+            CREATE a-[:HAS]->(i:Identity {name: {name}, link: {link}, source: {source}})'''
+        self.query(entity_statement, {'address': address, 'name': name, 'link': link, 'source': source})
+
+    def delete_identity(self, id):
+        entity_statement = 'MATCH (i:Identity)-[r]-() WHERE id(i) = {id} DELETE i, r'
+        self.query(entity_statement, {'id': id})
 
     def get_path(self, address1, address2):
-        statement = '''MATCH p = shortestpath (
-                (start:Address {address: {address1}})-[*]->(end:Address {address: {address2}})
-            ) RETURN p'''
+        statement = '''MATCH o1-[:USES]->(start:Address {address: {address1}}),
+                o2-[:USES]->(end:Address {address: {address2}}),
+                p = shortestpath(o1-[*]->o2)
+            UNWIND nodes(p) as n
+            OPTIONAL MATCH n-[:USES]->a
+            RETURN n, a'''
         return Path(self.query(statement, {'address1': address1, 'address2': address2}))
 
     def query(self, statement, parameters):
@@ -130,12 +146,15 @@ class QueryResult:
     def data(self):
         return self._raw_data['results'][0]['data']
 
-    @staticmethod
-    def convert_row(raw_data):
-        row = raw_data['row']
-        return row[0]
+    @property
+    def columns(self):
+        return self._raw_data['results'][0]['columns']
 
-    def get_list(self):
+    def convert_row(self, raw_data):
+        row = raw_data['row']
+        return dict(zip(self.columns, row))
+
+    def get(self):
         return map(self.convert_row, self.data)
 
 
@@ -197,15 +216,27 @@ class Address(QueryResult):
         return to_json({'nodes': nodes, 'links': links})
 
 
-class Path:
-
-    def __init__(self, raw_data):
-        self._raw_data = raw_data
+class Path(QueryResult):
 
     @property
     def path(self):
-        if self._raw_data['results'][0]['data']:
-            return self._raw_data['results'][0]['data'][0]['row'][0]
+        if self.data:
+            path = []
+            for idx, d in enumerate(self.data):
+                row = d['row']
+                address = row[1]
+                path_node = row[0]
+                if 'txid' in path_node:
+                    transaction = path_node
+                    path.append(transaction)
+                else:
+                    output = path_node
+                    if idx != 0:
+                        path.append(output)
+                    path.append(address)
+                    if idx != len(self.data) - 1:
+                        path.append(output)
+            return path
         else:
             return None
 
