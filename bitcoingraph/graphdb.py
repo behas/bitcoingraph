@@ -96,9 +96,9 @@ class GraphDB:
 
     def identity_delete_query(self, id):
         s = lb_join(
-            'MATCH (i:Identity)-[r]-()',
+            'MATCH (i:Identity)',
             'WHERE id(i) = {id}',
-            'DELETE i, r')
+            'DETACH DELETE i')
         return self.query(s, {'id': id})
 
     def path_query(self, address1, address2):
