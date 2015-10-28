@@ -1,16 +1,14 @@
-#!/usr/bin/env python
-
-import argparse
 import csv
 import os
 import requests
-import sys
 
 
-def export(args):
+def export(number_of_blocks, start_block_hash, output_path=None,
+           plain_header=False, separate_header=True, progress=None):
     def get_block(hash):
         def a_b(a, b):
             return '{}_{}'.format(a, b)
+
         r = session.get('http://localhost:8332/rest/block/{}.json'.format(hash))
         block = r.json()
         block_writer.writerow([block['hash'], block['height'], block['time']])
@@ -32,11 +30,11 @@ def export(args):
         return block['nextblockhash']
 
     def write_header(filename, row):
-        if not args.no_separate_header:
+        if separate_header:
             filename += '_header'
         with open(get_path(filename), 'w') as f:
             writer = csv.writer(f)
-            if args.plain_header:
+            if plain_header:
                 header = [entry.partition(':')[0] for entry in row]
             else:
                 header = row
@@ -45,10 +43,8 @@ def export(args):
     def get_path(filename):
         return os.path.join(output_path, filename + '.csv')
 
-    if args.output_path is None:
-        output_path = 'blocks_{}_{}'.format(args.number_of_blocks, args.start_block_hash[60:])
-    else:
-        output_path = args.output_path
+    if output_path is None:
+        output_path = 'blocks_{}_{}'.format(number_of_blocks, start_block_hash[60:])
     if not os.path.exists(output_path):
         os.makedirs(output_path)
 
@@ -61,13 +57,13 @@ def export(args):
     write_header('rel_input', ['txid:END_ID(Transaction)', 'txid_n:START_ID(Output)'])
     write_header('rel_output_address', ['txid_n:START_ID(Output)', 'address:END_ID(Address)'])
 
-    with open(get_path('blocks'), 'a') as blocks_file,\
-            open(get_path('transactions'), 'a') as transactions_file,\
-            open(get_path('outputs'), 'a') as outputs_file,\
-            open(get_path('addresses'), 'a') as addresses_file,\
-            open(get_path('rel_block_tx'), 'a') as rel_block_tx_file,\
-            open(get_path('rel_tx_output'), 'a') as rel_tx_output_file,\
-            open(get_path('rel_input'), 'a') as rel_input_file,\
+    with open(get_path('blocks'), 'a') as blocks_file, \
+            open(get_path('transactions'), 'a') as transactions_file, \
+            open(get_path('outputs'), 'a') as outputs_file, \
+            open(get_path('addresses'), 'a') as addresses_file, \
+            open(get_path('rel_block_tx'), 'a') as rel_block_tx_file, \
+            open(get_path('rel_tx_output'), 'a') as rel_tx_output_file, \
+            open(get_path('rel_input'), 'a') as rel_input_file, \
             open(get_path('rel_output_address'), 'a') as rel_output_address_file:
         block_writer = csv.writer(blocks_file)
         transaction_writer = csv.writer(transactions_file)
@@ -78,30 +74,13 @@ def export(args):
         rel_input_writer = csv.writer(rel_input_file)
         rel_output_address_writer = csv.writer(rel_output_address_file)
 
-        block_hash = args.start_block_hash
+        block_hash = start_block_hash
         with requests.Session() as session:
-            for counter in range(0, args.number_of_blocks):
+            for counter in range(0, number_of_blocks):
                 block_hash = get_block(block_hash)
 
-
-parser = argparse.ArgumentParser(
-    description='Export transactions from blockchain')
-parser.add_argument('number_of_blocks', type=int,
-                    help='Number of blocks')
-parser.add_argument('-b', '--start-block-hash', type=str,
-                    default='000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f',
-                    help='Start block hash')
-parser.add_argument('-o', '--output_path', type=str,
-                    help='Output path')
-parser.add_argument('--plain-header', action='store_true',
-                    help='Create header without Neo4J field types')
-parser.add_argument('--no-separate-header', action='store_true',
-                    help='Write CSV files without any header')
-
-
-if len(sys.argv) <= 1:
-    parser.print_help()
-    sys.exit(1)
-
-args = parser.parse_args()
-export(args)
+                if progress:
+                    last_percentage = (counter * 100) // number_of_blocks
+                    percentage = ((counter + 1) * 100) // number_of_blocks
+                    if percentage > last_percentage:
+                        progress((counter + 1) / number_of_blocks)

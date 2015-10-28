@@ -14,7 +14,8 @@ class GraphDB:
         self.port = port
         self.user = user
         self.password = password
-        self.url = 'http://{}:{}/db/data/transaction/commit'.format(host, port)
+        self.url_base = 'http://{}:{}/db/data/'.format(host, port)
+        self.url = self.url_base + 'transaction/commit'
 
     address_match = lb_join(
         'MATCH (a:Address {address: {address}})<-[:USES]-(o)-[r:INPUT|OUTPUT]-(t)<-[:CONTAINS]-(b)',
@@ -112,6 +113,11 @@ class GraphDB:
             'OPTIONAL MATCH (n)-[:USES]->(a)',
             'RETURN n as node, a as address')
         return self.query(s, {'address1': address1, 'address2': address2})
+
+    def create_entities(self, block_hash):
+        node_id = self.query('MATCH (b:Block {hash: {hash}}) RETURN id(b)', {'hash': block_hash}).single_result()
+        url = self.url_base + 'ext/Entity/node/{}/createEntities'.format(node_id)
+        requests.post(url, auth=(self.user, self.password))
 
     def query(self, statement, parameters):
         payload = {'statements': [{
