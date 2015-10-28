@@ -47,6 +47,8 @@ def export(args):
 
     if args.output_path is None:
         output_path = 'blocks_{}_{}'.format(args.number_of_blocks, args.start_block_hash[60:])
+    else:
+        output_path = args.output_path
     if not os.path.exists(output_path):
         os.makedirs(output_path)
 

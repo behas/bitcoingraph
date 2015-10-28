@@ -120,7 +120,8 @@ class GraphDB:
         }]}
         headers = {
             'Accept': 'application/json; charset=UTF-8',
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'max-execution-time': 30000
         }
         r = requests.post(self.url, auth=(self.user, self.password), headers=headers, json=payload)
         if r.status_code != 200:
@@ -148,7 +149,10 @@ class QueryResult:
         self._raw_data = raw_data
 
     def data(self):
-        return self._raw_data['results'][0]['data']
+        if self._raw_data['results']:
+            return self._raw_data['results'][0]['data']
+        else:
+            return []
 
     def columns(self):
         return self._raw_data['results'][0]['columns']
@@ -166,4 +170,8 @@ class QueryResult:
             return None
 
     def single_row(self):
-        return list(self.get())[0]
+        rows = self.get()
+        if self.get():
+            return list(self.get())[0]
+        else:
+            return None
