@@ -6,6 +6,8 @@ the Bitcoin block chain.
 
 """
 
+from bitcoingraph.bitcoingraph import BitcoinGraph
+
 __author__ = 'Bernhard Haslhofer (bernhard.haslhofer@ait.ac.at)'
 __copyright__ = 'Copyright 2015, Bernhard Haslhofer'
 __license__ = "MIT"
