@@ -1,6 +1,6 @@
 
-from bitcoingraph.blockchain import to_json, to_time
 from bitcoingraph.graphdb import GraphDB
+from bitcoingraph.helper import to_time, to_json
 
 
 class GraphController:
@@ -130,13 +130,14 @@ class Path:
     def get_graph_json(self):
         nodes = []
         links = []
-        if not self.path:
+        if self.path:
+            for pc in self.path:
+                if 'address' in pc:
+                    nodes.append({'label': 'Address', 'address': pc['address']})
+                elif 'txid' in pc:
+                    nodes.append({'label': 'Transaction', 'txid': pc['txid']})
+                else:
+                    links.append({'source': len(nodes) - 1, 'target': len(nodes), 'value': pc['value']})
+            return to_json({'nodes': nodes, 'links': links})
+        else:
             return to_json({})
-        for pc in self.path:
-            if 'address' in pc:
-                nodes.append({'label': 'Address', 'address': pc['address']})
-            elif 'txid' in pc:
-                nodes.append({'label': 'Transaction', 'txid': pc['txid']})
-            else:
-                links.append({'source': len(nodes) - 1, 'target': len(nodes), 'value': pc['value']})
-        return to_json({'nodes': nodes, 'links': links})

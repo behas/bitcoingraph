@@ -8,7 +8,7 @@ the Bitcoin block chain.
 
 import logging
 
-from bitcoingraph.blockchain import Blockchain, BlockchainException
+from bitcoingraph.blockchain import Blockchain
 from bitcoingraph.graph_controller import GraphController
 from bitcoingraph.rpc import BitcoinProxy, JSONRPCException
 #from bitcoingraph.writer import CSVDumpWriter
