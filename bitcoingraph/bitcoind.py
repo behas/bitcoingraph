@@ -131,7 +131,7 @@ class BitcoinProxy:
         rpc_url = 'http://{}:{}@{}:{}/'.format(rpc_user, rpc_pass, host, port)
         self._jsonrpc_proxy = JSONRPCProxy(rpc_url)
         if method == 'REST':
-            self._rest_proxy = RESTProxy(rpc_url)
+            self._rest_proxy = RESTProxy(rest_url)
 
     def getblock(self, block_hash):
         """
