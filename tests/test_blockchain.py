@@ -2,7 +2,8 @@ import unittest
 
 from tests.rpc_mock import BitcoinProxyMock
 
-from bitcoingraph.blockchain import *
+from bitcoingraph.blockchain import Blockchain, BlockchainException
+from bitcoingraph.model import Input, Output
 
 BH1 = "000000000002d01c1fccc21636b607dfd930d31d01c3a62104612a1719011250"
 BH1_HEIGHT = 99999
@@ -105,29 +106,20 @@ class TestTxInput(TestBlockchainObject):
         tx_input = tx.inputs[0]
         self.assertFalse(tx_input.is_coinbase)
 
-    @unittest.expectedFailure
     def test_prev_tx_hash(self):
         tx = self.blockchain.get_transaction(TX2)
         tx_input = tx.inputs[0]
-        self.assertEqual(tx_input.prev_tx_hash, TX3)
+        self.assertEqual(tx_input.output_reference['txid'], TX3)
 
-    @unittest.expectedFailure
     def test_prev_tx_coinbase(self):
         tx = self.blockchain.get_transaction(TX1)
         tx_input = tx.inputs[0]
-        self.assertIsNone(tx_input.prev_tx_hash)
+        self.assertIsNone(tx_input.output_reference)
 
-    @unittest.expectedFailure
     def test_tx_output_index(self):
         tx = self.blockchain.get_transaction(TX2)
         tx_input = tx.inputs[0]
-        self.assertEqual(tx_input.prev_tx_output_index, 0)
-
-    @unittest.expectedFailure
-    def test_tx_output_index_coinbase(self):
-        tx = self.blockchain.get_transaction(TX1)
-        tx_input = tx.inputs[0]
-        self.assertIsNone(tx_input.prev_tx_output_index)
+        self.assertEqual(tx_input.output_reference['vout'], 0)
 
     def test_prev_tx_output(self):
         tx = self.blockchain.get_transaction(TX2)
@@ -144,11 +136,10 @@ class TestTxInput(TestBlockchainObject):
 
 class TestTxOutput(TestBlockchainObject):
 
-    @unittest.expectedFailure
     def test_index(self):
         tx = self.blockchain.get_transaction(TX2)
-        self.assertEqual(0, tx.get_output_by_index(0).index)
-        self.assertEqual(1, tx.get_output_by_index(1).index)
+        self.assertEqual(0, tx.outputs[0].index)
+        self.assertEqual(1, tx.outputs[1].index)
 
     def test_value(self):
         tx = self.blockchain.get_transaction(TX2)
@@ -174,20 +165,13 @@ class TestTxOutput(TestBlockchainObject):
 
 class TestTransaction(TestBlockchainObject):
 
-    @unittest.expectedFailure
-    def test_time(self):
-        tx = self.blockchain.get_transaction(TX1)
-        self.assertEqual(tx.time, 1293623863)
-
-    @unittest.expectedFailure
-    def test_time_as_dt(self):
-        tx = self.blockchain.get_transaction(TX1)
-        self.assertEqual(tx.time_as_dt, "2010-12-29 11:57:43")
-
-    @unittest.expectedFailure
     def test_blocktime(self):
         tx = self.blockchain.get_transaction(TX1)
-        self.assertEqual(tx.blocktime, 1293623863)
+        self.assertEqual(tx.block.timestamp, 1293623863)
+
+    def test_blocktime_as_dt(self):
+        tx = self.blockchain.get_transaction(TX1)
+        self.assertEqual(tx.block.formatted_time(), "2010-12-29 11:57:43")
 
     def test_id(self):
         tx = self.blockchain.get_transaction(TX1)

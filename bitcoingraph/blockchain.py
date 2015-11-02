@@ -6,7 +6,7 @@ An API for traversing the Bitcoin blockchain
 """
 
 from bitcoingraph.model import Block, Transaction
-from bitcoingraph.rpc import JSONRPCException
+from bitcoingraph.bitcoind import JSONRPCException
 
 __author__ = 'Bernhard Haslhofer (bernhard.haslhofer@ait.ac.at)'
 __copyright__ = 'Copyright 2015, Bernhard Haslhofer'
@@ -32,7 +32,7 @@ class Blockchain:
     Bitcoin block chain.
     """
 
-    def __init__(self, bitcoin_proxy, method='RPC'):
+    def __init__(self, bitcoin_proxy):
         """
         Creates a block chain object.
 
@@ -41,7 +41,6 @@ class Blockchain:
         :rtype: Blockchain
         """
         self._bitcoin_proxy = bitcoin_proxy
-        self.method = method
 
     def get_block_by_hash(self, block_hash):
         """
@@ -87,10 +86,10 @@ class Blockchain:
         block = self.get_block_by_height(start_height)
         while block.height <= end_height:
             yield block
-            if not block.has_next_block():
-                break
-            else:
+            if block.has_next_block():
                 block = block.next_block
+            else:
+                break
 
     def get_transaction(self, tx_id):
         """

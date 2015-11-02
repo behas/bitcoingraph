@@ -2,7 +2,7 @@
 
 import argparse
 import sys
-from bitcoingraph import export
+from bitcoingraph import BitcoinGraph
 
 
 def progress(p=0):
@@ -12,17 +12,20 @@ def progress(p=0):
 
 parser = argparse.ArgumentParser(
     description='Export transactions from blockchain')
-parser.add_argument('number_of_blocks', type=int,
-                    help='Number of blocks')
-parser.add_argument('-b', '--start-block-hash', type=str,
-                    default='000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f',
-                    help='Start block hash')
+parser.add_argument('startheight', type=int,
+                    help='Start block height')
+parser.add_argument('endheight', type=int,
+                    help='End block height')
 parser.add_argument('-o', '--output_path', type=str,
                     help='Output path')
 parser.add_argument('--plain-header', action='store_true',
                     help='Create header without Neo4J field types')
 parser.add_argument('--no-separate-header', action='store_true',
                     help='Write CSV files without any header')
+parser.add_argument("-u", "--user", required=True,
+                    help="Bitcoin Core RPC username")
+parser.add_argument("-p", "--password", required=True,
+                    help="Bitcoin Core RPC password")
 
 
 if len(sys.argv) <= 1:
@@ -30,9 +33,11 @@ if len(sys.argv) <= 1:
     sys.exit(1)
 
 args = parser.parse_args()
-export.export(
-    args.number_of_blocks,
-    args.start_block_hash,
+bcgraph = BitcoinGraph(
+    blockchain={'host': 'localhost', 'port': 8332, 'rpc_user': args.user, 'rpc_pass': args.password, 'method': 'REST'})
+bcgraph.export(
+    args.startheight,
+    args.endheight,
     args.output_path,
     args.plain_header,
     not args.no_separate_header,

@@ -38,7 +38,7 @@ class JSONRPCProxy(object):
         self._url = url
         self._headers = {'content-type': 'application/json'}
 
-    def _call(self, rpcMethod, *params):
+    def call(self, rpcMethod, *params):
         """
         Execute a single request against a JSON-RPC interface
         """
@@ -48,7 +48,7 @@ class JSONRPCProxy(object):
         responseJSON = self._execute(request)
         return responseJSON['result']
 
-    def _batch(self, calls):
+    def batch(self, calls):
         """
         Executes a batch request (with same method) but different parameters
         against a JSON-RPC interface
@@ -97,7 +97,20 @@ class JSONRPCProxy(object):
         return responseJSON
 
 
-class BitcoinProxy(JSONRPCProxy):
+class RESTProxy:
+
+    def __init__(self, url):
+        self._session = requests.Session()
+        self._url = url
+
+    def get_block(self, hash):
+        r = self._session.get(self._url + 'block/{}.json'.format(hash))
+        if r.status_code != 200:
+            raise Exception('REST request was not successful')
+        return r.json()
+
+
+class BitcoinProxy:
     """
     Proxy to Bitcoin JSON RPC Service.
 
@@ -105,7 +118,7 @@ class BitcoinProxy(JSONRPCProxy):
     `here <https://en.bitcoin.it/wiki/Original_Bitcoin_client/API_Calls_list>`_
     """
 
-    def __init__(self, url):
+    def __init__(self, host, port, rpc_user=None, rpc_pass=None, method='RPC'):
         """
         Creates a Bitcoin JSON RPC Service object.
 
@@ -113,7 +126,12 @@ class BitcoinProxy(JSONRPCProxy):
         :return: bitcoin proxy object
         :rtype: BitcoinProxy
         """
-        super().__init__(url)
+        self.method = method
+        rest_url = 'http://{}:{}/rest/'.format(host, port)
+        rpc_url = 'http://{}:{}@{}:{}/'.format(rpc_user, rpc_pass, host, port)
+        self._jsonrpc_proxy = JSONRPCProxy(rpc_url)
+        if method == 'REST':
+            self._rest_proxy = RESTProxy(rpc_url)
 
     def getblock(self, block_hash):
         """
@@ -123,7 +141,10 @@ class BitcoinProxy(JSONRPCProxy):
         :return: block as JSON
         :rtype: str
         """
-        r = self._call('getblock', block_hash)
+        if self.method == 'REST':
+            r = self._rest_proxy.get_block(block_hash)
+        else:
+            r = self._jsonrpc_proxy.call('getblock', block_hash)
         return r
 
     def getblockcount(self):
@@ -133,7 +154,7 @@ class BitcoinProxy(JSONRPCProxy):
         :return: number of blocks in block chain
         :rtype: int
         """
-        r = self._call('getblockcount')
+        r = self._jsonrpc_proxy.call('getblockcount')
         return int(r)
 
     def getblockhash(self, height):
@@ -144,7 +165,7 @@ class BitcoinProxy(JSONRPCProxy):
         :return: block hash
         :rtype: str
         """
-        r = self._call('getblockhash', height)
+        r = self._jsonrpc_proxy.call('getblockhash', height)
         return r
 
     def getinfo(self):
@@ -154,7 +175,7 @@ class BitcoinProxy(JSONRPCProxy):
         :return: JSON string with state info
         :rtype: str
         """
-        r = self._call('getinfo')
+        r = self._jsonrpc_proxy.call('getinfo')
         return r
 
     def getrawtransaction(self, tx_id, verbose=1):
@@ -166,7 +187,7 @@ class BitcoinProxy(JSONRPCProxy):
         :return: raw transaction data as JSON
         :rtype: str
         """
-        r = self._call('getrawtransaction', tx_id, verbose)
+        r = self._jsonrpc_proxy.call('getrawtransaction', tx_id, verbose)
         return r
 
     def getrawtransactions(self, tx_ids, verbose=1):
@@ -185,7 +206,7 @@ class BitcoinProxy(JSONRPCProxy):
                     'params': [tx_id, verbose],
                     'id': tx_id}
             calls.append(call)
-        r = self._batch(calls)
+        r = self._jsonrpc_proxy.batch(calls)
 
         results = []
         for entry in r:

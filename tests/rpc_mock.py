@@ -1,4 +1,4 @@
-from bitcoingraph.rpc import BitcoinProxy, JSONRPCException
+from bitcoingraph.bitcoind import BitcoinProxy, JSONRPCException
 
 from pathlib import Path
 
@@ -10,8 +10,8 @@ TEST_DATA_PATH = "tests/data"
 
 class BitcoinProxyMock(BitcoinProxy):
 
-    def __init__(self, url=None):
-        super().__init__(url)
+    def __init__(self, host=None, port=None):
+        super().__init__(host, port)
         self.heights = {}
         self.blocks = {}
         self.txs = {}

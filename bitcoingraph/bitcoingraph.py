@@ -10,8 +10,8 @@ import logging
 
 from bitcoingraph.blockchain import Blockchain
 from bitcoingraph.graph_controller import GraphController
-from bitcoingraph.rpc import BitcoinProxy, JSONRPCException
-#from bitcoingraph.writer import CSVDumpWriter
+from bitcoingraph.bitcoind import BitcoinProxy, JSONRPCException
+from bitcoingraph.writer import CSVDumpWriter
 
 logger = logging.getLogger('bitcoingraph')
 
@@ -34,8 +34,9 @@ class BitcoinGraph:
     def __init__(self, **config):
 
         self.blockchain = self.__get_blockchain(config['blockchain'])
-        nc = config['neo4j']
-        self.graph_db = GraphController(nc['host'], nc['port'], nc['user'], nc['pass'])
+        if 'neo4j' in config:
+            nc = config['neo4j']
+            self.graph_db = GraphController(nc['host'], nc['port'], nc['user'], nc['pass'])
 
     # Blockchain interfaces
     @staticmethod
@@ -43,18 +44,16 @@ class BitcoinGraph:
         """
         Connects to Bitcoin Core (via JSON-RPC) and returns a Blockchain object.
         """
-        service_uri = 'http://{}:{}@{}:{}/'.format(
-            config['rpc_user'], config['rpc_pass'], config['rpc_host'], config['rpc_port'])
+
         try:
-            logger.debug("Connecting to Bitcoin Core at {}".format(service_uri))
-            bc_proxy = BitcoinProxy(service_uri)
+            logger.debug("Connecting to Bitcoin Core at {}".format(config['host']))
+            bc_proxy = BitcoinProxy(**config)
             bc_proxy.getinfo()
             logger.debug("Connection successful.")
             blockchain = Blockchain(bc_proxy)
             return blockchain
         except JSONRPCException as exc:
-            raise BitcoingraphException("Couldn't connect to {}.".format(
-                                            service_uri), exc)
+            raise BitcoingraphException("Couldn't connect to {}.".format(config['host']), exc)
 
     def get_transaction(self, tx_id):
         return self.blockchain.get_transaction(tx_id)
@@ -90,8 +89,19 @@ class BitcoinGraph:
     def get_path(self, start, end):
         return self.graph_db.get_path(start, end)
 
-    #def export(self, start, end, target_dir):
-    #    writer = CSVDumpWriter(target_dir)
-    #    for block in self.blockchain.get_block_range(start, end):
-    #        writer.write(block)
-    #    writer.close()
+    def export(self, start, end, output_path=None, plain_header=False, separate_header=True, progress=None):
+        if output_path is None:
+            output_path = 'blocks_{}_{}'.format(start, end)
+
+        writer = CSVDumpWriter(output_path, plain_header, separate_header)
+        number_of_blocks = end - start + 1
+        for block in self.blockchain.get_blocks_in_range(start, end):
+            writer.write(block)
+            if progress:
+                counter = block.height - start + 1
+
+                last_percentage = (counter * 100) // number_of_blocks
+                percentage = ((counter + 1) * 100) // number_of_blocks
+                if percentage > last_percentage:
+                    progress((counter + 1) / number_of_blocks)
+        writer.close()

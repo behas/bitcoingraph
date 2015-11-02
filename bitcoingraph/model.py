@@ -10,14 +10,19 @@ class Block:
             self.__hash = hash
             self.__height = height
             self.__timestamp = None
-            self.__previous_block = None
+            self.__has_previous_block = None
             self.__has_next_block = None
             self.__transactions = None
         else:
             self.__hash = json_data['hash']
             self.__height = json_data['height']
             self.__timestamp = json_data['time']
-            self.__previous_block = Block(blockchain, json_data['previousblockhash'], self.height - 1)
+            if 'previousblockhash' in json_data:
+                self.__has_previous_block = True
+                self.__previous_block = Block(blockchain, json_data['previousblockhash'], self.height - 1)
+            else:
+                self.__has_previous_block = False
+                self.__previous_block = None
             if 'nextblockhash' in json_data:
                 self.__has_next_block = True
                 self.__next_block = Block(blockchain, json_data['nextblockhash'], self.height + 1)
@@ -49,9 +54,13 @@ class Block:
 
     @property
     def previous_block(self):
-        if self.__previous_block is None:
-            self._load()
+        self.has_previous_block()
         return self.__previous_block
+
+    def has_previous_block(self):
+        if self.__has_previous_block is None:
+            self._load()
+        return self.__has_previous_block
 
     @property
     def next_block(self):
@@ -77,6 +86,7 @@ class Block:
         self.__height = block.height
         self.__hash = block.hash
         self.__timestamp = block.timestamp
+        self.__has_previous_block = block.has_previous_block()
         self.__previous_block = block.previous_block
         self.__has_next_block = block.has_next_block()
         self.__next_block = block.next_block
@@ -98,9 +108,9 @@ class Transaction:
                 self.block = Block(blockchain, json_data['blockhash'])
             self.__inputs = [
                 Input(blockchain, is_coinbase=True) if 'coinbase' in vin
-                else Input(blockchain, vin['txid'], vin['vout'])
+                else Input(blockchain, vin)
                 for vin in json_data['vin']]
-            self.__outputs = [Output(vout) for vout in json_data['vout']]
+            self.__outputs = [Output(i, vout) for i, vout in enumerate(json_data['vout'])]
 
     @property
     def inputs(self):
@@ -172,15 +182,14 @@ class Transaction:
 
 class Input:
 
-    def __init__(self, blockchain, txid=None, vout=None, is_coinbase=False, json_data=None):
+    def __init__(self, blockchain, output_reference=None, is_coinbase=False, json_data=None):
         self._blockchain = blockchain
+        self.output_reference = output_reference
+        self.is_coinbase = is_coinbase
         if json_data is None:
-            self._txid = txid
-            self._vout = vout
-            self.is_coinbase = is_coinbase
             self.__output = None
         else:
-            self.__output = Output(json_data)
+            self.__output = Output(output_reference['vout'], json_data)
 
     @property
     def output(self):
@@ -191,13 +200,14 @@ class Input:
         return self.__output
 
     def _load(self):
-        transaction = self._blockchain.get_transaction(self._txid)
-        self.__output = transaction.outputs[self._vout]
+        transaction = self._blockchain.get_transaction(self.output_reference['txid'])
+        self.__output = transaction.outputs[self.output_reference['vout']]
 
 
 class Output:
 
-    def __init__(self, json_data):
+    def __init__(self, index, json_data):
+        self.index = index
         self.value = json_data['value']
         self.type = json_data['scriptPubKey']['type']
         if 'addresses' in json_data['scriptPubKey']:
