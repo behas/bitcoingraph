@@ -98,8 +98,8 @@ class BitcoinGraph:
             for block in self.blockchain.get_blocks_in_range(start, end):
                 writer.write(block)
                 if progress:
-                    counter = block.height - start + 1
-                    last_percentage = (counter * 100) // number_of_blocks
-                    percentage = ((counter + 1) * 100) // number_of_blocks
+                    processed_blocks = block.height - start + 1
+                    last_percentage = ((processed_blocks - 1) * 100) // number_of_blocks
+                    percentage = (processed_blocks * 100) // number_of_blocks
                     if percentage > last_percentage:
-                        progress((counter + 1) / number_of_blocks)
+                        progress(processed_blocks / number_of_blocks)

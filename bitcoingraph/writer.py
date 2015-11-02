@@ -39,6 +39,7 @@ class CSVDumpWriter:
         self._rel_tx_output_writer = csv.writer(self._rel_tx_output_file)
         self._rel_input_writer = csv.writer(self._rel_input_file)
         self._rel_output_address_writer = csv.writer(self._rel_output_address_file)
+        return self
 
     def __exit__(self, type, value, traceback):
         self._blocks_file.close()
