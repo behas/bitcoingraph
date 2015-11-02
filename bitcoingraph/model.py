@@ -29,7 +29,10 @@ class Block:
             else:
                 self.__has_next_block = False
                 self.__next_block = None
-            self.__transactions = [Transaction(blockchain, tx, self) for tx in json_data['tx']]
+            self.__transactions = [
+                Transaction(blockchain, self, tx) if isinstance(tx, str)
+                else Transaction(blockchain, self, json_data=tx)
+                for tx in json_data['tx']]
 
     @property
     def hash(self):
@@ -95,7 +98,7 @@ class Block:
 
 class Transaction:
 
-    def __init__(self, blockchain, txid=None, block=None, json_data=None):
+    def __init__(self, blockchain, block=None, txid=None, json_data=None):
         self._blockchain = blockchain
         self.block = block
         if json_data is None:
