@@ -21,6 +21,7 @@ class CSVDumpWriter:
         self._write_header('rel_input', ['txid:END_ID(Transaction)', 'txid_n:START_ID(Output)'])
         self._write_header('rel_output_address', ['txid_n:START_ID(Output)', 'address:END_ID(Address)'])
 
+    def __enter__(self):
         self._blocks_file = open(self._get_path('blocks'), 'a')
         self._transactions_file = open(self._get_path('transactions'), 'a')
         self._outputs_file = open(self._get_path('outputs'), 'a')
@@ -38,6 +39,16 @@ class CSVDumpWriter:
         self._rel_tx_output_writer = csv.writer(self._rel_tx_output_file)
         self._rel_input_writer = csv.writer(self._rel_input_file)
         self._rel_output_address_writer = csv.writer(self._rel_output_address_file)
+
+    def __exit__(self, type, value, traceback):
+        self._blocks_file.close()
+        self._transactions_file.close()
+        self._outputs_file.close()
+        self._addresses_file.close()
+        self._rel_block_tx_file.close()
+        self._rel_tx_output_file.close()
+        self._rel_input_file.close()
+        self._rel_output_address_file.close()
 
     def _write_header(self, filename, row):
         if self._separate_header:
@@ -71,13 +82,3 @@ class CSVDumpWriter:
                 for address in output.addresses:
                     self._address_writer.writerow([address])
                     self._rel_output_address_writer.writerow([a_b(tx.txid, output.index), address])
-
-    def close(self):
-        self._blocks_file.close()
-        self._transactions_file.close()
-        self._outputs_file.close()
-        self._addresses_file.close()
-        self._rel_block_tx_file.close()
-        self._rel_tx_output_file.close()
-        self._rel_input_file.close()
-        self._rel_output_address_file.close()

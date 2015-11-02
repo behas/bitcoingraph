@@ -93,15 +93,13 @@ class BitcoinGraph:
         if output_path is None:
             output_path = 'blocks_{}_{}'.format(start, end)
 
-        writer = CSVDumpWriter(output_path, plain_header, separate_header)
         number_of_blocks = end - start + 1
-        for block in self.blockchain.get_blocks_in_range(start, end):
-            writer.write(block)
-            if progress:
-                counter = block.height - start + 1
-
-                last_percentage = (counter * 100) // number_of_blocks
-                percentage = ((counter + 1) * 100) // number_of_blocks
-                if percentage > last_percentage:
-                    progress((counter + 1) / number_of_blocks)
-        writer.close()
+        with CSVDumpWriter(output_path, plain_header, separate_header) as writer:
+            for block in self.blockchain.get_blocks_in_range(start, end):
+                writer.write(block)
+                if progress:
+                    counter = block.height - start + 1
+                    last_percentage = (counter * 100) // number_of_blocks
+                    percentage = ((counter + 1) * 100) // number_of_blocks
+                    if percentage > last_percentage:
+                        progress((counter + 1) / number_of_blocks)
