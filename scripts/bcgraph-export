@@ -22,6 +22,8 @@ parser.add_argument('--plain-header', action='store_true',
                     help='Create header without Neo4J field types')
 parser.add_argument('--no-separate-header', action='store_true',
                     help='Write CSV files without any header')
+parser.add_argument('--no-transaction-deduplication', action='store_true',
+                    help='Skip deduplication of transactions')
 parser.add_argument("-u", "--user", required=True,
                     help="Bitcoin Core RPC username")
 parser.add_argument("-p", "--password", required=True,
@@ -41,4 +43,5 @@ bcgraph.export(
     args.output_path,
     args.plain_header,
     not args.no_separate_header,
-    progress)
+    progress,
+    not args.no_transaction_deduplication)

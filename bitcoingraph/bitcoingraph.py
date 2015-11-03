@@ -8,9 +8,11 @@ the Bitcoin block chain.
 
 import logging
 
-from bitcoingraph.blockchain import Blockchain
-from bitcoingraph.graph_controller import GraphController
 from bitcoingraph.bitcoind import BitcoinProxy, JSONRPCException
+from bitcoingraph.blockchain import Blockchain
+from bitcoingraph import entities
+from bitcoingraph.graph_controller import GraphController
+from bitcoingraph.helper import sort
 from bitcoingraph.writer import CSVDumpWriter
 
 logger = logging.getLogger('bitcoingraph')
@@ -89,7 +91,9 @@ class BitcoinGraph:
     def get_path(self, start, end):
         return self.graph_db.get_path(start, end)
 
-    def export(self, start, end, output_path=None, plain_header=False, separate_header=True, progress=None):
+    def export(
+            self, start, end, output_path=None, plain_header=False, separate_header=True,
+            progress=None, deduplicate_transactions=True):
         if output_path is None:
             output_path = 'blocks_{}_{}'.format(start, end)
 
@@ -103,3 +107,17 @@ class BitcoinGraph:
                     percentage = (processed_blocks * 100) // number_of_blocks
                     if percentage > last_percentage:
                         progress(processed_blocks / number_of_blocks)
+        if separate_header:
+            sort(output_path, 'addresses.csv', '-u')
+            if deduplicate_transactions:
+                for base_name in ['transactions', 'rel_tx_output', 'outputs', 'rel_output_address']:
+                    sort(output_path, base_name + '.csv', '-u')
+
+
+def compute_entities(input_path, sort_input=False):
+    if sort_input:
+        sort(input_path, 'rel_output_address.csv')
+    sort(input_path, 'rel_input.csv', '-k 2 -t ,')
+    entities.calculate_input_addresses(input_path)
+    sort(input_path, 'input_addresses.csv')
+    entities.compute_entities(input_path)

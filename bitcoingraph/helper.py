@@ -1,6 +1,8 @@
 
 import datetime
 import json
+import os
+import subprocess
 
 
 def to_time(numeric_string, as_date=False):
@@ -25,3 +27,10 @@ def to_json(raw_data):
     """
     return json.dumps(raw_data, sort_keys=True,
                       indent=4, separators=(',', ': '))
+
+
+def sort(path, filename, args=''):
+    s = 'LC_ALL=C sort -S 50% --parallel=4 {0} {1} -o {1}'
+    status = subprocess.call(s.format(args, os.path.join(path, filename)), shell=True)
+    if status != 0:
+        raise Exception('unable to sort file: {}'.format(filename))
