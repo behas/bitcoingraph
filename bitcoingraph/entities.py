@@ -100,14 +100,15 @@ def compute_entities(input_path):
                 input_addresses = {address}
             transaction = entries[0]
             input_counter += 1
-            if input_counter % 100000 == 0:
-                print('processed inputs: ' + str(input_counter))
+            if input_counter % (1000 * 1000) == 0:
+                print('processed inputs:', input_counter)
         address_list.group(input_addresses)
     print('write to file')
     address_list.export(input_path)
 
 
 def calculate_input_addresses(input_path):
+    print('calculating input addresses')
     with open(os.path.join(input_path, 'rel_input.csv'), 'r', newline='') as input_file,\
             open(os.path.join(input_path, 'rel_output_address.csv'), 'r', newline='') as output_address_file,\
             open(os.path.join(input_path, 'input_addresses.csv'), 'w', newline='') as input_addresses_file:
