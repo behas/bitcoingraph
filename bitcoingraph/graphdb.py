@@ -16,6 +16,12 @@ class GraphDB:
         self.password = password
         self.url_base = 'http://{}:{}/db/data/'.format(host, port)
         self.url = self.url_base + 'transaction/commit'
+        self.headers = {
+            'Accept': 'application/json; charset=UTF-8',
+            'Content-Type': 'application/json',
+            'max-execution-time': 30000
+        }
+        self._session = requests.Session()
 
     address_match = lb_join(
         'MATCH (a:Address {address: {address}})<-[:USES]-(o)-[r:INPUT|OUTPUT]-(t)<-[:CONTAINS]-(b)',
@@ -159,19 +165,14 @@ class GraphDB:
 
     def create_entity(self, transaction_node_id):
         url = self.url_base + 'ext/Entity/node/{}/createEntity'.format(transaction_node_id)
-        requests.post(url, auth=(self.user, self.password))
+        self._session.post(url, auth=(self.user, self.password))
 
     def query(self, statement, parameters=None):
         statement_json = {'statement': statement}
         if parameters is not None:
             statement_json['parameters'] = parameters
         payload = {'statements': [statement_json]}
-        headers = {
-            'Accept': 'application/json; charset=UTF-8',
-            'Content-Type': 'application/json',
-            'max-execution-time': 30000
-        }
-        r = requests.post(self.url, auth=(self.user, self.password), headers=headers, json=payload)
+        r = self._session.post(self.url, auth=(self.user, self.password), headers=self.headers, json=payload)
         if r.status_code != 200:
             pass  # maybe raise an exception here
         return QueryResult(r.json())
@@ -189,6 +190,23 @@ class GraphDB:
             d += date.resolution
             timestamp_to = d.timestamp()
         return {'address': address, 'from': timestamp_from, 'to': timestamp_to}
+
+    def transaction(self):
+        return DBTransaction(self.host, self.port, self.user, self.password)
+
+
+class DBTransaction(GraphDB):
+
+    def __enter__(self):
+        transaction_begin_url = self.url_base + 'transaction'
+        r = self._session.post(transaction_begin_url, auth=(self.user, self.password), headers=self.headers)
+        self.url = r.headers['Location']
+        return self
+
+    def __exit__(self, type, value, traceback):
+        transaction_commit_url = self.url + '/commit'
+        r = self._session.post(transaction_commit_url, auth=(self.user, self.password), headers=self.headers)
+        self._session.close()
 
 
 class QueryResult:
