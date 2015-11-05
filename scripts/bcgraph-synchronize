@@ -1,0 +1,10 @@
+#!/usr/bin/env python
+
+from bitcoingraph import BitcoinGraph
+import configparser
+
+config = configparser.ConfigParser()
+config.read('config.ini')
+
+bcgraph = BitcoinGraph(**config)
+bcgraph.synchronize()

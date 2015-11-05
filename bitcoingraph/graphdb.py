@@ -114,16 +114,58 @@ class GraphDB:
             'RETURN n as node, a as address')
         return self.query(s, {'address1': address1, 'address2': address2})
 
-    def create_entities(self, block_hash):
-        node_id = self.query('MATCH (b:Block {hash: {hash}}) RETURN id(b)', {'hash': block_hash}).single_result()
-        url = self.url_base + 'ext/Entity/node/{}/createEntities'.format(node_id)
+    def get_max_block_height(self):
+        s = lb_join(
+            'MATCH (b:Block)',
+            'RETURN max(b.height)')
+        return self.query(s).single_result()
+
+    def add_block(self, block):
+        s = lb_join(
+            'CREATE (b:Block {hash: {hash}, height: {height}, timestamp: {timestamp}})',
+            'RETURN id(b)')
+        return self.query(s, {'hash': block.hash, 'height': block.height, 'timestamp': block.timestamp}).single_result()
+
+    def add_transaction(self, block_node_id, tx):
+        s = lb_join(
+            'MATCH (b) WHERE id(b) = {id}',
+            'CREATE (b)-[:CONTAINS]->(t:Transaction {txid: {txid}, coinbase: {coinbase}})',
+            'RETURN id(t)')
+        return self.query(s, {'id': block_node_id, 'txid': tx.txid, 'coinbase': tx.is_coinbase()}).single_result()
+
+    def add_input(self, tx_node_id, output_reference):
+        s = lb_join(
+            'MATCH (o:Output {txid_n: {txid_n}}), (t)',
+            'WHERE id(t) = {id}',
+            'CREATE (o)-[:INPUT]->(t)')
+        return self.query(s, {'txid_n': '{}_{}'.format(output_reference['txid'], output_reference['vout']),
+                              'id': tx_node_id}).single_result()
+
+    def add_output(self, tx_node_id, output):
+        s = lb_join(
+            'MATCH (t) WHERE id(t) = {id}',
+            'CREATE (t)-[:OUTPUT]->(o:Output {txid_n: {txid_n}, n: {n}, value: {value}, type: {type}})',
+            'RETURN id(o)')
+        return self.query(s, {'id': tx_node_id, 'txid_n': '{}_{}'.format(output.transaction.txid, output.index),
+                              'n': output.index, 'value': output.value, 'type': output.type}).single_result()
+
+    def add_address(self, output_node_id, address):
+        s = lb_join(
+            'MATCH (o) WHERE id(o) = {id}',
+            'MERGE (a:Address {address: {address}})',
+            'CREATE (o)-[:USES]->(a)',
+            'RETURN id(a)')
+        return self.query(s, {'id': output_node_id, 'address': address}).single_result()
+
+    def create_entity(self, transaction_node_id):
+        url = self.url_base + 'ext/Entity/node/{}/createEntity'.format(transaction_node_id)
         requests.post(url, auth=(self.user, self.password))
 
-    def query(self, statement, parameters):
-        payload = {'statements': [{
-            'statement': statement,
-            'parameters': parameters
-        }]}
+    def query(self, statement, parameters=None):
+        statement_json = {'statement': statement}
+        if parameters is not None:
+            statement_json['parameters'] = parameters
+        payload = {'statements': [statement_json]}
         headers = {
             'Accept': 'application/json; charset=UTF-8',
             'Content-Type': 'application/json',

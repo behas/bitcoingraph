@@ -113,6 +113,13 @@ class BitcoinGraph:
                 for base_name in ['transactions', 'rel_tx_output', 'outputs', 'rel_output_address']:
                     sort(output_path, base_name + '.csv', '-u')
 
+    def synchronize(self):
+        start = self.graph_db.get_max_block_height() + 1
+        end = start # self.blockchain.get_max_block_height() - 2
+        print('add blocks', start, 'to', end)
+        for block in self.blockchain.get_blocks_in_range(start, end):
+            self.graph_db.add_block(block)
+
 
 def compute_entities(input_path, sort_input=False):
     if sort_input:

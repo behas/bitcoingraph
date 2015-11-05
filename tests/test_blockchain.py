@@ -232,7 +232,7 @@ class TestBlockchain(TestBlockchainObject):
         self.assertEqual(2, len(txs))
 
     def test_get_max_blockheight(self):
-        max_height = self.blockchain.get_max_blockheight()
+        max_height = self.blockchain.get_max_block_height()
         self.assertEqual(max_height, 100001)
 
     def test_exceptions(self):

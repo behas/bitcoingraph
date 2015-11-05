@@ -56,6 +56,25 @@ class GraphController:
     def get_path(self, address1, address2):
         return Path(self.graph_db.path_query(address1, address2).get())
 
+    def get_max_block_height(self):
+        return self.graph_db.get_max_block_height()
+
+    def add_block(self, block):
+        print('add block', block.height)
+        block_node_id = self.graph_db.add_block(block)
+        for index, tx in enumerate(block.transactions):
+            print('add transaction {} of {} (txid: {})'.format(index + 1, len(block.transactions), tx.txid))
+            tx_node_id = self.graph_db.add_transaction(block_node_id, tx)
+            if not tx.is_coinbase():
+                for input in tx.inputs:
+                    self.graph_db.add_input(tx_node_id, input.output_reference)
+            for output in tx.outputs:
+                output_node_id = self.graph_db.add_output(tx_node_id, output)
+                for address in output.addresses:
+                    self.graph_db.add_address(output_node_id, address)
+            print('create entity (node id: {})'.format(tx_node_id))
+            self.graph_db.create_entity(tx_node_id)
+
 
 class Address:
 

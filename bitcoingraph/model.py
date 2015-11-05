@@ -113,7 +113,7 @@ class Transaction:
                 Input(blockchain, is_coinbase=True) if 'coinbase' in vin
                 else Input(blockchain, vin)
                 for vin in json_data['vin']]
-            self.__outputs = [Output(i, vout) for i, vout in enumerate(json_data['vout'])]
+            self.__outputs = [Output(self, i, vout) for i, vout in enumerate(json_data['vout'])]
 
     @property
     def inputs(self):
@@ -185,14 +185,11 @@ class Transaction:
 
 class Input:
 
-    def __init__(self, blockchain, output_reference=None, is_coinbase=False, json_data=None):
+    def __init__(self, blockchain, output_reference=None, is_coinbase=False):
         self._blockchain = blockchain
         self.output_reference = output_reference
         self.is_coinbase = is_coinbase
-        if json_data is None:
-            self.__output = None
-        else:
-            self.__output = Output(output_reference['vout'], json_data)
+        self.__output = None
 
     @property
     def output(self):
@@ -209,7 +206,8 @@ class Input:
 
 class Output:
 
-    def __init__(self, index, json_data):
+    def __init__(self, transaction, index, json_data):
+        self.transaction = transaction
         self.index = index
         self.value = json_data['value']
         self.type = json_data['scriptPubKey']['type']

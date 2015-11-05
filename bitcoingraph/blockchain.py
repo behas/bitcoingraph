@@ -122,7 +122,7 @@ class Blockchain:
         except JSONRPCException as exc:
             raise BlockchainException('Cannot retrieve transactions {}'.format(tx_ids), exc)
 
-    def get_max_blockheight(self):
+    def get_max_block_height(self):
         """
         Returns maximum known block height.
 
