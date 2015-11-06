@@ -26,9 +26,11 @@ parser.add_argument('-P', '--neo4j-password', required=True,
 
 
 args = parser.parse_args()
-blockchain = {'host': args.bc_host, 'port': args.bc_port, 'rpc_user': args.bc_user, 'rpc_pass': args.bc_password}
+blockchain = {'host': args.bc_host, 'port': args.bc_port,
+              'rpc_user': args.bc_user, 'rpc_pass': args.bc_password}
 if args.rest:
     blockchain['method'] = 'REST'
-neo4j = {'host': args.neo4j_host, 'port': args.neo4j_port, 'user': args.neo4j_user, 'pass': args.neo4j_password}
+neo4j = {'host': args.neo4j_host, 'port': args.neo4j_port,
+         'user': args.neo4j_user, 'pass': args.neo4j_password}
 bcgraph = BitcoinGraph(blockchain=blockchain, neo4j=neo4j)
 bcgraph.synchronize()

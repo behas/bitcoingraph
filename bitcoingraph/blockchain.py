@@ -72,7 +72,8 @@ class Blockchain:
             block_hash = self._bitcoin_proxy.getblockhash(block_height)
             return self.get_block_by_hash(block_hash)
         except BitcoindException as exc:
-            raise BlockchainException('Cannot retrieve block with height {}'.format(block_height), exc)
+            raise BlockchainException(
+                'Cannot retrieve block with height {}'.format(block_height), exc)
 
     def get_blocks_in_range(self, start_height=0, end_height=0):
         """

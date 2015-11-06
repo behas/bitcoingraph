@@ -36,7 +36,9 @@ if len(sys.argv) <= 1:
 
 args = parser.parse_args()
 bcgraph = BitcoinGraph(
-    blockchain={'host': 'localhost', 'port': 8332, 'rpc_user': args.user, 'rpc_pass': args.password, 'method': 'REST'})
+    blockchain={'host': 'localhost', 'port': 8332,
+                'rpc_user': args.user, 'rpc_pass': args.password,
+                'method': 'REST'})
 bcgraph.export(
     args.startheight,
     args.endheight,

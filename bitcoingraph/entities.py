@@ -50,7 +50,8 @@ class AddressList:
             representatives = {address.get_representative() for address in addresses}
             highest_representative = None
             for representative in representatives:
-                if highest_representative is None or representative.height > highest_representative.height:
+                if (highest_representative is None or
+                        representative.height > highest_representative.height):
                     highest_representative = representative
             representatives.remove(highest_representative)
             for representative in representatives:
@@ -107,11 +108,15 @@ def compute_entities(input_path):
     address_list.export(input_path)
 
 
+def open_csv(input_path, base_name, mode):
+    return open(os.path.join(input_path, base_name + '.csv'), mode, newline='')
+
+
 def calculate_input_addresses(input_path):
     print('calculating input addresses')
-    with open(os.path.join(input_path, 'rel_input.csv'), 'r', newline='') as input_file,\
-            open(os.path.join(input_path, 'rel_output_address.csv'), 'r', newline='') as output_address_file,\
-            open(os.path.join(input_path, 'input_addresses.csv'), 'w', newline='') as input_addresses_file:
+    with open_csv(input_path, 'rel_input', 'r') as input_file, \
+            open_csv(input_path, 'rel_output_address', 'r') as output_address_file, \
+            open_csv(input_path, 'input_addresses', 'w') as input_addresses_file:
         input_reader = csv.reader(input_file)
         output_address_reader = csv.reader(output_address_file)
         input_address_writer = csv.writer(input_addresses_file)

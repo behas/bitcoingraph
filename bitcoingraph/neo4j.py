@@ -24,7 +24,8 @@ class Neo4jController:
         self._session = requests.Session()
 
     address_match = lb_join(
-        'MATCH (a:Address {address: {address}})<-[:USES]-(o)-[r:INPUT|OUTPUT]-(t)<-[:CONTAINS]-(b)',
+        'MATCH (a:Address {address: {address}})<-[:USES]-'
+        '(o)-[r:INPUT|OUTPUT]-(t)<-[:CONTAINS]-(b)',
         'WITH a, t, type(r) AS rel_type, sum(o.value) AS value, b')
     address_period_match = lb_join(
         address_match,
@@ -40,7 +41,8 @@ class Neo4jController:
     def address_stats_query(self, address):
         s = lb_join(
             self.address_match,
-            'RETURN count(*) as num_transactions, min(b.timestamp) as first, max(b.timestamp) as last')
+            'RETURN count(*) as num_transactions, '
+            'min(b.timestamp) as first, max(b.timestamp) as last')
         return self.query(s, {'address': address})
 
     def address_count_query(self, address, date_from, date_to):
@@ -50,7 +52,8 @@ class Neo4jController:
         return self.query(s, self.as_address_query_parameter(address, date_from, date_to))
 
     def address_query(self, address, date_from, date_to):
-        return self.query(self.address_statement, self.as_address_query_parameter(address, date_from, date_to))
+        return self.query(self.address_statement,
+                          self.as_address_query_parameter(address, date_from, date_to))
 
     def paginated_address_query(self, address, date_from, date_to, skip, limit):
         s = lb_join(
@@ -130,30 +133,35 @@ class Neo4jController:
         s = lb_join(
             'CREATE (b:Block {hash: {hash}, height: {height}, timestamp: {timestamp}})',
             'RETURN id(b)')
-        return self.query(s, {'hash': block.hash, 'height': block.height, 'timestamp': block.timestamp}).single_result()
+        p = {'hash': block.hash, 'height': block.height, 'timestamp': block.timestamp}
+        return self.query(s, p).single_result()
 
     def add_transaction(self, block_node_id, tx):
         s = lb_join(
             'MATCH (b) WHERE id(b) = {id}',
             'CREATE (b)-[:CONTAINS]->(t:Transaction {txid: {txid}, coinbase: {coinbase}})',
             'RETURN id(t)')
-        return self.query(s, {'id': block_node_id, 'txid': tx.txid, 'coinbase': tx.is_coinbase()}).single_result()
+        p = {'id': block_node_id, 'txid': tx.txid, 'coinbase': tx.is_coinbase()}
+        return self.query(s, p).single_result()
 
     def add_input(self, tx_node_id, output_reference):
         s = lb_join(
             'MATCH (o:Output {txid_n: {txid_n}}), (t)',
             'WHERE id(t) = {id}',
             'CREATE (o)-[:INPUT]->(t)')
-        return self.query(s, {'txid_n': '{}_{}'.format(output_reference['txid'], output_reference['vout']),
-                              'id': tx_node_id}).single_result()
+        p = {'txid_n': '{}_{}'.format(output_reference['txid'], output_reference['vout']),
+             'id': tx_node_id}
+        return self.query(s, p).single_result()
 
     def add_output(self, tx_node_id, output):
         s = lb_join(
             'MATCH (t) WHERE id(t) = {id}',
-            'CREATE (t)-[:OUTPUT]->(o:Output {txid_n: {txid_n}, n: {n}, value: {value}, type: {type}})',
+            'CREATE (t)-[:OUTPUT]->'
+            '(o:Output {txid_n: {txid_n}, n: {n}, value: {value}, type: {type}})',
             'RETURN id(o)')
-        return self.query(s, {'id': tx_node_id, 'txid_n': '{}_{}'.format(output.transaction.txid, output.index),
-                              'n': output.index, 'value': output.value, 'type': output.type}).single_result()
+        p = {'id': tx_node_id, 'txid_n': '{}_{}'.format(output.transaction.txid, output.index),
+             'n': output.index, 'value': output.value, 'type': output.type}
+        return self.query(s, p).single_result()
 
     def add_address(self, output_node_id, address):
         s = lb_join(
@@ -176,7 +184,8 @@ class Neo4jController:
         if parameters is not None:
             statement_json['parameters'] = parameters
         payload = {'statements': [statement_json]}
-        r = self._session.post(self.url, auth=(self.user, self.password), headers=self.headers, json=payload)
+        r = self._session.post(self.url, auth=(self.user, self.password),
+                               headers=self.headers, json=payload)
         if r.status_code != 200:
             pass  # maybe raise an exception here
         return QueryResult(r.json())
@@ -186,7 +195,8 @@ class Neo4jController:
         if date_from is None:
             timestamp_from = 0
         else:
-            timestamp_from = datetime.strptime(date_from, '%Y-%m-%d').replace(tzinfo=timezone.utc).timestamp()
+            timestamp_from = datetime.strptime(date_from, '%Y-%m-%d').replace(
+                tzinfo=timezone.utc).timestamp()
         if date_to is None:
             timestamp_to = 2 ** 31 - 1
         else:
@@ -203,13 +213,15 @@ class DBTransaction(Neo4jController):
 
     def __enter__(self):
         transaction_begin_url = self.url_base + 'transaction'
-        r = self._session.post(transaction_begin_url, auth=(self.user, self.password), headers=self.headers)
+        r = self._session.post(transaction_begin_url, auth=(self.user, self.password),
+                               headers=self.headers)
         self.url = r.headers['Location']
         return self
 
     def __exit__(self, type, value, traceback):
         transaction_commit_url = self.url + '/commit'
-        r = self._session.post(transaction_commit_url, auth=(self.user, self.password), headers=self.headers)
+        r = self._session.post(transaction_commit_url, auth=(self.user, self.password),
+                               headers=self.headers)
         self._session.close()
 
 

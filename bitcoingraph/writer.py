@@ -17,9 +17,11 @@ class CSVDumpWriter:
         self._write_header('outputs', ['txid_n:ID(Output)', 'n:int', 'value:double', 'type'])
         self._write_header('addresses', ['address:ID(Address)'])
         self._write_header('rel_block_tx', ['hash:START_ID(Block)', 'txid:END_ID(Transaction)'])
-        self._write_header('rel_tx_output', ['txid:START_ID(Transaction)', 'txid_n:END_ID(Output)'])
+        self._write_header('rel_tx_output',
+                           ['txid:START_ID(Transaction)', 'txid_n:END_ID(Output)'])
         self._write_header('rel_input', ['txid:END_ID(Transaction)', 'txid_n:START_ID(Output)'])
-        self._write_header('rel_output_address', ['txid_n:START_ID(Output)', 'address:END_ID(Address)'])
+        self._write_header('rel_output_address',
+                           ['txid_n:START_ID(Output)', 'address:END_ID(Address)'])
 
     def __enter__(self):
         self._blocks_file = open(self._get_path('blocks'), 'a')
@@ -76,9 +78,11 @@ class CSVDumpWriter:
             if not tx.is_coinbase():
                 for input in tx.inputs:
                     self._rel_input_writer.writerow(
-                        [tx.txid, a_b(input.output_reference['txid'], input.output_reference['vout'])])
+                        [tx.txid,
+                         a_b(input.output_reference['txid'], input.output_reference['vout'])])
             for output in tx.outputs:
-                self._output_writer.writerow([a_b(tx.txid, output.index), output.index, output.value, output.type])
+                self._output_writer.writerow([a_b(tx.txid, output.index), output.index,
+                                              output.value, output.type])
                 self._rel_tx_output_writer.writerow([tx.txid, a_b(tx.txid, output.index)])
                 for address in output.addresses:
                     self._address_writer.writerow([address])

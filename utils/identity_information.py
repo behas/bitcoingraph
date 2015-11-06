@@ -7,7 +7,8 @@ import urllib
 
 
 def scrape_page(writer, list_key, offset):
-    r = requests.get('https://blockchain.info/de/tags', params={'filter': list_key, 'offset': offset})
+    r = requests.get('https://blockchain.info/de/tags',
+                     params={'filter': list_key, 'offset': offset})
     soup = BeautifulSoup(r.text, 'html.parser')
     for tr in soup.tbody.find_all('tr'):
         if tr.img['src'].endswith('green_tick.png'):

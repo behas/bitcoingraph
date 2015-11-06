@@ -10,7 +10,8 @@ class GraphController:
     def __init__(self, host, port, user, password):
         self.graph_db = Neo4jController(host, port, user, password)
 
-    def get_address_info(self, address, date_from=None, date_to=None, rows_per_page=rows_per_page_default):
+    def get_address_info(self, address, date_from=None, date_to=None,
+                         rows_per_page=rows_per_page_default):
         result = self.graph_db.address_stats_query(address).single_row()
         if result['num_transactions'] == 0:
             return {'transactions': 0}
@@ -25,7 +26,8 @@ class GraphController:
                 'entity': entity,
                 'pages': (count + rows_per_page - 1) // rows_per_page}
 
-    def get_address(self, address, page, date_from=None, date_to=None, rows_per_page=rows_per_page_default):
+    def get_address(self, address, page, date_from=None, date_to=None,
+                    rows_per_page=rows_per_page_default):
         if rows_per_page is None:
             query = self.graph_db.address_query(address, date_from, date_to)
         else:
@@ -64,7 +66,8 @@ class GraphController:
         with self.graph_db.transaction() as db_transaction:
             block_node_id = db_transaction.add_block(block)
             for index, tx in enumerate(block.transactions):
-                print('add transaction {} of {} (txid: {})'.format(index + 1, len(block.transactions), tx.txid))
+                print('add transaction {} of {} (txid: {})'.format(
+                    index + 1, len(block.transactions), tx.txid))
                 tx_node_id = db_transaction.add_transaction(block_node_id, tx)
                 if not tx.is_coinbase():
                     for input in tx.inputs:
@@ -81,9 +84,9 @@ class Address:
 
     def __init__(self, address, outputs):
         self.address = address
-        self.outputs = [
-            {'txid': o['txid'], 'type': o['type'], 'value': o['value'], 'timestamp': to_time(o['timestamp'])}
-            for o in outputs]
+        self.outputs = [{'txid': o['txid'], 'type': o['type'], 'value': o['value'],
+                         'timestamp': to_time(o['timestamp'])}
+                        for o in outputs]
 
     def get_incoming_transactions(self):
         for output in self.outputs:
@@ -104,20 +107,24 @@ class Address:
         outgoing_transactions = list(self.get_outgoing_transactions())
         if len(incoming_transactions) <= 10:
             for transaction in incoming_transactions:
-                nodes.append({'label': 'Transaction', 'txid': transaction['txid'], 'type': 'source'})
+                nodes.append({'label': 'Transaction', 'txid': transaction['txid'],
+                              'type': 'source'})
                 links.append({'source': len(nodes) - 1, 'target': 0,
                               'type': transaction['type'], 'value': transaction['value']})
         else:
-            nodes.append({'label': 'Transaction', 'amount': len(incoming_transactions), 'type': 'source'})
+            nodes.append({'label': 'Transaction', 'amount': len(incoming_transactions),
+                          'type': 'source'})
             links.append({'source': len(nodes) - 1, 'target': 0,
                           'type': 'OUTPUT', 'value': value_sum(incoming_transactions)})
         if len(outgoing_transactions) <= 10:
             for transaction in outgoing_transactions:
-                nodes.append({'label': 'Transaction', 'txid': transaction['txid'], 'type': 'target'})
+                nodes.append({'label': 'Transaction', 'txid': transaction['txid'],
+                              'type': 'target'})
                 links.append({'source': 0, 'target': len(nodes) - 1,
                               'type': transaction['type'], 'value': transaction['value']})
         else:
-            nodes.append({'label': 'Transaction', 'amount': len(outgoing_transactions), 'type': 'target'})
+            nodes.append({'label': 'Transaction', 'amount': len(outgoing_transactions),
+                          'type': 'target'})
             links.append({'source': 0, 'target': len(nodes) - 1,
                           'type': 'INPUT', 'value': value_sum(outgoing_transactions)})
         return to_json({'nodes': nodes, 'links': links})
@@ -157,7 +164,8 @@ class Path:
                 elif 'txid' in pc:
                     nodes.append({'label': 'Transaction', 'txid': pc['txid']})
                 else:
-                    links.append({'source': len(nodes) - 1, 'target': len(nodes), 'value': pc['value']})
+                    links.append({'source': len(nodes) - 1, 'target': len(nodes),
+                                  'value': pc['value']})
             return to_json({'nodes': nodes, 'links': links})
         else:
             return to_json({})

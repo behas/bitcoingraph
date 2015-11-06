@@ -19,7 +19,8 @@ class Block:
             self.__timestamp = json_data['time']
             if 'previousblockhash' in json_data:
                 self.__has_previous_block = True
-                self.__previous_block = Block(blockchain, json_data['previousblockhash'], self.height - 1)
+                self.__previous_block = Block(blockchain, json_data['previousblockhash'],
+                                              self.height - 1)
             else:
                 self.__has_previous_block = False
                 self.__previous_block = None
@@ -172,14 +173,16 @@ class Transaction:
                 links.append({'source': len(nodes) - 1, 'target': 0, 'type': 'INPUT', 'value': v})
         else:
             nodes.append({'label': 'Address', 'amount': len(aggregated_inputs), 'type': 'source'})
-            links.append({'source': len(nodes) - 1, 'target': 0, 'type': 'INPUT', 'value': self.output_sum()})
+            links.append({'source': len(nodes) - 1, 'target': 0,
+                          'type': 'INPUT', 'value': self.output_sum()})
         if len(aggregated_outputs) <= 10:
             for k, v in aggregated_outputs.items():
                 nodes.append({'label': 'Address', 'address': k, 'type': 'target'})
                 links.append({'source': 0, 'target': len(nodes) - 1, 'type': 'OUTPUT', 'value': v})
         else:
             nodes.append({'label': 'Address', 'amount': len(aggregated_outputs), 'type': 'target'})
-            links.append({'source': 0, 'target': len(nodes) - 1, 'type': 'OUTPUT', 'value': self.output_sum()})
+            links.append({'source': 0, 'target': len(nodes) - 1,
+                          'type': 'OUTPUT', 'value': self.output_sum()})
         return to_json({'nodes': nodes, 'links': links})
 
 

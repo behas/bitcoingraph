@@ -110,7 +110,8 @@ class BitcoinGraph:
         if separate_header:
             sort(output_path, 'addresses.csv', '-u')
             if deduplicate_transactions:
-                for base_name in ['transactions', 'rel_tx_output', 'outputs', 'rel_output_address']:
+                for base_name in ['transactions', 'rel_tx_output',
+                                  'outputs', 'rel_output_address']:
                     sort(output_path, base_name + '.csv', '-u')
 
     def synchronize(self):
