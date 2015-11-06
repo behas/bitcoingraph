@@ -1,10 +1,34 @@
 #!/usr/bin/env python
 
+import argparse
 from bitcoingraph import BitcoinGraph
-import configparser
 
-config = configparser.ConfigParser()
-config.read('config.ini')
+parser = argparse.ArgumentParser(
+    description='Synchronise database with blockchain')
+parser.add_argument('-s', '--bc-host', required=True,
+                    help='Bitcoin Core host')
+parser.add_argument('--bc-port', default='8332',
+                    help='Bitcoin Core port')
+parser.add_argument('-u', '--bc-user', required=True,
+                    help='Bitcoin Core RPC username')
+parser.add_argument('-p', '--bc-password', required=True,
+                    help='Bitcoin Core RPC password')
+parser.add_argument('--rest', action='store_true',
+                    help='Prefer REST API over RPC. This is only possible on localhost.')
+parser.add_argument('-S', '--neo4j-host', required=True,
+                    help='Neo4j host')
+parser.add_argument('--neo4j-port', default='7474',
+                    help='Neo4j port')
+parser.add_argument('-U', '--neo4j-user', required=True,
+                    help='Neo4j username')
+parser.add_argument('-P', '--neo4j-password', required=True,
+                    help='Neo4j password')
 
-bcgraph = BitcoinGraph(**config)
+
+args = parser.parse_args()
+blockchain = {'host': args.bc_host, 'port': args.bc_port, 'rpc_user': args.bc_user, 'rpc_pass': args.bc_password}
+if args.rest:
+    blockchain['method'] = 'REST'
+neo4j = {'host': args.neo4j_host, 'port': args.neo4j_port, 'user': args.neo4j_user, 'pass': args.neo4j_password}
+bcgraph = BitcoinGraph(blockchain=blockchain, neo4j=neo4j)
 bcgraph.synchronize()

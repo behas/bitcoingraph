@@ -138,7 +138,7 @@ class Transaction:
     def output_sum(self):
         return sum([output.value for output in self.outputs])
 
-    def get_aggregated_inputs(self):
+    def aggregated_inputs(self):
         aggregated_inputs = {}
         for input in self.inputs:
             output = input.output
@@ -150,7 +150,7 @@ class Transaction:
                 aggregated_inputs[output.addresses[0]] = output.value
         return aggregated_inputs
 
-    def get_aggregated_outputs(self):
+    def aggregated_outputs(self):
         aggregated_outputs = {}
         for output in self.outputs:
             if output.addresses:
@@ -160,11 +160,11 @@ class Transaction:
                     aggregated_outputs[output.addresses[0]] = output.value
         return aggregated_outputs
 
-    def get_graph_json(self):
+    def to_graph_json(self):
         nodes = [{'label': 'Transaction', 'txid': self.txid}]
         links = []
-        aggregated_inputs = self.get_aggregated_inputs()
-        aggregated_outputs = self.get_aggregated_outputs()
+        aggregated_inputs = self.aggregated_inputs()
+        aggregated_outputs = self.aggregated_outputs()
 
         if len(aggregated_inputs) <= 10:
             for k, v in aggregated_inputs.items():

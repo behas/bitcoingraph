@@ -1,4 +1,4 @@
-from bitcoingraph.bitcoind import BitcoinProxy, JSONRPCException
+from bitcoingraph.bitcoind import BitcoinProxy, BitcoindException
 
 from pathlib import Path
 
@@ -40,7 +40,7 @@ class BitcoinProxyMock(BitcoinProxy):
 
     def getblock(self, block_hash):
         if block_hash not in self.blocks:
-            raise JSONRPCException("Unknown block", block_hash)
+            raise BitcoindException("Unknown block", block_hash)
         else:
             return self.blocks[block_hash]
 
@@ -49,7 +49,7 @@ class BitcoinProxyMock(BitcoinProxy):
 
     def getblockhash(self, block_height):
         if block_height not in self.heights:
-            raise JSONRPCException("Unknown height", block_height)
+            raise BitcoindException("Unknown height", block_height)
         else:
             return self.heights[block_height]
 
@@ -58,7 +58,7 @@ class BitcoinProxyMock(BitcoinProxy):
 
     def getrawtransaction(self, tx_id, verbose=1):
         if tx_id not in self.txs:
-            raise JSONRPCException("Unknown transaction", tx_id)
+            raise BitcoindException("Unknown transaction", tx_id)
         else:
             return self.txs[tx_id]
 

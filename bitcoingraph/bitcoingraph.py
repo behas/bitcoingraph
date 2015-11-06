@@ -8,10 +8,10 @@ the Bitcoin block chain.
 
 import logging
 
-from bitcoingraph.bitcoind import BitcoinProxy, JSONRPCException
+from bitcoingraph.bitcoind import BitcoinProxy, BitcoindException
 from bitcoingraph.blockchain import Blockchain
 from bitcoingraph import entities
-from bitcoingraph.graph_controller import GraphController
+from bitcoingraph.graphdb import GraphController
 from bitcoingraph.helper import sort
 from bitcoingraph.writer import CSVDumpWriter
 
@@ -54,7 +54,7 @@ class BitcoinGraph:
             logger.debug("Connection successful.")
             blockchain = Blockchain(bc_proxy)
             return blockchain
-        except JSONRPCException as exc:
+        except BitcoindException as exc:
             raise BitcoingraphException("Couldn't connect to {}.".format(config['host']), exc)
 
     def get_transaction(self, tx_id):

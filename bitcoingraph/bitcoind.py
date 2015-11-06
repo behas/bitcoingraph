@@ -14,14 +14,14 @@ __copyright__ = 'Copyright 2015, Bernhard Haslhofer'
 __license__ = "MIT"
 
 
-class JSONRPCException(Exception):
+class BitcoindException(Exception):
     """
     Exception raised when accessing Bitcoin Core via JSON-RPCS.
     """
     pass
 
 
-class JSONRPCProxy(object):
+class JSONRPCInterface:
     """
     A generic JSON-RPC interface with keep-alive session reuse.
     """
@@ -32,7 +32,7 @@ class JSONRPCProxy(object):
 
         :param str url: URL of JSON-RPC endpoint
         :return: JSON-RPC proxy object
-        :rtype: JSONRPCProxy
+        :rtype: JSONRPCInterface
         """
         self._session = requests.Session()
         self._url = url
@@ -77,7 +77,7 @@ class JSONRPCProxy(object):
                 print(e)
                 tries -= 1
                 if tries == 0:
-                    raise JSONRPCException('Failed to connect for RPC call.')
+                    raise BitcoindException('Failed to connect for RPC call.')
                 hadConnectionFailures = True
                 print("Couldn't connect for remote procedure call.",
                       "will sleep for ten seconds and then try again...")
@@ -87,17 +87,17 @@ class JSONRPCProxy(object):
                     print("Connected for RPC call after retry.")
                 break
         if response.status_code not in (200, 500):
-            raise JSONRPCException("RPC connection failure: " +
-                                   str(response.status_code) + ' ' +
-                                   response.reason)
+            raise BitcoindException("RPC connection failure: " +
+                                    str(response.status_code) + ' ' +
+                                    response.reason)
         responseJSON = response.json()
         if 'error' in responseJSON and responseJSON['error'] is not None:
-            raise JSONRPCException('Error in RPC call: ' +
-                                   str(responseJSON['error']))
+            raise BitcoindException('Error in RPC call: ' +
+                                    str(responseJSON['error']))
         return responseJSON
 
 
-class RESTProxy:
+class RESTInterface:
 
     def __init__(self, url):
         self._session = requests.Session()
@@ -129,9 +129,9 @@ class BitcoinProxy:
         self.method = method
         rest_url = 'http://{}:{}/rest/'.format(host, port)
         rpc_url = 'http://{}:{}@{}:{}/'.format(rpc_user, rpc_pass, host, port)
-        self._jsonrpc_proxy = JSONRPCProxy(rpc_url)
+        self._jsonrpc_proxy = JSONRPCInterface(rpc_url)
         if method == 'REST':
-            self._rest_proxy = RESTProxy(rest_url)
+            self._rest_proxy = RESTInterface(rest_url)
 
     def getblock(self, block_hash):
         """

@@ -6,7 +6,7 @@ An API for traversing the Bitcoin blockchain
 """
 
 from bitcoingraph.model import Block, Transaction
-from bitcoingraph.bitcoind import JSONRPCException
+from bitcoingraph.bitcoind import BitcoindException
 
 __author__ = 'Bernhard Haslhofer (bernhard.haslhofer@ait.ac.at)'
 __copyright__ = 'Copyright 2015, Bernhard Haslhofer'
@@ -55,7 +55,7 @@ class Blockchain:
         try:
             raw_block_data = self._bitcoin_proxy.getblock(block_hash)
             return Block(self, json_data=raw_block_data)
-        except JSONRPCException as exc:
+        except BitcoindException as exc:
             raise BlockchainException('Cannot retrieve block {}'.format(block_hash), exc)
 
     def get_block_by_height(self, block_height):
@@ -71,7 +71,7 @@ class Blockchain:
         try:
             block_hash = self._bitcoin_proxy.getblockhash(block_height)
             return self.get_block_by_hash(block_hash)
-        except JSONRPCException as exc:
+        except BitcoindException as exc:
             raise BlockchainException('Cannot retrieve block with height {}'.format(block_height), exc)
 
     def get_blocks_in_range(self, start_height=0, end_height=0):
@@ -102,7 +102,7 @@ class Blockchain:
         try:
             raw_tx_data = self._bitcoin_proxy.getrawtransaction(tx_id)
             return Transaction(self, json_data=raw_tx_data)
-        except JSONRPCException as exc:
+        except BitcoindException as exc:
             raise BlockchainException('Cannot retrieve transaction with id {}'.format(tx_id), exc)
 
     def get_transactions(self, tx_ids):
@@ -119,7 +119,7 @@ class Blockchain:
             for raw_tx_data in raw_txs_data:
                 txs.append(Transaction(raw_tx_data, self))
             return txs
-        except JSONRPCException as exc:
+        except BitcoindException as exc:
             raise BlockchainException('Cannot retrieve transactions {}'.format(tx_ids), exc)
 
     def get_max_block_height(self):
@@ -132,6 +132,6 @@ class Blockchain:
         try:
             max_height = self._bitcoin_proxy.getblockcount()
             return max_height
-        except JSONRPCException as exc:
+        except BitcoindException as exc:
             raise BlockchainException("Error when retrieving maximum\
                 block height", exc)

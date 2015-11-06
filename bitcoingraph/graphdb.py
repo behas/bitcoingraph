@@ -1,243 +1,163 @@
 
-import requests
-from datetime import date, datetime, timezone
+from bitcoingraph.neo4j import Neo4jController
+from bitcoingraph.helper import to_time, to_json
 
 
-def lb_join(*lines):
-    return '\n'.join(lines)
+class GraphController:
 
-
-class GraphDB:
+    rows_per_page_default = 20
 
     def __init__(self, host, port, user, password):
-        self.host = host
-        self.port = port
-        self.user = user
-        self.password = password
-        self.url_base = 'http://{}:{}/db/data/'.format(host, port)
-        self.url = self.url_base + 'transaction/commit'
-        self.headers = {
-            'Accept': 'application/json; charset=UTF-8',
-            'Content-Type': 'application/json',
-            'max-execution-time': 30000
-        }
-        self._session = requests.Session()
+        self.graph_db = Neo4jController(host, port, user, password)
 
-    address_match = lb_join(
-        'MATCH (a:Address {address: {address}})<-[:USES]-(o)-[r:INPUT|OUTPUT]-(t)<-[:CONTAINS]-(b)',
-        'WITH a, t, type(r) AS rel_type, sum(o.value) AS value, b')
-    address_period_match = lb_join(
-        address_match,
-        'WHERE b.timestamp > {from} AND b.timestamp < {to}')
-    address_statement = lb_join(
-        address_period_match,
-        'RETURN t.txid as txid, rel_type as type, value as value, b.timestamp as timestamp',
-        'ORDER BY b.timestamp desc')
-    entity_match = lb_join(
-        'MATCH (e:Entity)<-[:BELONGS_TO]-(a)',
-        'WHERE id(e) = {id}')
+    def get_address_info(self, address, date_from=None, date_to=None, rows_per_page=rows_per_page_default):
+        result = self.graph_db.address_stats_query(address).single_row()
+        if result['num_transactions'] == 0:
+            return {'transactions': 0}
+        if date_from is None and date_to is None:
+            count = result['num_transactions']
+        else:
+            count = self.graph_db.address_count_query(address, date_from, date_to).single_result()
+        entity = self.graph_db.entity_query(address).single_result()
+        return {'transactions': result['num_transactions'],
+                'first': to_time(result['first'], True),
+                'last': to_time(result['last'], True),
+                'entity': entity,
+                'pages': (count + rows_per_page - 1) // rows_per_page}
 
-    def address_stats_query(self, address):
-        s = lb_join(
-            self.address_match,
-            'RETURN count(*) as num_transactions, min(b.timestamp) as first, max(b.timestamp) as last')
-        return self.query(s, {'address': address})
+    def get_address(self, address, page, date_from=None, date_to=None, rows_per_page=rows_per_page_default):
+        if rows_per_page is None:
+            query = self.graph_db.address_query(address, date_from, date_to)
+        else:
+            query = self.graph_db.paginated_address_query(address, date_from, date_to,
+                                                          page * rows_per_page, rows_per_page)
+        return Address(address, query.get())
 
-    def address_count_query(self, address, date_from, date_to):
-        s = lb_join(
-            self.address_period_match,
-            'RETURN count(*)')
-        return self.query(s, self.as_address_query_parameter(address, date_from, date_to))
+    def get_identities(self, address):
+        identities = self.graph_db.identity_query(address).single_result()
+        return identities
 
-    def address_query(self, address, date_from, date_to):
-        return self.query(self.address_statement, self.as_address_query_parameter(address, date_from, date_to))
+    def get_entity(self, id, max_addresses=rows_per_page_default):
+        count = self.graph_db.entity_count_query(id).single_result()
+        result = self.graph_db.entity_address_query(id, max_addresses)
+        entity = {'id': id, 'addresses': result.get(), 'number_of_addresses': count}
+        return entity
 
-    def paginated_address_query(self, address, date_from, date_to, skip, limit):
-        s = lb_join(
-            self.address_statement,
-            'SKIP {skip} LIMIT {limit}')
-        p = self.as_address_query_parameter(address, date_from, date_to)
-        p['skip'] = skip
-        p['limit'] = limit
-        return self.query(s, p)
+    def search_address_by_identity_name(self, name):
+        address = self.graph_db.reverse_identity_query(name).single_result()
+        return address
 
-    def entity_query(self, address):
-        s = lb_join(
-            'MATCH (a:Address {address: {address}})-[:BELONGS_TO]->(e)',
-            'RETURN {id: id(e)}')
-        return self.query(s, {'address': address})
+    def add_identity(self, address, name, link, source):
+        self.graph_db.identity_add_query(address, name, link, source)
 
-    def entity_count_query(self, id):
-        s = lb_join(
-            self.entity_match,
-            'RETURN count(*)')
-        return self.query(s, {'id': id})
+    def delete_identity(self, id):
+        self.graph_db.identity_delete_query(id)
 
-    def entity_address_query(self, id, limit):
-        s = lb_join(
-            self.entity_match,
-            'OPTIONAL MATCH (a)-[:HAS]->(i)',
-            'WITH e, a, collect(i) as is',
-            'ORDER BY length(is) desc',
-            'LIMIT {limit}',
-            'RETURN a.address as address, is as identities')
-        return self.query(s, {'id': id, 'limit': limit})
-
-    def identity_query(self, address):
-        s = lb_join(
-            'MATCH (a:Address {address: {address}})-[:HAS]->(i)',
-            'RETURN collect({id: id(i), name: i.name, link: i.link, source: i.source})')
-        return self.query(s, {'address': address})
-
-    def reverse_identity_query(self, name):
-        s = lb_join(
-            'MATCH (i:Identity {name: {name}})<-[:HAS]-(a)',
-            'RETURN a.address')
-        return self.query(s, {'name': name})
-
-    def identity_add_query(self, address, name, link, source):
-        s = lb_join(
-            'MATCH (a:Address {address: {address}})',
-            'CREATE (a)-[:HAS]->(i:Identity {name: {name}, link: {link}, source: {source}})')
-        return self.query(s, {'address': address, 'name': name, 'link': link, 'source': source})
-
-    def identity_delete_query(self, id):
-        s = lb_join(
-            'MATCH (i:Identity)',
-            'WHERE id(i) = {id}',
-            'DETACH DELETE i')
-        return self.query(s, {'id': id})
-
-    def path_query(self, address1, address2):
-        s = lb_join(
-            'MATCH (start:Address {address: {address1}})<-[:USES]-(o1:Output)',
-            '  -[:INPUT|OUTPUT*]->(o2:Output)-[:USES]->(end:Address {address: {address2}}),',
-            '  p = shortestpath((o1)-[:INPUT|OUTPUT*]->(o2))',
-            'WITH p',
-            'LIMIT 1',
-            'UNWIND nodes(p) as n',
-            'OPTIONAL MATCH (n)-[:USES]->(a)',
-            'RETURN n as node, a as address')
-        return self.query(s, {'address1': address1, 'address2': address2})
+    def get_path(self, address1, address2):
+        return Path(self.graph_db.path_query(address1, address2).get())
 
     def get_max_block_height(self):
-        s = lb_join(
-            'MATCH (b:Block)',
-            'RETURN max(b.height)')
-        return self.query(s).single_result()
+        return self.graph_db.get_max_block_height()
 
     def add_block(self, block):
-        s = lb_join(
-            'CREATE (b:Block {hash: {hash}, height: {height}, timestamp: {timestamp}})',
-            'RETURN id(b)')
-        return self.query(s, {'hash': block.hash, 'height': block.height, 'timestamp': block.timestamp}).single_result()
+        print('add block', block.height)
+        with self.graph_db.transaction() as db_transaction:
+            block_node_id = db_transaction.add_block(block)
+            for index, tx in enumerate(block.transactions):
+                print('add transaction {} of {} (txid: {})'.format(index + 1, len(block.transactions), tx.txid))
+                tx_node_id = db_transaction.add_transaction(block_node_id, tx)
+                if not tx.is_coinbase():
+                    for input in tx.inputs:
+                        db_transaction.add_input(tx_node_id, input.output_reference)
+                for output in tx.outputs:
+                    output_node_id = db_transaction.add_output(tx_node_id, output)
+                    for address in output.addresses:
+                        db_transaction.add_address(output_node_id, address)
+        print('create entities for block (node id: {})'.format(block_node_id))
+        self.graph_db.create_entities(block_node_id)
 
-    def add_transaction(self, block_node_id, tx):
-        s = lb_join(
-            'MATCH (b) WHERE id(b) = {id}',
-            'CREATE (b)-[:CONTAINS]->(t:Transaction {txid: {txid}, coinbase: {coinbase}})',
-            'RETURN id(t)')
-        return self.query(s, {'id': block_node_id, 'txid': tx.txid, 'coinbase': tx.is_coinbase()}).single_result()
 
-    def add_input(self, tx_node_id, output_reference):
-        s = lb_join(
-            'MATCH (o:Output {txid_n: {txid_n}}), (t)',
-            'WHERE id(t) = {id}',
-            'CREATE (o)-[:INPUT]->(t)')
-        return self.query(s, {'txid_n': '{}_{}'.format(output_reference['txid'], output_reference['vout']),
-                              'id': tx_node_id}).single_result()
+class Address:
 
-    def add_output(self, tx_node_id, output):
-        s = lb_join(
-            'MATCH (t) WHERE id(t) = {id}',
-            'CREATE (t)-[:OUTPUT]->(o:Output {txid_n: {txid_n}, n: {n}, value: {value}, type: {type}})',
-            'RETURN id(o)')
-        return self.query(s, {'id': tx_node_id, 'txid_n': '{}_{}'.format(output.transaction.txid, output.index),
-                              'n': output.index, 'value': output.value, 'type': output.type}).single_result()
+    def __init__(self, address, outputs):
+        self.address = address
+        self.outputs = [
+            {'txid': o['txid'], 'type': o['type'], 'value': o['value'], 'timestamp': to_time(o['timestamp'])}
+            for o in outputs]
 
-    def add_address(self, output_node_id, address):
-        s = lb_join(
-            'MATCH (o) WHERE id(o) = {id}',
-            'MERGE (a:Address {address: {address}})',
-            'CREATE (o)-[:USES]->(a)',
-            'RETURN id(a)')
-        return self.query(s, {'id': output_node_id, 'address': address}).single_result()
+    def get_incoming_transactions(self):
+        for output in self.outputs:
+            if output['type'] == 'OUTPUT':
+                yield output
 
-    def create_entity(self, transaction_node_id):
-        url = self.url_base + 'ext/Entity/node/{}/createEntity'.format(transaction_node_id)
-        self._session.post(url, auth=(self.user, self.password))
+    def get_outgoing_transactions(self):
+        for output in self.outputs:
+            if output['type'] == 'INPUT':
+                yield output
 
-    def query(self, statement, parameters=None):
-        statement_json = {'statement': statement}
-        if parameters is not None:
-            statement_json['parameters'] = parameters
-        payload = {'statements': [statement_json]}
-        r = self._session.post(self.url, auth=(self.user, self.password), headers=self.headers, json=payload)
-        if r.status_code != 200:
-            pass  # maybe raise an exception here
-        return QueryResult(r.json())
-
-    @staticmethod
-    def as_address_query_parameter(address, date_from=None, date_to=None):
-        if date_from is None:
-            timestamp_from = 0
+    def to_graph_json(self):
+        def value_sum(transactions):
+            return sum([trans['value'] for trans in transactions])
+        nodes = [{'label': 'Address', 'address': self.address}]
+        links = []
+        incoming_transactions = list(self.get_incoming_transactions())
+        outgoing_transactions = list(self.get_outgoing_transactions())
+        if len(incoming_transactions) <= 10:
+            for transaction in incoming_transactions:
+                nodes.append({'label': 'Transaction', 'txid': transaction['txid'], 'type': 'source'})
+                links.append({'source': len(nodes) - 1, 'target': 0,
+                              'type': transaction['type'], 'value': transaction['value']})
         else:
-            timestamp_from = datetime.strptime(date_from, '%Y-%m-%d').replace(tzinfo=timezone.utc).timestamp()
-        if date_to is None:
-            timestamp_to = 2 ** 31 - 1
+            nodes.append({'label': 'Transaction', 'amount': len(incoming_transactions), 'type': 'source'})
+            links.append({'source': len(nodes) - 1, 'target': 0,
+                          'type': 'OUTPUT', 'value': value_sum(incoming_transactions)})
+        if len(outgoing_transactions) <= 10:
+            for transaction in outgoing_transactions:
+                nodes.append({'label': 'Transaction', 'txid': transaction['txid'], 'type': 'target'})
+                links.append({'source': 0, 'target': len(nodes) - 1,
+                              'type': transaction['type'], 'value': transaction['value']})
         else:
-            d = datetime.strptime(date_to, '%Y-%m-%d').replace(tzinfo=timezone.utc)
-            d += date.resolution
-            timestamp_to = d.timestamp()
-        return {'address': address, 'from': timestamp_from, 'to': timestamp_to}
-
-    def transaction(self):
-        return DBTransaction(self.host, self.port, self.user, self.password)
+            nodes.append({'label': 'Transaction', 'amount': len(outgoing_transactions), 'type': 'target'})
+            links.append({'source': 0, 'target': len(nodes) - 1,
+                          'type': 'INPUT', 'value': value_sum(outgoing_transactions)})
+        return to_json({'nodes': nodes, 'links': links})
 
 
-class DBTransaction(GraphDB):
+class Path:
 
-    def __enter__(self):
-        transaction_begin_url = self.url_base + 'transaction'
-        r = self._session.post(transaction_begin_url, auth=(self.user, self.password), headers=self.headers)
-        self.url = r.headers['Location']
-        return self
+    def __init__(self, raw_path):
+        self.raw_path = raw_path
 
-    def __exit__(self, type, value, traceback):
-        transaction_commit_url = self.url + '/commit'
-        r = self._session.post(transaction_commit_url, auth=(self.user, self.password), headers=self.headers)
-        self._session.close()
-
-
-class QueryResult:
-
-    def __init__(self, raw_data):
-        self._raw_data = raw_data
-
-    def data(self):
-        if self._raw_data['results']:
-            return self._raw_data['results'][0]['data']
-        else:
-            return []
-
-    def columns(self):
-        return self._raw_data['results'][0]['columns']
-
-    def get(self):
-        return [dict(zip(self.columns(), r['row'])) for r in self.data()]
-
-    def list(self):
-        return [r['row'][0] for r in self.data()]
-
-    def single_result(self):
-        if self.data():
-            return self.data()[0]['row'][0]
+    @property
+    def path(self):
+        if self.raw_path:
+            path = []
+            for idx, row in enumerate(self.raw_path):
+                if 'txid' in row['node']:
+                    transaction = row['node']
+                    path.append(transaction)
+                else:
+                    output = row['node']
+                    if idx != 0:
+                        path.append(output)
+                    path.append(row['address'])
+                    if idx != len(self.raw_path) - 1:
+                        path.append(output)
+            return path
         else:
             return None
 
-    def single_row(self):
-        rows = self.get()
-        if self.get():
-            return list(self.get())[0]
+    def to_graph_json(self):
+        nodes = []
+        links = []
+        if self.path:
+            for pc in self.path:
+                if 'address' in pc:
+                    nodes.append({'label': 'Address', 'address': pc['address']})
+                elif 'txid' in pc:
+                    nodes.append({'label': 'Transaction', 'txid': pc['txid']})
+                else:
+                    links.append({'source': len(nodes) - 1, 'target': len(nodes), 'value': pc['value']})
+            return to_json({'nodes': nodes, 'links': links})
         else:
-            return None
+            return to_json({})
