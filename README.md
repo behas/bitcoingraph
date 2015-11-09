@@ -1,6 +1,6 @@
-Bitcoingraph - A Python library for extracting and navigating graph structures from the Bitcoin block chain.
+Bitcoingraph - A Python library for exploring the Bitcoin transaction graph.
 
-[![Build Status](https://travis-ci.org/behas/bitcoingraph.svg?branch=develop)](https://travis-ci.org/behas/bitcoingraph)  [![Coverage Status](https://coveralls.io/repos/behas/bitcoingraph/badge.svg?branch=develop)](https://coveralls.io/r/behas/bitcoingraph?branch=develop)
+[![Build Status](https://travis-ci.org/behas/bitcoingraph.svg?branch=develop)](https://travis-ci.org/behas/bitcoingraph)
 
 # Prerequesites
 
@@ -28,7 +28,7 @@ Second, you must make sure that your bitcoin client accepts JSON-RPC connections
     # Listen for RPC connections on this TCP port:
     rpcport=8332
 
-Test whether the JSON-RPC interface is working by starting your Bitcoin Core peer (...waiting until it finished startup...) and using cURL:
+Test whether the JSON-RPC interface is working by starting your Bitcoin Core peer (...waiting until it finished startup...) and using the following cURL request (with adapted username and password):
 
     curl --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "getinfo", "params": [] }' -H 'content-type: text/plain;' http://your_rpcuser:your_rpcpass@localhost:8332/
 
@@ -37,7 +37,7 @@ Third, since Bitcoingraph needs to access non-wallet blockchain transactions by 
 
     txindex=1
 
-... and restarting your Bitcoin core peer as follows:
+... and restarting your Bitcoin core peer as follows (rebuilding the index can take a while):
 
     bitcoind -reindex
 
@@ -47,7 +47,19 @@ Test non-wallet transaction data access by taking an arbitrary transaction id an
     curl --data-binary '{"jsonrpc": "1.0", "id":"curltest", "method": "getrawtransaction", "params": ["110ed92f558a1e3a94976ddea5c32f030670b5c58c3cc4d857ac14d7a1547a90", 1] }' -H 'content-type: text/plain;' http://your_rpcuser:your_rpcpass@localhost:8332/
 
 
-When you have got that far, your Bitcoin Core setup is working.
+Finally, bitcoingraph also makes use of Bitcoin Core's HTTP REST interface, which is enabled using the following parameter:
+
+    bitcoind -rest
+
+Test it using some sample block hash
+
+    http://localhost:8332/rest/block/000000000000000e7ad69c72afc00dc4e05fc15ae3061c47d3591d07c09f2928.json
+
+
+When you reached this point, your Bitcoin Core setup is working. Terminate all running bitcoind instances and launch a new background daemon with enabled REST interface
+
+    bitcoind -daemon -rest
+
 
 ## Bitcoingraph setup
 
@@ -69,10 +81,9 @@ Now clone Bitcoingraph...
     python setup.py install
 
 
-
 # Usage
 
-## Blockchain export with bcgraph-export
+## Export blockchain to CSV
 
 Bitcoin graph provides the `bcgraph-export` tool for exporting transactions in a given block range from the blockchain. The following command exports all transactions contained in block range 1 to 1000.
 
