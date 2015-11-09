@@ -2,9 +2,9 @@ Bitcoingraph - A Python library for exploring the Bitcoin transaction graph.
 
 [![Build Status](https://travis-ci.org/behas/bitcoingraph.svg?branch=develop)](https://travis-ci.org/behas/bitcoingraph)
 
-# Prerequesites
+## Prerequesites
 
-## Bitcoin Core setup and configuration
+### Bitcoin Core setup and configuration
 
 First, install the current version of Bitcoin Core, either from [source](https://github.com/bitcoin/bitcoin) or from a [pre-compiled executable](https://bitcoin.org/en/download).
 
@@ -61,7 +61,7 @@ When you reached this point, your Bitcoin Core setup is working. Terminate all r
     bitcoind -daemon -rest
 
 
-## Bitcoingraph library setup
+### Bitcoingraph library setup
 
 Bitcoingraph is being developed in Python 3.4. Make sure it is running on your machine:
 
@@ -81,18 +81,18 @@ Now clone Bitcoingraph...
     python setup.py install
 
 
-## OS-specifics
+### OS-specifics
 
 Running bitcoingraph on a Mac requires coreutils to be installed
 
     homebrew install coreutils
 
 
-# Boostrapping the underlying graph database (Neo4J)
+## Boostrapping the underlying graph database (Neo4J)
 
 bitcoingraph stores Bitcoin transactions as directed labelled graph in a Neo4J graph database instance. This database can be bootstrapped by loading an initial blockchain dump, performing entity computation over the entire dump as described by [Ron and Shamir](https://eprint.iacr.org/2012/584.pdf), and ingesting it into a running Neo4J instance.
 
-## Step 1: Create transaction dump from blockchain
+### Step 1: Create transaction dump from blockchain
 
 Bitcoingraph provides the `bcgraph-export` tool for exporting transactions in a given block range from the blockchain. The following command exports all transactions contained in block range 0 to 1000 using Neo4Js header format and separate CSV header files:
 
@@ -110,7 +110,7 @@ The following CSV files are created (with separate header files):
 * rel_tx_output.csv: relationship between transactions and transaction outputs (tx_hash, output key)
 
 
-## Step 2: Compute entities over transaction dump
+### Step 2: Compute entities over transaction dump
 
 The following command computes entities for a given blockchain data dump:
 
@@ -122,7 +122,7 @@ Two additional files are created:
 * rel_address_entity.csv: assignment of addresses to entities (address, entity_id)
 
 
-## Step 3: Ingest pre-computed dump into Neo4J
+### Step 3: Ingest pre-computed dump into Neo4J
 
 Download and install [Neo4J][neo4j] community edition (>= 2.3.0):
 
@@ -172,23 +172,23 @@ Finally start Neo4J
     $NEO4J_HOME/bin/neo4j start
 
 
-## Step 4: Install Neo4J entity computation plugin
+### Step 4: Install Neo4J entity computation plugin
 
 
 
 
-## Step 5: Enable synchronization with Bitcoin block chain
+### Step 5: Enable synchronization with Bitcoin block chain
 
 
 
 
-# Contributors
+## Contributors
 
 * [Bernhard Haslhofer](mailto:bernhard.haslhofer@ait.ac.at)
 * [Roman Karl](mailto:roman.karl@ait.ac.at)
 
 
-# License
+## License
 
 This library is release Open Source under the [MIT license](http://opensource.org/licenses/MIT).
 
