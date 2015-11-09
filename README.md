@@ -85,37 +85,31 @@ Now clone Bitcoingraph...
 
 ## Export blockchain to CSV
 
-Bitcoin graph provides the `bcgraph-export` tool for exporting transactions in a given block range from the blockchain. The following command exports all transactions contained in block range 1 to 1000.
+Bitcoin graph provides the `bcgraph-export` tool for exporting transactions in a given block range from the blockchain. The following command exports all transactions contained in block range 0 to 1000.
 
-    bcgraph-export 1 1000 -s localhost:8332 -u your_rpcuser -p your_rpcpass
+    bcgraph-export 0 1000 -u your_rpcuser -p your_rpcpass
 
 Furthermore, the `-n` option can be used to write the CSV headers in Neo4J's input format.
 
-The following files are generated in a directory called `block_1_1000`:
+The following files are generated in a directory called `block_0_1000`:
 
++ blocks.csv
 + transactions.csv: data related to transactions
++ outputs.csv: all transaction outputs
 + addresses.csv: all addresses that were either part of inputs or outputs (Note: list contains duplicates)
-+ inputs.csv: all input relationships (Address -> Transaction)
-+ outputs.csv: all output relationships (Transaction -> Address)
-
-The address file (`addresses.csv`) contains duplicates. To deduplicate and sort the list of addresses, use the following command (and replace the original address file):
-
-    LC_ALL=C sort -u addresses.csv > addresses_unique.csv
-
-Also the transaction file (`transactions.csv`) contains duplicates. These should also be removed in order to be able to create a unique index in Neo4j afterwards.
-
-    cat <(head -n 1 transactions.csv) <(tail -n +2 transactions.csv | sort | uniq -w 64) > transactions_unique.csv
++ rel_*.csv: several relations between the four different kinds of objects
++ *_header.csv: associated CSV-header files
 
 ## Entity computation
 
-Bitcoingraph supprts computation of entites as described by [Ron and Shamir](https://eprint.iacr.org/2012/584.pdf). The following command computes entities for a given blockchain data dump:
+Bitcoingraph supports computation of entites as described by [Ron and Shamir](https://eprint.iacr.org/2012/584.pdf). The following command computes entities for a given blockchain data dump:
 
     bcgraph-compute-entities -i block_1_1000
 
 This creates two additional files:
 
 * entities.csv: list of entity identifiers
-* belongs_to_csv: assignment of addresses to entities
+* rel_address_entity.csv: assignment of addresses to entities
 
 
 ## Neo4J graph database setup
@@ -131,7 +125,17 @@ Make sure Neo4J is not running an pre-existing databases are removed:
 
 The import the dump using Neo4J's CSV importer tool:
 
-    bin/neo4j-import --into data/graph.db --id-type string --nodes:Transaction dump/transactions.csv --nodes:Address dump/addresses.csv --nodes:Entity dump/entities.csv --relationships:INPUT dump/inputs.csv --relationships:OUTPUT dump/outputs.csv --relationships:BELONGS_TO dump/belongs_to.csv
+    /var/lib/neo4j/bin/neo4j-import --into graph.db \
+    --nodes:Block blocks_header.csv,blocks.csv \
+    --nodes:Transaction transactions_header.csv,transactions.csv \
+    --nodes:Output outputs_header.csv,outputs.csv \
+    --nodes:Address addresses_header.csv,addresses.csv \
+    --nodes:Entity entities.csv \
+    --relationships:CONTAINS rel_block_tx_header.csv,rel_block_tx.csv \
+    --relationships:OUTPUT rel_tx_output_header.csv,rel_tx_output.csv \
+    --relationships:INPUT rel_input_header.csv,rel_input.csv \
+    --relationships:USES rel_output_address_header.csv,rel_output_address.csv \
+    --relationships:BELONGS_TO belongs_to.csv
 
 
 Then start Neo4J
@@ -140,9 +144,12 @@ Then start Neo4J
 
 and create unique indexes with the Cypher commands:
 
-    CREATE CONSTRAINT ON (t:Transaction) ASSERT t.txid IS UNIQUE
     CREATE CONSTRAINT ON (a:Address) ASSERT a.address IS UNIQUE
 
+To use the synchronisation feature, another index is needed:
+
+    CREATE CONSTRAINT ON (o:Output) ASSERT o.txid_n IS UNIQUE
+    
 Cypher commands can be entered either in the Neo4j shell or in the web interface (see http://neo4j.com/docs/stable/tools.html).
 
 # Contributors
