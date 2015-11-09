@@ -61,7 +61,7 @@ When you reached this point, your Bitcoin Core setup is working. Terminate all r
     bitcoind -daemon -rest
 
 
-## Bitcoingraph setup
+## Bitcoingraph library setup
 
 Bitcoingraph is being developed in Python 3.4. Make sure it is running on your machine:
 
@@ -81,15 +81,41 @@ Now clone Bitcoingraph...
     python setup.py install
 
 
-# Usage
+## OS-specifics
 
-## Export blockchain to CSV
+Running bitcoingraph on a Mac requires coreutils to be installed
 
-Bitcoin graph provides the `bcgraph-export` tool for exporting transactions in a given block range from the blockchain. The following command exports all transactions contained in block range 0 to 1000.
+    homebrew install coreutils
+
+
+# Boostrapping the underlying graph database (Neo4J)
+
+bitcoingraph stores Bitcoin transactions as directed labelled graph in a Neo4J graph database instance. This database can be bootstrapped by loading an initial blockchain dump, performing entity computation over the entire dump and ingesting it into a running Neo4J instance.
+
+## Creating transaction dump from blockchain
+
+Bitcoingraph provides the `bcgraph-export` tool for exporting transactions in a given block range from the blockchain. The following command exports all transactions contained in block range 0 to 1000 using Neo4Js header format and separate CSV header files:
 
     bcgraph-export 0 1000 -u your_rpcuser -p your_rpcpass
 
-Furthermore, the `-n` option can be used to write the CSV headers in Neo4J's input format.
+
+
+## Computing entities over dump
+
+
+## Ingesting dump into Neo4J
+
+
+
+
+
+## Export blockchain to CSV
+
+Bitcoin graph provides the `bcgraph-export` tool for exporting transactions in a given block range from the blockchain. The following command exports all transactions contained in block range 0 to 10000.
+
+    bcgraph-export 0 1000 -n -u your_rpcuser -p your_rpcpass
+
+The `-n` option indicates that CSV headers should be in Neo4J's input format.
 
 The following files are generated in a directory called `block_0_1000`:
 
@@ -149,7 +175,7 @@ and create unique indexes with the Cypher commands:
 To use the synchronisation feature, another index is needed:
 
     CREATE CONSTRAINT ON (o:Output) ASSERT o.txid_n IS UNIQUE
-    
+
 Cypher commands can be entered either in the Neo4j shell or in the web interface (see http://neo4j.com/docs/stable/tools.html).
 
 # Contributors

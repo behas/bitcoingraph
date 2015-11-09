@@ -3,6 +3,7 @@ import datetime
 import json
 import os
 import subprocess
+import sys
 
 
 def to_time(numeric_string, as_date=False):
@@ -30,7 +31,10 @@ def to_json(raw_data):
 
 
 def sort(path, filename, args=''):
-    s = 'LC_ALL=C sort -S 50% --parallel=4 {0} {1} -o {1}'
+    if sys.platform == 'darwin':
+        s = 'LC_ALL=C gsort -S 50% --parallel=4 {0} {1} -o {1}'
+    else:
+        s = 'LC_ALL=C sort -S 50% --parallel=4 {0} {1} -o {1}'
     status = subprocess.call(s.format(args, os.path.join(path, filename)), shell=True)
     if status != 0:
         raise Exception('unable to sort file: {}'.format(filename))
