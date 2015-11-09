@@ -90,68 +90,60 @@ Running bitcoingraph on a Mac requires coreutils to be installed
 
 # Boostrapping the underlying graph database (Neo4J)
 
-bitcoingraph stores Bitcoin transactions as directed labelled graph in a Neo4J graph database instance. This database can be bootstrapped by loading an initial blockchain dump, performing entity computation over the entire dump and ingesting it into a running Neo4J instance.
+bitcoingraph stores Bitcoin transactions as directed labelled graph in a Neo4J graph database instance. This database can be bootstrapped by loading an initial blockchain dump, performing entity computation over the entire dump as described by [Ron and Shamir](https://eprint.iacr.org/2012/584.pdf), and ingesting it into a running Neo4J instance.
 
-## Creating transaction dump from blockchain
+## Step 1: Create transaction dump from blockchain
 
 Bitcoingraph provides the `bcgraph-export` tool for exporting transactions in a given block range from the blockchain. The following command exports all transactions contained in block range 0 to 1000 using Neo4Js header format and separate CSV header files:
 
     bcgraph-export 0 1000 -u your_rpcuser -p your_rpcpass
 
+The following CSV files are created (with separate header files):
+
+* addresses.csv: sorted list of Bitcoin addressed
+* blocks.csv: list of blocks (hash, height, timestamp)
+* transactions.csv: list of transactions (hash, coinbase/non-coinbase)
+* outputs.csv: list of transaction outputs (output key, id, value, script type)
+* rel_block_tx.csv: relationship between blocks and transactions (block_hash, tx_hash)
+* rel_input.csv: relationship between transactions and transaction outputs (tx_hash, output key)
+* rel_output_address.csv: relationship between outputs and addresses (output key, address)
+* rel_tx_output.csv: relationship between transactions and transaction outputs (tx_hash, output key)
 
 
-## Computing entities over dump
+## Step 2: Compute entities over transaction dump
 
-
-## Ingesting dump into Neo4J
-
-
-
-
-
-## Export blockchain to CSV
-
-Bitcoin graph provides the `bcgraph-export` tool for exporting transactions in a given block range from the blockchain. The following command exports all transactions contained in block range 0 to 10000.
-
-    bcgraph-export 0 1000 -n -u your_rpcuser -p your_rpcpass
-
-The `-n` option indicates that CSV headers should be in Neo4J's input format.
-
-The following files are generated in a directory called `block_0_1000`:
-
-+ blocks.csv
-+ transactions.csv: data related to transactions
-+ outputs.csv: all transaction outputs
-+ addresses.csv: all addresses that were either part of inputs or outputs (Note: list contains duplicates)
-+ rel_*.csv: several relations between the four different kinds of objects
-+ *_header.csv: associated CSV-header files
-
-## Entity computation
-
-Bitcoingraph supports computation of entites as described by [Ron and Shamir](https://eprint.iacr.org/2012/584.pdf). The following command computes entities for a given blockchain data dump:
+The following command computes entities for a given blockchain data dump:
 
     bcgraph-compute-entities -i block_1_1000
 
-This creates two additional files:
+Two additional files are created:
 
-* entities.csv: list of entity identifiers
-* rel_address_entity.csv: assignment of addresses to entities
-
-
-## Neo4J graph database setup
-
-Bitcoingraph uses Neo4J as graph database backend. Exported transactions can be imported as follows:
+* entities.csv: list of entity identifiers (entity_id)
+* rel_address_entity.csv: assignment of addresses to entities (address, entity_id)
 
 
-Make sure Neo4J is not running an pre-existing databases are removed:
+## Step 3: Ingest pre-computed dump into Neo4J
 
-    ./bin/neo4j stop
-    rm -rf data/*
+Download and install [Neo4J][neo4j] community edition (>= 2.3.0):
+
+    tar xvfz neo4j-community-2.3.0-unix.tar.gz
+    export NEO4J_HOME=[PATH_TO_NEO4J_INSTALLATION]
+
+Test Neo4J installation:
+
+    $NEO4J_HOME/bin/neo4j start
+    http://localhost:7474/
 
 
-The import the dump using Neo4J's CSV importer tool:
+Install  and make sure is not running and pre-existing databases are removed:
 
-    /var/lib/neo4j/bin/neo4j-import --into graph.db \
+    $NEO4J_HOME/bin/neo4j stop
+    rm -rf $NEO4J_HOME/data/*
+
+
+Switch back into the dump directory and create a new database using Neo4J's CSV importer tool:
+
+    $NEO4J_HOME/bin/neo4j-import --into $NEO4J_HOME/data/graph.db \
     --nodes:Block blocks_header.csv,blocks.csv \
     --nodes:Transaction transactions_header.csv,transactions.csv \
     --nodes:Output outputs_header.csv,outputs.csv \
@@ -161,28 +153,40 @@ The import the dump using Neo4J's CSV importer tool:
     --relationships:OUTPUT rel_tx_output_header.csv,rel_tx_output.csv \
     --relationships:INPUT rel_input_header.csv,rel_input.csv \
     --relationships:USES rel_output_address_header.csv,rel_output_address.csv \
-    --relationships:BELONGS_TO belongs_to.csv
+    --relationships:BELONGS_TO rel_address_entity.csv
 
 
-Then start Neo4J
+Then, start the Neo4J shell...:
 
-    ./bin/neo4j start
+    $NEO4J_HOME/bin/neo4j-shell -path $NEO4J_HOME/data
 
-and create unique indexes with the Cypher commands:
+and create the following uniquness constraints:
 
-    CREATE CONSTRAINT ON (a:Address) ASSERT a.address IS UNIQUE
+    CREATE CONSTRAINT ON (a:Address) ASSERT a.address IS UNIQUE;
 
-To use the synchronisation feature, another index is needed:
+    CREATE CONSTRAINT ON (o:Output) ASSERT o.txid_n IS UNIQUE;
 
-    CREATE CONSTRAINT ON (o:Output) ASSERT o.txid_n IS UNIQUE
 
-Cypher commands can be entered either in the Neo4j shell or in the web interface (see http://neo4j.com/docs/stable/tools.html).
+Finally start Neo4J
+
+    $NEO4J_HOME/bin/neo4j start
+
+
+## Step 4: Install Neo4J entity computation plugin
+
+
+
+
+## Step 5: Enable synchronization with Bitcoin block chain
+
+
+
 
 # Contributors
 
 * [Bernhard Haslhofer](mailto:bernhard.haslhofer@ait.ac.at)
-* [Aljosha Judmaier](mailto:judmayer@xylem-technologies.com)
 * [Roman Karl](mailto:roman.karl@ait.ac.at)
+
 
 # License
 
@@ -190,4 +194,4 @@ This library is release Open Source under the [MIT license](http://opensource.or
 
 [bc_core]: https://github.com/bitcoin/bitcoin "Bitcoin Core"
 [bc_conf]: https://en.bitcoin.it/wiki/Running_Bitcoin#Bitcoin.conf_Configuration_File "Bitcoin Core configuration file"
-
+[neo4j]: http://neo4j.com/ "Neo4J"
