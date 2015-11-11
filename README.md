@@ -174,12 +174,24 @@ Finally start Neo4J
 
 ### Step 4: Install Neo4J entity computation plugin
 
+Clone the git repository and compile from source. This requires Maven and Java JDK to be installed.
 
+    git clone https://github.com/romankarl/entity-plugin.git
+    cd entity-plugin
+    mvn package
+
+Copy the JAR package into Neo4j's plugin directory.
+
+    service neo4j-service stop
+    cp target/entities-plugin-0.0.1-SNAPSHOT.jar $NEO4J_HOME/plugins/
+    service neo4j-service start
 
 
 ### Step 5: Enable synchronization with Bitcoin block chain
 
+Bitcoingraph provides a synchronisation script, which reads blocks from bitcoind and writes them into Neo4j. It is intended to be called by a cron job which runs daily or more frequent. For performance reasons it is no substitution for steps 1-3.
 
+    bcgraph-synchronize -s localhost -u RPC_USER -p RPC_PASS -S localhost -U NEO4J_USER -P NEO4J_PASS --rest
 
 
 ## Contributors
