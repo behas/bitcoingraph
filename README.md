@@ -6,7 +6,7 @@ Bitcoingraph - A Python library for exploring the Bitcoin transaction graph.
 
 ### Bitcoin Core setup and configuration
 
-First, install the current version of Bitcoin Core, either from [source](https://github.com/bitcoin/bitcoin) or from a [pre-compiled executable](https://bitcoin.org/en/download).
+First, install the current version of Bitcoin Core (v.11.1), either from [source](https://github.com/bitcoin/bitcoin) or from a [pre-compiled executable](https://bitcoin.org/en/download).
 
 Once installed, you'll have access to three programs: `bitcoind` (= full peer), `bitcoin-qt` (= peer with GUI), and `bitcoin-cli` (RPC command line interface). The following instructions have been tested with `bitcoind` and assume you can start and run a Bitcoin Core peer as follows:
 
@@ -185,6 +185,7 @@ The resulting CSV file can be imported into Neo4j with the Cypher statement:
     CREATE a-[:HAS]->(i:Identity
       {name: row.tag, link: row.link, source: "https://blockchain.info/"})
 
+
 ### Step 5: Install Neo4J entity computation plugin
 
 Clone the git repository and compile from source. This requires Maven and Java JDK to be installed.
@@ -198,6 +199,7 @@ Copy the JAR package into Neo4j's plugin directory.
     service neo4j-service stop
     cp target/entities-plugin-0.0.1-SNAPSHOT.jar $NEO4J_HOME/plugins/
     service neo4j-service start
+
 
 
 ### Step 6: Enable synchronization with Bitcoin block chain
