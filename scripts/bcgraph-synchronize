@@ -23,6 +23,8 @@ parser.add_argument('-U', '--neo4j-user', required=True,
                     help='Neo4j username')
 parser.add_argument('-P', '--neo4j-password', required=True,
                     help='Neo4j password')
+parser.add_argument('-b', '--max-blocks', type=int,
+                    help='Enforce a limit on the number of blocks that are synchronised')
 
 
 args = parser.parse_args()
@@ -33,4 +35,4 @@ if args.rest:
 neo4j = {'host': args.neo4j_host, 'port': args.neo4j_port,
          'user': args.neo4j_user, 'pass': args.neo4j_password}
 bcgraph = BitcoinGraph(blockchain=blockchain, neo4j=neo4j)
-bcgraph.synchronize()
+bcgraph.synchronize(args.max_blocks)
