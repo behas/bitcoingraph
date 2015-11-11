@@ -114,7 +114,7 @@ The following CSV files are created (with separate header files):
 
 The following command computes entities for a given blockchain data dump:
 
-    bcgraph-compute-entities -i block_1_1000
+    bcgraph-compute-entities -i block_0_1000
 
 Two additional files are created:
 
@@ -172,14 +172,39 @@ Finally start Neo4J
     $NEO4J_HOME/bin/neo4j start
 
 
-### Step 4: Install Neo4J entity computation plugin
+### Step 4: Enrich transaction graph with identity information
+
+Some bitcoin addresses have associated public identity information. Bitcoingraph provides an example script which collects information from blockchain.info.
+
+    utils/identity_information.py
+
+The resulting CSV file can be imported into Neo4j with the Cypher statement:
+
+    LOAD CSV WITH HEADERS FROM "file://<PATH>/identities.csv" AS row
+    MERGE (a:Address {address: row.address})
+    CREATE a-[:HAS]->(i:Identity
+      {name: row.tag, link: row.link, source: "https://blockchain.info/"})
+
+### Step 5: Install Neo4J entity computation plugin
+
+Clone the git repository and compile from source. This requires Maven and Java JDK to be installed.
+
+    git clone https://github.com/romankarl/entity-plugin.git
+    cd entity-plugin
+    mvn package
+
+Copy the JAR package into Neo4j's plugin directory.
+
+    service neo4j-service stop
+    cp target/entities-plugin-0.0.1-SNAPSHOT.jar $NEO4J_HOME/plugins/
+    service neo4j-service start
 
 
+### Step 6: Enable synchronization with Bitcoin block chain
 
+Bitcoingraph provides a synchronisation script, which reads blocks from bitcoind and writes them into Neo4j. It is intended to be called by a cron job which runs daily or more frequent. For performance reasons it is no substitution for steps 1-3.
 
-### Step 5: Enable synchronization with Bitcoin block chain
-
-
+    bcgraph-synchronize -s localhost -u RPC_USER -p RPC_PASS -S localhost -U NEO4J_USER -P NEO4J_PASS --rest
 
 
 ## Contributors
