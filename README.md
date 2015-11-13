@@ -81,7 +81,7 @@ Now clone Bitcoingraph...
     python setup.py install
 
 
-### OS-specifics
+### Mac OSX specifics
 
 Running bitcoingraph on a Mac requires coreutils to be installed
 
