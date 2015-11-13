@@ -137,13 +137,16 @@ class BitcoinGraph:
         """
         start = self.graph_db.get_max_block_height() + 1
         blockchain_end = self.blockchain.get_max_block_height() - 2
-        if max_blocks is None:
-            end = blockchain_end
+        if start > blockchain_end:
+            print('Already up-to-date.')
         else:
-            end = min(start + max_blocks - 1, blockchain_end)
-        print('add blocks', start, 'to', end)
-        for block in self.blockchain.get_blocks_in_range(start, end):
-            self.graph_db.add_block(block)
+            if max_blocks is None:
+                end = blockchain_end
+            else:
+                end = min(start + max_blocks - 1, blockchain_end)
+            print('add blocks', start, 'to', end)
+            for block in self.blockchain.get_blocks_in_range(start, end):
+                self.graph_db.add_block(block)
 
 
 def compute_entities(input_path, sort_input=False):
