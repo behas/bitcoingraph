@@ -1,3 +1,9 @@
+# IDE settings
+/.idea/
+
+# Generated dirs
+
+
 # Backup files
 *.~
 .*.swp

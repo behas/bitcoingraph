@@ -1,38 +1,16 @@
 """
 blockchain
 
-An API for traversing the Bitcoin block chain
+An API for traversing the Bitcoin blockchain
 
 """
+
+from bitcoingraph.model import Block, Transaction
+from bitcoingraph.bitcoind import BitcoindException
 
 __author__ = 'Bernhard Haslhofer (bernhard.haslhofer@ait.ac.at)'
 __copyright__ = 'Copyright 2015, Bernhard Haslhofer'
 __license__ = "MIT"
-
-import json
-import datetime as dt
-
-from bitcoingraph.rpc import JSONRPCException
-
-
-def to_json(raw_data):
-    """
-    Pretty-prints JSON data
-
-    :param str raw_data: raw JSON data
-    """
-    return json.dumps(raw_data, sort_keys=True,
-                      indent=4, separators=(',', ': '))
-
-
-def to_time(numeric_string):
-    """
-    Converts UTC timestamp to string-formatted data time.
-
-    :param int numeric_string: UTC timestamp
-    """
-    time_as_date = dt.datetime.utcfromtimestamp(int(numeric_string))
-    return time_as_date.strftime('%Y-%m-%d %H:%M:%S')
 
 
 class BlockchainException(Exception):
@@ -48,471 +26,7 @@ class BlockchainException(Exception):
         return repr(self.msg)
 
 
-class BlockchainObject(object):
-    """
-    Generic block chain object.
-    """
-
-    def __init__(self, raw_data, blockchain):
-        """
-        Creates a generic block chain object.
-
-        :param str raw_data: raw JSON data extracted from block chain
-        :param BlockChain blockchain: instantiated blockchain object
-        :return: block chain object
-        :rtype: BlockchainObject
-        """
-        self._raw_data = raw_data
-        self._blockchain = blockchain
-
-    @property
-    def time(self):
-        """
-        UTC timestamp in UNIX-format denoting approximate creation time.
-
-        :return: approximate creation time as UTC timestamp
-        :rtype: str
-        """
-        return self._raw_data['time']
-
-    @property
-    def time_as_dt(self):
-        """
-        String-formatted approximate creation time.
-
-        :return: approximate creation time
-        :rtype: str
-        """
-        return to_time(self.time)
-
-    def __str__(self):
-        return to_json(self._raw_data)
-
-    def __repr__(self):
-        return to_json(self._raw_data)
-
-
-class Block(BlockchainObject):
-
-    """
-    Bitcoin block recording transactions.
-    """
-
-    def __init__(self, raw_data, blockchain):
-        """
-        Creates a block object.
-
-        :param str raw_data: raw JSON data extracted from block chain
-        :param BlockChain blockchain: instantiated blockchain object
-        :return: block object
-        :rtype: Block
-        """
-        super().__init__(raw_data, blockchain)
-
-    @property
-    def height(self):
-        """
-        Number of blocks between it and genesis block (height 0).
-
-        :return: block height
-        :rtype: int
-        """
-        return int(self._raw_data['height'])
-
-    @property
-    def hash(self):
-        """
-        256-bit hash based on all of the transactions in the block.
-
-        :return: block hash
-        :rtype: str
-        """
-        return self._raw_data['hash']
-
-    @property
-    def previousblockhash(self):
-        """
-        Reference to the previous block.
-
-        :return: previous block hash
-        :rtype: str
-        """
-        return self._raw_data['previousblockhash']
-
-    @property
-    def nextblockhash(self):
-        """
-        Reference to the next block.
-
-        :return: next block hash
-        :rtype: str
-        """
-        return self._raw_data['nextblockhash']
-
-    @property
-    def hasnextblock(self):
-        """
-        Returns `True` if block references next block.
-        """
-        return 'nextblockhash' in self._raw_data
-
-    @property
-    def nextblock(self):
-        """
-        Returns next block.
-
-        :return: next block or `None` if there is none
-        :rtype: Block
-        """
-        if self.hasnextblock:
-            block_hash = self.nextblockhash
-            return self._blockchain.get_block_by_hash(block_hash)
-        else:
-            return None
-
-    @property
-    def tx_count(self):
-        """
-        Returns number of transactions in block.
-
-        :return: number of transactions
-        :rtype: int
-        """
-        return len(self._raw_data['tx'])
-
-    @property
-    def tx_ids(self):
-        """
-        Returns ids of transactions in block.
-
-        :return: list of transaction ids
-        :rtype: array
-        """
-        return self._raw_data['tx']
-
-    @property
-    def transactions(self):
-        """
-        Generates Transaction objects for each transaction in block.
-
-        :yield: transaction
-        :rtype: Transaction
-        """
-        for tx in self._blockchain.get_transactions(self.tx_ids):
-            yield tx
-
-
-class TxInput(object):
-
-    """
-    Transaction input.
-    """
-
-    def __init__(self, raw_data, blockchain):
-        """
-        Creates a transaction input object.
-
-        :param str raw_data: raw JSON data extracted from block chain
-        :param BlockChain blockchain: instantiated blockchain object
-        :return: transaction input object
-        :rtype: TxInput
-        """
-        self._raw_data = raw_data
-        self._blockchain = blockchain
-
-    @property
-    def is_coinbase(self):
-        """
-        Returns `True` if input refers to coinbase.
-        """
-        return 'coinbase' in self._raw_data
-
-    @property
-    def prev_tx_hash(self):
-        """
-        Returns hash of previous transaction or `None` if transaction
-        is coinbase transaction.
-
-        :return: previous transaction hash
-        :rtype: str
-        """
-        if self.is_coinbase:
-            return None
-        else:
-            return self._raw_data['txid']
-
-    @property
-    def prev_tx_output_index(self):
-        """
-        Returns index of output in previous transaction or `None` if
-        transaction is coinbase transaction.
-
-        :return: previous transaction output index
-        :rtype: str
-        """
-        if self.is_coinbase:
-            return None
-        else:
-            return self._raw_data['vout']
-
-    @property
-    def prev_tx_output(self):
-        """
-        Returns ouput in previous transaction or `None` if transaction
-        is coinbase transaction.
-
-        :return: previous transaction output
-        :rtype: TxOutput
-        """
-        if self.is_coinbase:
-            return None
-        else:
-            prev_tx = self._blockchain.get_transaction(self.prev_tx_hash)
-            return prev_tx.get_output_by_index(self.prev_tx_output_index)
-
-    @property
-    def addresses(self):
-        """
-        Returns addresses in output in previous transaction or `None` if
-        transaction is coinbase transaction.
-
-        :return: previous transaction output addresses
-        :rtype: array
-        """
-        if self.is_coinbase:
-            return None
-        else:
-            return self.prev_tx_output.addresses
-
-
-class TxOutput(object):
-
-    """
-    Transaction output.
-    """
-
-    def __init__(self, raw_data):
-        """
-        Creates a transaction output object.
-
-        :param str raw_data: raw JSON data extracted from block chain
-        :return: transaction output object
-        :rtype: TxOutput
-        """
-        self._raw_data = raw_data
-
-    @property
-    def index(self):
-        """
-        Returns index of transaction output.
-
-        :return: transaction output index
-        :rtype: str
-        """
-        return self._raw_data['n']
-
-    @property
-    def value(self):
-        """
-        Returns amount of Bitcoins.
-
-        :return: amount of Bitcoins
-        :rtype: float
-        """
-        return float(self._raw_data['value'])
-
-    @property
-    def addresses(self):
-        """
-        Returns (possibly empty) transaction output addresses list.
-
-        :return: output addresses
-        :rtype: array
-        """
-        addresses = []
-
-        scriptPubKey = self._raw_data.get('scriptPubKey')
-        if scriptPubKey is None:
-            return addresses
-        output_addresses = scriptPubKey.get('addresses')
-        if output_addresses is None:
-            return addresses
-        else:
-            addresses += [address for address in output_addresses]
-
-        return addresses
-
-
-class Transaction(BlockchainObject):
-
-    """
-    Bitcoin transaction.
-    """
-
-    def __init__(self, raw_data, blockchain):
-        """
-        Creates a transaction object.
-
-        :param str raw_data: raw JSON data extracted from block chain
-        :param BlockChain blockchain: instantiated blockchain object
-        :return: transaction object
-        :rtype: Transaction
-        """
-        super().__init__(raw_data, blockchain)
-
-    # Explicit transaction properties
-
-    @property
-    def blocktime(self):
-        """
-        Returns blocktime as UTC timestamp.
-
-        :return: blocktime as UTC timestamp
-        :rtype: str
-        """
-        return self._raw_data['blocktime']
-
-    @property
-    def id(self):
-        """
-        Returns transaction id (hash)
-
-        :return: transaction id (hash)
-        :rtype: str
-        """
-        return self._raw_data['txid']
-
-    @property
-    def blockhash(self):
-        """
-        Returns hash of included block.
-
-        :return: block hash
-        :rtype: str
-        """
-        return self._raw_data['blockhash']
-
-    # Included block properties
-
-    def get_included_block_height(self):
-        """
-        Returns height of block this transaction is included in.
-
-        :return: block height
-        :rtype: int
-        """
-        block = self._blockchain.get_block_by_hash(self.blockhash)
-        return block.height
-
-    # Input properties
-
-    def get_inputs(self):
-        """
-        Generates transaction input objects for listed inputs.
-
-        :yield: transaction input objects
-        :rtype: TxInput
-        """
-        for tx_input in self._raw_data['vin']:
-            yield TxInput(tx_input, self._blockchain)
-
-    def get_input_count(self):
-        """
-        Returns number of listed transaction inputs.
-
-        :return: transaction input count
-        :rtype: int
-        """
-        if 'vin' in self._raw_data:
-            return len(self._raw_data['vin'])
-        else:
-            return 0
-
-    @property
-    def is_coinbase_tx(self):
-        """
-        Returns `True` if transaction is coinbase transaction.
-        """
-        for tx_input in self.get_inputs():
-            if tx_input.is_coinbase:
-                return True
-        else:
-            return False
-
-    # Output properties
-
-    def get_output_count(self):
-        """
-        Returns number of listed transaction outputs.
-
-        :return: transaction output count
-        :rtype: int
-        """
-        if 'vout' in self._raw_data:
-            return len(self._raw_data['vout'])
-        else:
-            return 0
-
-    def get_outputs(self):
-        """
-        Generates transaction output objects for listed inputs.
-
-        :yield: transaction output objects
-        :rtype: TxOutput
-        """
-        for tx_output in self._raw_data['vout']:
-            yield TxOutput(tx_output)
-
-    def get_output_by_index(self, index):
-        """
-        Returns transaction output by id or `None` if there is none.
-
-        :param int index: transaction output index
-        :return: transaction output object
-        :rtype: TxOutput
-        """
-        for output in self.get_outputs():
-            if output.index == index:
-                return output
-        return None
-
-    # Bitcoin flow properties
-
-    @property
-    def bc_flows(self):
-        """
-        Returns flows of Bitcoins between source and target addresses.
-
-        :return: bitcoin flows ([src1, src2, ...], [tgt1, tgt2, ...], value)
-        :rtype: array
-        """
-        bc_flows = []
-        # collect input addresses
-        if self.is_coinbase_tx:
-            src_list = ['COINBASE']
-        else:
-            src_list = []
-            for tx_input in self.get_inputs():
-                src_list += [address for address in tx_input.addresses
-                             if address not in src_list]
-        # collect output addresses
-        for tx_output in self.get_outputs():
-            tgt_list = [address for address in tx_output.addresses]
-            flow = {'src_list': src_list, 'tgt_list': tgt_list,
-                    'value': tx_output.value}
-            bc_flows += [flow]
-
-        return bc_flows
-
-    @property
-    def flow_sum(self):
-        """
-        Returns sum of BTC transferred
-        """
-        return sum([tx_output.value for tx_output in self.get_outputs()])
-
-
-class BlockChain(object):
+class Blockchain:
 
     """
     Bitcoin block chain.
@@ -524,7 +38,7 @@ class BlockChain(object):
 
         :param BitcoinProxy bitcoin_proxy: reference to Bitcoin proxy
         :return: block chain object
-        :rtype: BlockChain
+        :rtype: Blockchain
         """
         self._bitcoin_proxy = bitcoin_proxy
 
@@ -540,16 +54,15 @@ class BlockChain(object):
         # Returns block by hash
         try:
             raw_block_data = self._bitcoin_proxy.getblock(block_hash)
-            return Block(raw_block_data, self)
-        except JSONRPCException as exc:
-            raise BlockchainException("Cannot retrieve block %s"
-                                      % (block_hash), exc)
+            return Block(self, json_data=raw_block_data)
+        except BitcoindException as exc:
+            raise BlockchainException('Cannot retrieve block {}'.format(block_hash), exc)
 
     def get_block_by_height(self, block_height):
         """
         Returns a block by given block height.
 
-        :param str block_height: height of block to be returned
+        :param int block_height: height of block to be returned
         :return: the requested block
         :rtype: Block
         :raises BlockchainException: if block cannot be retrieved
@@ -558,9 +71,9 @@ class BlockChain(object):
         try:
             block_hash = self._bitcoin_proxy.getblockhash(block_height)
             return self.get_block_by_hash(block_hash)
-        except JSONRPCException as exc:
-            raise BlockchainException("Cannot retrieve block with height %s"
-                                      % (block_height), exc)
+        except BitcoindException as exc:
+            raise BlockchainException(
+                'Cannot retrieve block with height {}'.format(block_height), exc)
 
     def get_blocks_in_range(self, start_height=0, end_height=0):
         """
@@ -572,12 +85,12 @@ class BlockChain(object):
         :rtype: Block
         """
         block = self.get_block_by_height(start_height)
-        while (block.height <= end_height):
+        while block.height <= end_height:
             yield block
-            if not block.hasnextblock:
-                break
+            if block.has_next_block():
+                block = block.next_block
             else:
-                block = block.nextblock
+                break
 
     def get_transaction(self, tx_id):
         """
@@ -589,10 +102,9 @@ class BlockChain(object):
         """
         try:
             raw_tx_data = self._bitcoin_proxy.getrawtransaction(tx_id)
-            return Transaction(raw_tx_data, self)
-        except JSONRPCException as exc:
-            raise BlockchainException("Cannot retrieve transaction with id %s"
-                                      % (tx_id), exc)
+            return Transaction(self, json_data=raw_tx_data)
+        except BitcoindException as exc:
+            raise BlockchainException('Cannot retrieve transaction with id {}'.format(tx_id), exc)
 
     def get_transactions(self, tx_ids):
         """
@@ -608,11 +120,10 @@ class BlockChain(object):
             for raw_tx_data in raw_txs_data:
                 txs.append(Transaction(raw_tx_data, self))
             return txs
-        except JSONRPCException as exc:
-            raise BlockchainException("Cannot retrieve transactions %s"
-                                      % (tx_ids), exc)
+        except BitcoindException as exc:
+            raise BlockchainException('Cannot retrieve transactions {}'.format(tx_ids), exc)
 
-    def get_max_blockheight(self):
+    def get_max_block_height(self):
         """
         Returns maximum known block height.
 
@@ -622,6 +133,6 @@ class BlockChain(object):
         try:
             max_height = self._bitcoin_proxy.getblockcount()
             return max_height
-        except JSONRPCException as exc:
+        except BitcoindException as exc:
             raise BlockchainException("Error when retrieving maximum\
                 block height", exc)

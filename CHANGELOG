@@ -1,3 +1,12 @@
+= v0.3 2015-11-13 =
+
+* Added Neo4J graph database backend
+* Adapted model and path search to operate on Neo4J
+* Updated internal data model
+* Changed blockchain dump export model
+* Implemented identity gathering script
+
+
 = v0.2 2015-03-31 =
 
 * Added graph abstraction and graph pattern search methods

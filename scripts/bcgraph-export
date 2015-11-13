@@ -1,0 +1,49 @@
+#!/usr/bin/env python
+
+import argparse
+import sys
+from bitcoingraph import BitcoinGraph
+
+
+def progress(p=0):
+    p = int(p * 100)
+    sys.stdout.write('\rProgress: {}%'.format(p))
+    sys.stdout.flush()
+
+parser = argparse.ArgumentParser(
+    description='Export transactions from blockchain')
+parser.add_argument('startheight', type=int,
+                    help='Start block height')
+parser.add_argument('endheight', type=int,
+                    help='End block height')
+parser.add_argument('-o', '--output_path', type=str,
+                    help='Output path')
+parser.add_argument('--plain-header', action='store_true',
+                    help='Create header without Neo4J field types')
+parser.add_argument('--no-separate-header', action='store_true',
+                    help='Write CSV files without any header')
+parser.add_argument('--no-transaction-deduplication', action='store_true',
+                    help='Skip deduplication of transactions')
+parser.add_argument("-u", "--user", required=True,
+                    help="Bitcoin Core RPC username")
+parser.add_argument("-p", "--password", required=True,
+                    help="Bitcoin Core RPC password")
+
+
+if len(sys.argv) <= 1:
+    parser.print_help()
+    sys.exit(1)
+
+args = parser.parse_args()
+bcgraph = BitcoinGraph(
+    blockchain={'host': 'localhost', 'port': 8332,
+                'rpc_user': args.user, 'rpc_pass': args.password,
+                'method': 'REST'})
+bcgraph.export(
+    args.startheight,
+    args.endheight,
+    args.output_path,
+    args.plain_header,
+    not args.no_separate_header,
+    progress,
+    not args.no_transaction_deduplication)

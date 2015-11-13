@@ -1,0 +1,15 @@
+#!/usr/bin/env python
+
+import argparse
+from bitcoingraph import bitcoingraph
+
+parser = argparse.ArgumentParser(
+    description='Compute entities from exported block chain data')
+parser.add_argument('-i', '--input_path', required=True,
+                    help='Input path')
+parser.add_argument('--sort-input', action='store_true',
+                    help='Sort all input files. This is necessary if '
+                         'the transaction deduplication was skipped on export.')
+
+args = parser.parse_args()
+bitcoingraph.compute_entities(args.input_path, args.sort_input)
