@@ -1,4 +1,5 @@
 
+import json
 import requests
 from datetime import date, datetime, timezone
 
@@ -111,7 +112,7 @@ class Neo4jController:
             'DETACH DELETE i')
         return self.query(s, {'id': id})
 
-    def path_query(self, address1, address2):
+    def path_query_old(self, address1, address2):
         s = lb_join(
             'MATCH (start:Address {address: {address1}})<-[:USES]-(o1:Output)',
             '  -[:INPUT|OUTPUT*]->(o2:Output)-[:USES]->(end:Address {address: {address2}}),',
@@ -122,6 +123,25 @@ class Neo4jController:
             'OPTIONAL MATCH (n)-[:USES]->(a)',
             'RETURN n as node, a as address')
         return self.query(s, {'address1': address1, 'address2': address2})
+
+    def path_query(self, address1, address2):
+        url = self.url_base + 'ext/Entity/node/{}/findPathWithBidirectionalStrategy'.format(
+                self.get_id_of_address_node(address1))
+        headers = {'Content-Type': 'application/json'}
+        payload = {'target': self.url_base + 'node/{}'.format(
+                self.get_id_of_address_node(address2))}
+        r = self._session.post(url, auth=(self.user, self.password), json=payload, headers=headers)
+        result = json.loads(r.json())
+        if 'path' in result:
+            return result['path']
+        else:
+            return None
+
+    def get_id_of_address_node(self, address):
+        s = lb_join(
+            'MATCH (a:Address {address: {address}})',
+            'RETURN id(a)')
+        return self.query(s, {'address': address}).single_result()
 
     def get_max_block_height(self):
         s = lb_join(

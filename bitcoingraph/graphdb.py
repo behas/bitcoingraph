@@ -56,7 +56,7 @@ class GraphController:
         self.graph_db.identity_delete_query(id)
 
     def get_path(self, address1, address2):
-        return Path(self.graph_db.path_query(address1, address2).get())
+        return Path(self.graph_db.path_query(address1, address2))
 
     def get_max_block_height(self):
         return self.graph_db.get_max_block_height()
@@ -140,14 +140,13 @@ class Path:
         if self.raw_path:
             path = []
             for idx, row in enumerate(self.raw_path):
-                if 'txid' in row['node']:
-                    transaction = row['node']
-                    path.append(transaction)
+                if 'txid' in row:
+                    path.append(row)
                 else:
-                    output = row['node']
+                    output = row
                     if idx != 0:
                         path.append(output)
-                    path.append(row['address'])
+                    path.append({'address': row['addresses'][0]})
                     if idx != len(self.raw_path) - 1:
                         path.append(output)
             return path
