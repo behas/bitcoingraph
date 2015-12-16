@@ -46,6 +46,19 @@ class Neo4jController:
             'min(b.timestamp) as first, max(b.timestamp) as last')
         return self.query(s, {'address': address})
 
+    def get_received_bitcoins(self, address):
+        s = lb_join(
+            'MATCH (a:Address {address: {address}})<-[:USES]-(o)',
+            'RETURN sum(o.value)')
+        return self.query(s, {'address': address}).single_result()
+
+    def get_unspent_bitcoins(self, address):
+        s = lb_join(
+            'MATCH (a:Address {address: {address}})<-[:USES]-(o)',
+            'WHERE NOT (o)-[:INPUT]->()',
+            'RETURN sum(o.value)')
+        return self.query(s, {'address': address}).single_result()
+
     def address_count_query(self, address, date_from, date_to):
         s = lb_join(
             self.address_period_match,

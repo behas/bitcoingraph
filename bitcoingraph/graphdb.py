@@ -26,6 +26,12 @@ class GraphController:
                 'entity': entity,
                 'pages': (count + rows_per_page - 1) // rows_per_page}
 
+    def get_received_bitcoins(self, address):
+        return self.graph_db.get_received_bitcoins(address)
+
+    def get_unspent_bitcoins(self, address):
+        return self.graph_db.get_unspent_bitcoins(address)
+
     def get_address(self, address, page, date_from=None, date_to=None,
                     rows_per_page=rows_per_page_default):
         if rows_per_page is None:

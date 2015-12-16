@@ -108,6 +108,14 @@ class BitcoinGraph:
         """Return a path between addresses."""
         return self.graph_db.get_path(start, end)
 
+    def get_received_bitcoins(self, address):
+        """Return the total number of bitcoins received by this address."""
+        return self.graph_db.get_received_bitcoins(address)
+
+    def get_unspent_bitcoins(self, address):
+        """Return the current balance of this address."""
+        return self.graph_db.get_unspent_bitcoins(address)
+
     def export(self, start, end, output_path=None, plain_header=False, separate_header=True,
                progress=None, deduplicate_transactions=True):
         """Export the blockchain into CSV files."""
