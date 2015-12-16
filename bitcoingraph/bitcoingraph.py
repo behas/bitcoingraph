@@ -12,7 +12,7 @@ from bitcoingraph.bitcoind import BitcoinProxy, BitcoindException
 from bitcoingraph.blockchain import Blockchain
 from bitcoingraph import entities
 from bitcoingraph.graphdb import GraphController
-from bitcoingraph.helper import sort
+from bitcoingraph.helper import sort, to_json
 from bitcoingraph.writer import CSVDumpWriter
 
 logger = logging.getLogger('bitcoingraph')
@@ -60,6 +60,57 @@ class BitcoinGraph:
     def get_transaction(self, tx_id):
         """Return a transaction."""
         return self.blockchain.get_transaction(tx_id)
+
+    def get_transaction_graph(self, tx_id):
+        """Return a transaction graph."""
+        def address_node(address, type):
+            identities = self.get_identities(address)
+            label = 'known_address' if identities else 'address'
+            return {'label': label, 'address': address, 'type': type}
+
+        transaction = self.get_transaction(tx_id)
+        nodes = [{'label': 'transaction', 'txid': transaction.txid}]
+        links = []
+        inputs = transaction.reduced_inputs()
+        outputs = transaction.reduced_outputs()
+
+        if len(inputs) <= 10:
+            for k, v in inputs.items():
+                nodes.append(address_node(k, 'source'))
+                links.append({'source': len(nodes) - 1, 'target': 0, 'type': 'INPUT', 'value': v})
+        else:
+            nodes.append({'label': 'address', 'amount': len(inputs), 'type': 'source'})
+            links.append({'source': len(nodes) - 1, 'target': 0,
+                          'type': 'INPUT', 'value': transaction.input_sum()})
+        if len(outputs) <= 10:
+            for k, v in outputs.items():
+                nodes.append(address_node(k, 'target'))
+                links.append({'source': 0, 'target': len(nodes) - 1, 'type': 'OUTPUT', 'value': v})
+        else:
+            nodes.append({'label': 'address', 'amount': len(outputs), 'type': 'target'})
+            links.append({'source': 0, 'target': len(nodes) - 1,
+                          'type': 'OUTPUT', 'value': transaction.output_sum()})
+        return to_json({'nodes': nodes, 'links': links})
+
+    def get_path_graph(self, start, end):
+        """Return a path graph."""
+        nodes = []
+        links = []
+        path = self.get_path(start, end).path
+        if path:
+            for pc in path:
+                if 'address' in pc:
+                    identities = self.get_identities(pc['address'])
+                    label = 'known_address' if identities else 'address'
+                    nodes.append({'label': label, 'address': pc['address']})
+                elif 'txid' in pc:
+                    nodes.append({'label': 'transaction', 'txid': pc['txid']})
+                else:
+                    links.append({'source': len(nodes) - 1, 'target': len(nodes),
+                                  'value': pc['value']})
+            return to_json({'nodes': nodes, 'links': links})
+        else:
+            return to_json({})
 
     def get_block_by_height(self, height):
         """Return the block for a given height."""
