@@ -8,6 +8,15 @@ def lb_join(*lines):
     return '\n'.join(lines)
 
 
+class Neo4jException(Exception):
+
+    def __init__(self, msg):
+        self.msg = msg
+
+    def __str__(self):
+        return repr(self.msg)
+
+
 class Neo4jController:
 
     def __init__(self, host, port, user, password):
@@ -35,9 +44,6 @@ class Neo4jController:
         address_period_match,
         'RETURN t.txid as txid, rel_type as type, value as value, b.timestamp as timestamp',
         'ORDER BY b.timestamp desc')
-    entity_match = lb_join(
-        'MATCH (e:Entity)<-[:BELONGS_TO]-(a)',
-        'WHERE id(e) = {id}')
 
     def address_stats_query(self, address):
         s = lb_join(
@@ -84,15 +90,17 @@ class Neo4jController:
             'RETURN {id: id(e)}')
         return self.query(s, {'address': address})
 
-    def entity_count_query(self, id):
+    def get_number_of_addresses_for_entity(self, id):
         s = lb_join(
-            self.entity_match,
-            'RETURN count(*)')
-        return self.query(s, {'id': id})
+            'MATCH (e:Entity)',
+            'WHERE id(e) = {id}',
+            'RETURN size((e)<-[:BELONGS_TO]-())')
+        return self.query(s, {'id': id}).single_result()
 
     def entity_address_query(self, id, limit):
         s = lb_join(
-            self.entity_match,
+            'MATCH (e:Entity)<-[:BELONGS_TO]-(a)',
+            'WHERE id(e) = {id}',
             'OPTIONAL MATCH (a)-[:HAS]->(i)',
             'WITH e, a, collect(i) as is',
             'ORDER BY length(is) desc',
@@ -140,12 +148,15 @@ class Neo4jController:
     def path_query(self, address1, address2):
         url = self.url_base + 'ext/Entity/node/{}/findPathWithBidirectionalStrategy'.format(
                 self.get_id_of_address_node(address1))
-        headers = {'Content-Type': 'application/json'}
         payload = {'target': self.url_base + 'node/{}'.format(
                 self.get_id_of_address_node(address2))}
-        r = self._session.post(url, auth=(self.user, self.password), json=payload, headers=headers)
-        result = json.loads(r.json())
-        if 'path' in result:
+        r = self._session.post(url, auth=(self.user, self.password), json=payload,
+                               headers=self.headers)
+        result_obj = r.json()
+        result = json.loads(result_obj) if type(result_obj) is str else result_obj
+        if 'errors' in result:
+            raise Neo4jException(result['errors'][0]['message'])
+        elif 'path' in result:
             return result['path']
         else:
             return None
@@ -213,15 +224,18 @@ class Neo4jController:
         self._session.post(url, auth=(self.user, self.password))
 
     def query(self, statement, parameters=None):
+        print(statement, '||', parameters)
         statement_json = {'statement': statement}
         if parameters is not None:
             statement_json['parameters'] = parameters
         payload = {'statements': [statement_json]}
         r = self._session.post(self.url, auth=(self.user, self.password),
                                headers=self.headers, json=payload)
-        if r.status_code != 200:
-            pass  # maybe raise an exception here
-        return QueryResult(r.json())
+        result = r.json()
+        if result['errors']:
+            raise Neo4jException(result['errors'][0]['message'])
+        #print(result)
+        return QueryResult(result)
 
     @staticmethod
     def as_address_query_parameter(address, date_from=None, date_to=None):

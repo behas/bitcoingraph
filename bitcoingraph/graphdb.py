@@ -46,7 +46,7 @@ class GraphController:
         return identities
 
     def get_entity(self, id, max_addresses=rows_per_page_default):
-        count = self.graph_db.entity_count_query(id).single_result()
+        count = self.graph_db.get_number_of_addresses_for_entity(id)
         result = self.graph_db.entity_address_query(id, max_addresses)
         entity = {'id': id, 'addresses': result.get(), 'number_of_addresses': count}
         return entity
