@@ -91,19 +91,20 @@ class Address:
     def __init__(self, address, identities, outputs):
         self.address = address
         self.identities = identities
-        self.outputs = [{'txid': o['txid'], 'type': o['type'], 'value': o['value'],
+        self.outputs = [{'txid': o['txid'], 'value': o['value'],
                          'timestamp': to_time(o['timestamp'])}
                         for o in outputs]
 
     def get_incoming_transactions(self):
         for output in self.outputs:
-            if output['type'] == 'OUTPUT':
+            if output['value'] > 0:
                 yield output
 
     def get_outgoing_transactions(self):
         for output in self.outputs:
-            if output['type'] == 'INPUT':
-                yield output
+            if output['value'] < 0:
+                yield {'txid': output['txid'], 'value': -output['value'],
+                       'timestamp': output['timestamp']}
 
     def to_graph_json(self):
         def value_sum(transactions):
@@ -118,7 +119,7 @@ class Address:
                 nodes.append({'label': 'transaction', 'txid': transaction['txid'],
                               'type': 'source'})
                 links.append({'source': len(nodes) - 1, 'target': 0,
-                              'type': transaction['type'], 'value': transaction['value']})
+                              'value': transaction['value']})
         else:
             nodes.append({'label': 'transaction', 'amount': len(incoming_transactions),
                           'type': 'source'})
@@ -129,7 +130,7 @@ class Address:
                 nodes.append({'label': 'transaction', 'txid': transaction['txid'],
                               'type': 'target'})
                 links.append({'source': 0, 'target': len(nodes) - 1,
-                              'type': transaction['type'], 'value': transaction['value']})
+                              'value': transaction['value']})
         else:
             nodes.append({'label': 'transaction', 'amount': len(outgoing_transactions),
                           'type': 'target'})

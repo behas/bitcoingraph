@@ -34,28 +34,33 @@ class Neo4jController:
         self._session = requests.Session()
 
     address_match = lb_join(
-        'MATCH (a:Address {address: {address}})<-[:USES]-'
-        '(o)-[r:INPUT|OUTPUT]-(t)<-[:CONTAINS]-(b)',
-        'WITH a, t, type(r) AS rel_type, sum(o.value) AS value, b')
-    address_period_match = lb_join(
+        'MATCH (a:Address {address: {address}})<-[:USES]-(o),',
+        '  (o)-[r:INPUT|OUTPUT]-(t)<-[:CONTAINS]-(b)',
+        'WITH a, t, b,',
+        'CASE type(r) WHEN "OUTPUT" THEN sum(o.value) ELSE -sum(o.value) END AS value')
+    reduced_address_match = lb_join(
         address_match,
+        'WITH a, t, b, sum(value) AS value')
+    address_period_match = lb_join(
+        reduced_address_match,
         'WHERE b.timestamp > {from} AND b.timestamp < {to}')
     address_statement = lb_join(
         address_period_match,
-        'RETURN t.txid as txid, rel_type as type, value as value, b.timestamp as timestamp',
+        'RETURN t.txid as txid, value, b.timestamp as timestamp',
         'ORDER BY b.timestamp desc')
 
     def address_stats_query(self, address):
         s = lb_join(
-            self.address_match,
+            self.reduced_address_match,
             'RETURN count(*) as num_transactions, '
             'min(b.timestamp) as first, max(b.timestamp) as last')
         return self.query(s, {'address': address})
 
     def get_received_bitcoins(self, address):
         s = lb_join(
-            'MATCH (a:Address {address: {address}})<-[:USES]-(o)',
-            'RETURN sum(o.value)')
+            self.reduced_address_match,
+            'WHERE value > 0',
+            'RETURN sum(value)')
         return self.query(s, {'address': address}).single_result()
 
     def get_unspent_bitcoins(self, address):
