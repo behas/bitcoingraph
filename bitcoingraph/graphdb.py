@@ -41,6 +41,12 @@ class GraphController:
                                                           page * rows_per_page, rows_per_page)
         return Address(address, self.get_identities(address), query.get())
 
+    def incoming_addresses(self, address, date_from, date_to):
+        return self.graph_db.incoming_addresses(address, date_from, date_to)
+
+    def outgoing_addresses(self, address, date_from, date_to):
+        return self.graph_db.outgoing_addresses(address, date_from, date_to)
+
     def get_identities(self, address):
         identities = self.graph_db.identity_query(address).single_result()
         return identities

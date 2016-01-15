@@ -89,6 +89,30 @@ class Neo4jController:
         p['limit'] = limit
         return self.query(s, p)
 
+    def incoming_addresses(self, address, date_from, date_to):
+        s = lb_join(
+            'MATCH (a:Address {address: {address}})<-[:USES]-(o),',
+            '  (o)<-[:OUTPUT]-(t)<-[:INPUT]-(o2)-[:USES]->(a2),',
+            '  (t)<-[:CONTAINS]-(b)',
+            'WITH DISTINCT a, a2, t, b',
+            'WHERE a2 <> a',
+            'AND b.timestamp > {from} AND b.timestamp < {to}',
+            'RETURN a2.address as address, count(t) as transactions',
+            'ORDER BY transactions desc')
+        return self.query(s, self.as_address_query_parameter(address, date_from, date_to)).get()
+
+    def outgoing_addresses(self, address, date_from, date_to):
+        s = lb_join(
+            'MATCH (a:Address {address: {address}})<-[:USES]-(o),',
+            '  (o)-[:INPUT]->(t)-[:OUTPUT]->(o2)-[:USES]->(a2),',
+            '  (t)<-[:CONTAINS]-(b)',
+            'WITH DISTINCT a, a2, t, b',
+            'WHERE a2 <> a',
+            'AND b.timestamp > {from} AND b.timestamp < {to}',
+            'RETURN a2.address as address, count(t) as transactions',
+            'ORDER BY transactions desc')
+        return self.query(s, self.as_address_query_parameter(address, date_from, date_to)).get()
+
     def entity_query(self, address):
         s = lb_join(
             'MATCH (a:Address {address: {address}})-[:BELONGS_TO]->(e)',

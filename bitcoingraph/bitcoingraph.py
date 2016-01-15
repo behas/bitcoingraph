@@ -61,13 +61,16 @@ class BitcoinGraph:
         """Return a transaction."""
         return self.blockchain.get_transaction(tx_id)
 
+    def address_node(self, address, type=None):
+        identities = self.get_identities(address)
+        label = 'known_address' if identities else 'address'
+        node = {'label': label, 'address': address}
+        if type is not None:
+            node['type'] = type
+        return node
+
     def get_transaction_graph(self, tx_id):
         """Return a transaction graph."""
-        def address_node(address, type):
-            identities = self.get_identities(address)
-            label = 'known_address' if identities else 'address'
-            return {'label': label, 'address': address, 'type': type}
-
         transaction = self.get_transaction(tx_id)
         nodes = [{'label': 'transaction', 'txid': transaction.txid}]
         links = []
@@ -76,7 +79,7 @@ class BitcoinGraph:
 
         if len(inputs) <= 10:
             for k, v in inputs.items():
-                nodes.append(address_node(k, 'source'))
+                nodes.append(self.address_node(k, 'source'))
                 links.append({'source': len(nodes) - 1, 'target': 0, 'type': 'INPUT', 'value': v})
         else:
             nodes.append({'label': 'address', 'amount': len(inputs), 'type': 'source'})
@@ -84,12 +87,33 @@ class BitcoinGraph:
                           'type': 'INPUT', 'value': transaction.input_sum()})
         if len(outputs) <= 10:
             for k, v in outputs.items():
-                nodes.append(address_node(k, 'target'))
+                nodes.append(self.address_node(k, 'target'))
                 links.append({'source': 0, 'target': len(nodes) - 1, 'type': 'OUTPUT', 'value': v})
         else:
             nodes.append({'label': 'address', 'amount': len(outputs), 'type': 'target'})
             links.append({'source': 0, 'target': len(nodes) - 1,
                           'type': 'OUTPUT', 'value': transaction.output_sum()})
+        return to_json({'nodes': nodes, 'links': links})
+
+    def get_address_relation_graph(self, address, date_from, date_to):
+        def add_related_address_nodes(related_addresses, type):
+            loosely_related_addresses = [row for row in related_addresses
+                                         if row['transactions'] == 1]
+            other = 'target' if type == 'source' else 'source'
+            for row in related_addresses:
+                if len(loosely_related_addresses) <= 10 or row['transactions'] > 1:
+                    nodes.append(self.address_node(row['address'], type))
+                    links.append({type: len(nodes) - 1, other: 0, 'value': row['transactions']})
+            if len(loosely_related_addresses) > 10:
+                nodes.append({'label': 'address', 'amount': len(loosely_related_addresses),
+                              'type': type})
+                links.append({type: len(nodes) - 1, other: 0})
+        nodes = [self.address_node(address)]
+        links = []
+        incoming_addresses = self.graph_db.incoming_addresses(address, date_from, date_to)
+        outgoing_addresses = self.graph_db.outgoing_addresses(address, date_from, date_to)
+        add_related_address_nodes(incoming_addresses, 'source')
+        add_related_address_nodes(outgoing_addresses, 'target')
         return to_json({'nodes': nodes, 'links': links})
 
     def get_path_graph(self, start, end):
