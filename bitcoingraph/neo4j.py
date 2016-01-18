@@ -90,9 +90,15 @@ class Neo4jController:
         return self.query(s, p)
 
     def incoming_addresses(self, address, date_from, date_to):
+        return self._related_addresses(address, date_from, date_to, '<-[:OUTPUT]-(t)<-[:INPUT]-')
+
+    def outgoing_addresses(self, address, date_from, date_to):
+        return self._related_addresses(address, date_from, date_to, '-[:INPUT]->(t)-[:OUTPUT]->')
+
+    def _related_addresses(self, address, date_from, date_to, output_relation):
         s = lb_join(
             'MATCH (a:Address {address: {address}})<-[:USES]-(o),',
-            '  (o)<-[:OUTPUT]-(t)<-[:INPUT]-(o2)-[:USES]->(a2),',
+            '  (o)' + output_relation + '(o2)-[:USES]->(a2),',
             '  (t)<-[:CONTAINS]-(b)',
             'WITH DISTINCT a, a2, t, b',
             'WHERE a2 <> a',
@@ -101,17 +107,20 @@ class Neo4jController:
             'ORDER BY transactions desc')
         return self.query(s, self.as_address_query_parameter(address, date_from, date_to)).get()
 
-    def outgoing_addresses(self, address, date_from, date_to):
+    def transaction_relations(self, address, address2, date_from, date_to):
         s = lb_join(
             'MATCH (a:Address {address: {address}})<-[:USES]-(o),',
-            '  (o)-[:INPUT]->(t)-[:OUTPUT]->(o2)-[:USES]->(a2),',
+            '  (o)-[:INPUT]->(t)-[:OUTPUT]->(o2),',
+            '  (o2)-[:USES]->(a2:Address {address: {address2}}),',
             '  (t)<-[:CONTAINS]-(b)',
-            'WITH DISTINCT a, a2, t, b',
-            'WHERE a2 <> a',
-            'AND b.timestamp > {from} AND b.timestamp < {to}',
-            'RETURN a2.address as address, count(t) as transactions',
-            'ORDER BY transactions desc')
-        return self.query(s, self.as_address_query_parameter(address, date_from, date_to)).get()
+            'WHERE b.timestamp > {from} AND b.timestamp < {to}',
+            'WITH a, a2, t, b, collect(DISTINCT o) as ins, collect(DISTINCT o2) as outs',
+            'RETURN t.txid as txid, reduce(sum=0, o in ins | sum+o.value) as in,',
+            '  reduce(sum=0, o in outs | sum+o.value) as out, b.timestamp as timestamp',
+            'ORDER BY b.timestamp desc')
+        p = self.as_address_query_parameter(address, date_from, date_to)
+        p['address2'] = address2
+        return self.query(s, p).get()
 
     def entity_query(self, address):
         s = lb_join(
