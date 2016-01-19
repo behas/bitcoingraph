@@ -48,7 +48,11 @@ class GraphController:
         return self.graph_db.outgoing_addresses(address, date_from, date_to)
 
     def transaction_relations(self, address1, address2, date_from, date_to):
-        return self.graph_db.transaction_relations(address1, address2, date_from, date_to)
+        trs = self.graph_db.transaction_relations(address1, address2, date_from, date_to)
+        transaction_relations = [{'txid': tr['txid'], 'in': tr['in'], 'out': tr['out'],
+                                  'timestamp': to_time(tr['timestamp'])}
+                                 for tr in trs]
+        return transaction_relations
 
     def get_identities(self, address):
         identities = self.graph_db.identity_query(address).single_result()
@@ -114,38 +118,6 @@ class Address:
             if output['value'] < 0:
                 yield {'txid': output['txid'], 'value': -output['value'],
                        'timestamp': output['timestamp']}
-
-    def to_graph_json(self):
-        def value_sum(transactions):
-            return sum([trans['value'] for trans in transactions])
-        label = 'known_address' if self.identities else 'address'
-        nodes = [{'label': label, 'address': self.address}]
-        links = []
-        incoming_transactions = list(self.get_incoming_transactions())
-        outgoing_transactions = list(self.get_outgoing_transactions())
-        if len(incoming_transactions) <= 10:
-            for transaction in incoming_transactions:
-                nodes.append({'label': 'transaction', 'txid': transaction['txid'],
-                              'type': 'source'})
-                links.append({'source': len(nodes) - 1, 'target': 0,
-                              'value': transaction['value']})
-        else:
-            nodes.append({'label': 'transaction', 'amount': len(incoming_transactions),
-                          'type': 'source'})
-            links.append({'source': len(nodes) - 1, 'target': 0,
-                          'type': 'OUTPUT', 'value': value_sum(incoming_transactions)})
-        if len(outgoing_transactions) <= 10:
-            for transaction in outgoing_transactions:
-                nodes.append({'label': 'transaction', 'txid': transaction['txid'],
-                              'type': 'target'})
-                links.append({'source': 0, 'target': len(nodes) - 1,
-                              'value': transaction['value']})
-        else:
-            nodes.append({'label': 'transaction', 'amount': len(outgoing_transactions),
-                          'type': 'target'})
-            links.append({'source': 0, 'target': len(nodes) - 1,
-                          'type': 'INPUT', 'value': value_sum(outgoing_transactions)})
-        return to_json({'nodes': nodes, 'links': links})
 
 
 class Path:

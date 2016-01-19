@@ -67,7 +67,7 @@ class BitcoinGraph:
     def outgoing_addresses(self, address, date_from, date_to):
         return self.graph_db.outgoing_addresses(address, date_from, date_to)
 
-    def transaction_relations(self, address1, address2, date_from, date_to):
+    def transaction_relations(self, address1, address2, date_from=None, date_to=None):
         return self.graph_db.transaction_relations(address1, address2, date_from, date_to)
 
     def get_block_by_height(self, height):
