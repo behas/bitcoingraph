@@ -3,6 +3,10 @@ from bitcoingraph.neo4j import Neo4jController
 from bitcoingraph.helper import to_time, to_json
 
 
+def round_value(bitcoin_value):
+    return round(bitcoin_value, 8)
+
+
 class GraphController:
 
     rows_per_page_default = 20
@@ -49,7 +53,8 @@ class GraphController:
 
     def transaction_relations(self, address1, address2, date_from, date_to):
         trs = self.graph_db.transaction_relations(address1, address2, date_from, date_to)
-        transaction_relations = [{'txid': tr['txid'], 'in': tr['in'], 'out': tr['out'],
+        transaction_relations = [{'txid': tr['txid'], 'in': round_value(tr['in']),
+                                  'out': round_value(tr['out']),
                                   'timestamp': to_time(tr['timestamp'])}
                                  for tr in trs]
         return transaction_relations
@@ -104,7 +109,7 @@ class Address:
     def __init__(self, address, identities, outputs):
         self.address = address
         self.identities = identities
-        self.outputs = [{'txid': o['txid'], 'value': o['value'],
+        self.outputs = [{'txid': o['txid'], 'value': round_value(o['value']),
                          'timestamp': to_time(o['timestamp'])}
                         for o in outputs]
 
