@@ -184,10 +184,14 @@ class Neo4jController:
         return self.query(s, {'address1': address1, 'address2': address2})
 
     def path_query(self, address1, address2):
-        url = self.url_base + 'ext/Entity/node/{}/findPathWithBidirectionalStrategy'.format(
-                self.get_id_of_address_node(address1))
-        payload = {'target': self.url_base + 'node/{}'.format(
-                self.get_id_of_address_node(address2))}
+        source = self.get_id_of_address_node(address1)
+        if source is None:
+            raise Neo4jException("address {} doesn't exist".format(address1))
+        target = self.get_id_of_address_node(address2)
+        if target is None:
+            raise Neo4jException("address {} doesn't exist".format(address2))
+        url = self.url_base + 'ext/Entity/node/{}/findPathWithBidirectionalStrategy'.format(source)
+        payload = {'target': self.url_base + 'node/{}'.format(target)}
         r = self._session.post(url, auth=(self.user, self.password), json=payload,
                                headers=self.headers)
         result_obj = r.json()
@@ -262,7 +266,7 @@ class Neo4jController:
         self._session.post(url, auth=(self.user, self.password))
 
     def query(self, statement, parameters=None):
-        print(statement, '||', parameters)
+        #print(statement, '||', parameters)
         statement_json = {'statement': statement}
         if parameters is not None:
             statement_json['parameters'] = parameters
