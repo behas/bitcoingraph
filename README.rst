@@ -176,7 +176,7 @@ dump:
 
 ::
 
-    bcgraph-compute-entities -i block_0_1000
+    bcgraph-compute-entities -i blocks_0_1000
 
 Two additional files are created:
 
