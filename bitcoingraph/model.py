@@ -1,5 +1,5 @@
 
-from bitcoingraph.helper import to_time, to_json
+from bitcoingraph.helper import to_time
 
 
 class Block:
@@ -136,6 +136,9 @@ class Transaction:
     def is_coinbase(self):
         return self.inputs[0].is_coinbase
 
+    def input_sum(self):
+        return sum([input.output.value for input in self.inputs])
+
     def output_sum(self):
         return sum([output.value for output in self.outputs])
 
@@ -161,29 +164,23 @@ class Transaction:
                     aggregated_outputs[output.addresses[0]] = output.value
         return aggregated_outputs
 
-    def to_graph_json(self):
-        nodes = [{'label': 'Transaction', 'txid': self.txid}]
-        links = []
-        aggregated_inputs = self.aggregated_inputs()
-        aggregated_outputs = self.aggregated_outputs()
+    @staticmethod
+    def _reduced_values(values, other_values):
+        reduced_values = {}
+        for address, value in values.items():
+            if address in other_values:
+                other_value = other_values[address]
+                if value > other_value:
+                    reduced_values[address] = value - other_value
+            else:
+                reduced_values[address] = value
+        return reduced_values
 
-        if len(aggregated_inputs) <= 10:
-            for k, v in aggregated_inputs.items():
-                nodes.append({'label': 'Address', 'address': k, 'type': 'source'})
-                links.append({'source': len(nodes) - 1, 'target': 0, 'type': 'INPUT', 'value': v})
-        else:
-            nodes.append({'label': 'Address', 'amount': len(aggregated_inputs), 'type': 'source'})
-            links.append({'source': len(nodes) - 1, 'target': 0,
-                          'type': 'INPUT', 'value': self.output_sum()})
-        if len(aggregated_outputs) <= 10:
-            for k, v in aggregated_outputs.items():
-                nodes.append({'label': 'Address', 'address': k, 'type': 'target'})
-                links.append({'source': 0, 'target': len(nodes) - 1, 'type': 'OUTPUT', 'value': v})
-        else:
-            nodes.append({'label': 'Address', 'amount': len(aggregated_outputs), 'type': 'target'})
-            links.append({'source': 0, 'target': len(nodes) - 1,
-                          'type': 'OUTPUT', 'value': self.output_sum()})
-        return to_json({'nodes': nodes, 'links': links})
+    def reduced_inputs(self):
+        return self._reduced_values(self.aggregated_inputs(), self.aggregated_outputs())
+
+    def reduced_outputs(self):
+        return self._reduced_values(self.aggregated_outputs(), self.aggregated_inputs())
 
 
 class Input:

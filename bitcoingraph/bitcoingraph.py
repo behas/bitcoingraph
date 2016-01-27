@@ -61,6 +61,15 @@ class BitcoinGraph:
         """Return a transaction."""
         return self.blockchain.get_transaction(tx_id)
 
+    def incoming_addresses(self, address, date_from, date_to):
+        return self.graph_db.incoming_addresses(address, date_from, date_to)
+
+    def outgoing_addresses(self, address, date_from, date_to):
+        return self.graph_db.outgoing_addresses(address, date_from, date_to)
+
+    def transaction_relations(self, address1, address2, date_from=None, date_to=None):
+        return self.graph_db.transaction_relations(address1, address2, date_from, date_to)
+
     def get_block_by_height(self, height):
         """Return the block for a given height."""
         return self.blockchain.get_block_by_height(height)
@@ -108,6 +117,14 @@ class BitcoinGraph:
         """Return a path between addresses."""
         return self.graph_db.get_path(start, end)
 
+    def get_received_bitcoins(self, address):
+        """Return the total number of bitcoins received by this address."""
+        return self.graph_db.get_received_bitcoins(address)
+
+    def get_unspent_bitcoins(self, address):
+        """Return the current balance of this address."""
+        return self.graph_db.get_unspent_bitcoins(address)
+
     def export(self, start, end, output_path=None, plain_header=False, separate_header=True,
                progress=None, deduplicate_transactions=True):
         """Export the blockchain into CSV files."""
@@ -137,13 +154,16 @@ class BitcoinGraph:
         """
         start = self.graph_db.get_max_block_height() + 1
         blockchain_end = self.blockchain.get_max_block_height() - 2
-        if max_blocks is None:
-            end = blockchain_end
+        if start > blockchain_end:
+            print('Already up-to-date.')
         else:
-            end = min(start + max_blocks - 1, blockchain_end)
-        print('add blocks', start, 'to', end)
-        for block in self.blockchain.get_blocks_in_range(start, end):
-            self.graph_db.add_block(block)
+            if max_blocks is None:
+                end = blockchain_end
+            else:
+                end = min(start + max_blocks - 1, blockchain_end)
+            print('add blocks', start, 'to', end)
+            for block in self.blockchain.get_blocks_in_range(start, end):
+                self.graph_db.add_block(block)
 
 
 def compute_entities(input_path, sort_input=False):

@@ -1,10 +1,20 @@
 
+import json
 import requests
 from datetime import date, datetime, timezone
 
 
 def lb_join(*lines):
     return '\n'.join(lines)
+
+
+class Neo4jException(Exception):
+
+    def __init__(self, msg):
+        self.msg = msg
+
+    def __str__(self):
+        return repr(self.msg)
 
 
 class Neo4jController:
@@ -24,26 +34,41 @@ class Neo4jController:
         self._session = requests.Session()
 
     address_match = lb_join(
-        'MATCH (a:Address {address: {address}})<-[:USES]-'
-        '(o)-[r:INPUT|OUTPUT]-(t)<-[:CONTAINS]-(b)',
-        'WITH a, t, type(r) AS rel_type, sum(o.value) AS value, b')
-    address_period_match = lb_join(
+        'MATCH (a:Address {address: {address}})<-[:USES]-(o),',
+        '  (o)-[r:INPUT|OUTPUT]-(t)<-[:CONTAINS]-(b)',
+        'WITH a, t, b,',
+        'CASE type(r) WHEN "OUTPUT" THEN sum(o.value) ELSE -sum(o.value) END AS value')
+    reduced_address_match = lb_join(
         address_match,
+        'WITH a, t, b, sum(value) AS value')
+    address_period_match = lb_join(
+        reduced_address_match,
         'WHERE b.timestamp > {from} AND b.timestamp < {to}')
     address_statement = lb_join(
         address_period_match,
-        'RETURN t.txid as txid, rel_type as type, value as value, b.timestamp as timestamp',
+        'RETURN t.txid as txid, value, b.timestamp as timestamp',
         'ORDER BY b.timestamp desc')
-    entity_match = lb_join(
-        'MATCH (e:Entity)<-[:BELONGS_TO]-(a)',
-        'WHERE id(e) = {id}')
 
     def address_stats_query(self, address):
         s = lb_join(
-            self.address_match,
+            self.reduced_address_match,
             'RETURN count(*) as num_transactions, '
             'min(b.timestamp) as first, max(b.timestamp) as last')
         return self.query(s, {'address': address})
+
+    def get_received_bitcoins(self, address):
+        s = lb_join(
+            self.reduced_address_match,
+            'WHERE value > 0',
+            'RETURN sum(value)')
+        return self.query(s, {'address': address}).single_result()
+
+    def get_unspent_bitcoins(self, address):
+        s = lb_join(
+            'MATCH (a:Address {address: {address}})<-[:USES]-(o)',
+            'WHERE NOT (o)-[:INPUT]->()',
+            'RETURN sum(o.value)')
+        return self.query(s, {'address': address}).single_result()
 
     def address_count_query(self, address, date_from, date_to):
         s = lb_join(
@@ -64,21 +89,56 @@ class Neo4jController:
         p['limit'] = limit
         return self.query(s, p)
 
+    def incoming_addresses(self, address, date_from, date_to):
+        return self._related_addresses(address, date_from, date_to, '<-[:OUTPUT]-(t)<-[:INPUT]-')
+
+    def outgoing_addresses(self, address, date_from, date_to):
+        return self._related_addresses(address, date_from, date_to, '-[:INPUT]->(t)-[:OUTPUT]->')
+
+    def _related_addresses(self, address, date_from, date_to, output_relation):
+        s = lb_join(
+            'MATCH (a:Address {address: {address}})<-[:USES]-(o),',
+            '  (o)' + output_relation + '(o2)-[:USES]->(a2),',
+            '  (t)<-[:CONTAINS]-(b)',
+            'WITH DISTINCT a, a2, t, b',
+            'WHERE a2 <> a',
+            'AND b.timestamp > {from} AND b.timestamp < {to}',
+            'RETURN a2.address as address, count(t) as transactions',
+            'ORDER BY transactions desc')
+        return self.query(s, self.as_address_query_parameter(address, date_from, date_to)).get()
+
+    def transaction_relations(self, address, address2, date_from, date_to):
+        s = lb_join(
+            'MATCH (a:Address {address: {address}})<-[:USES]-(o),',
+            '  (o)-[:INPUT]->(t)-[:OUTPUT]->(o2),',
+            '  (o2)-[:USES]->(a2:Address {address: {address2}}),',
+            '  (t)<-[:CONTAINS]-(b)',
+            'WHERE b.timestamp > {from} AND b.timestamp < {to}',
+            'WITH a, a2, t, b, collect(DISTINCT o) as ins, collect(DISTINCT o2) as outs',
+            'RETURN t.txid as txid, reduce(sum=0, o in ins | sum+o.value) as in,',
+            '  reduce(sum=0, o in outs | sum+o.value) as out, b.timestamp as timestamp',
+            'ORDER BY b.timestamp desc')
+        p = self.as_address_query_parameter(address, date_from, date_to)
+        p['address2'] = address2
+        return self.query(s, p).get()
+
     def entity_query(self, address):
         s = lb_join(
             'MATCH (a:Address {address: {address}})-[:BELONGS_TO]->(e)',
             'RETURN {id: id(e)}')
         return self.query(s, {'address': address})
 
-    def entity_count_query(self, id):
+    def get_number_of_addresses_for_entity(self, id):
         s = lb_join(
-            self.entity_match,
-            'RETURN count(*)')
-        return self.query(s, {'id': id})
+            'MATCH (e:Entity)',
+            'WHERE id(e) = {id}',
+            'RETURN size((e)<-[:BELONGS_TO]-())')
+        return self.query(s, {'id': id}).single_result()
 
     def entity_address_query(self, id, limit):
         s = lb_join(
-            self.entity_match,
+            'MATCH (e:Entity)<-[:BELONGS_TO]-(a)',
+            'WHERE id(e) = {id}',
             'OPTIONAL MATCH (a)-[:HAS]->(i)',
             'WITH e, a, collect(i) as is',
             'ORDER BY length(is) desc',
@@ -111,7 +171,7 @@ class Neo4jController:
             'DETACH DELETE i')
         return self.query(s, {'id': id})
 
-    def path_query(self, address1, address2):
+    def path_query_old(self, address1, address2):
         s = lb_join(
             'MATCH (start:Address {address: {address1}})<-[:USES]-(o1:Output)',
             '  -[:INPUT|OUTPUT*]->(o2:Output)-[:USES]->(end:Address {address: {address2}}),',
@@ -122,6 +182,32 @@ class Neo4jController:
             'OPTIONAL MATCH (n)-[:USES]->(a)',
             'RETURN n as node, a as address')
         return self.query(s, {'address1': address1, 'address2': address2})
+
+    def path_query(self, address1, address2):
+        source = self.get_id_of_address_node(address1)
+        if source is None:
+            raise Neo4jException("address {} doesn't exist".format(address1))
+        target = self.get_id_of_address_node(address2)
+        if target is None:
+            raise Neo4jException("address {} doesn't exist".format(address2))
+        url = self.url_base + 'ext/Entity/node/{}/findPathWithBidirectionalStrategy'.format(source)
+        payload = {'target': self.url_base + 'node/{}'.format(target)}
+        r = self._session.post(url, auth=(self.user, self.password), json=payload,
+                               headers=self.headers)
+        result_obj = r.json()
+        result = json.loads(result_obj) if type(result_obj) is str else result_obj
+        if 'errors' in result:
+            raise Neo4jException(result['errors'][0]['message'])
+        elif 'path' in result:
+            return result['path']
+        else:
+            return None
+
+    def get_id_of_address_node(self, address):
+        s = lb_join(
+            'MATCH (a:Address {address: {address}})',
+            'RETURN id(a)')
+        return self.query(s, {'address': address}).single_result()
 
     def get_max_block_height(self):
         s = lb_join(
@@ -180,15 +266,18 @@ class Neo4jController:
         self._session.post(url, auth=(self.user, self.password))
 
     def query(self, statement, parameters=None):
+        #print(statement, '||', parameters)
         statement_json = {'statement': statement}
         if parameters is not None:
             statement_json['parameters'] = parameters
         payload = {'statements': [statement_json]}
         r = self._session.post(self.url, auth=(self.user, self.password),
                                headers=self.headers, json=payload)
-        if r.status_code != 200:
-            pass  # maybe raise an exception here
-        return QueryResult(r.json())
+        result = r.json()
+        if result['errors']:
+            raise Neo4jException(result['errors'][0]['message'])
+        #print(result)
+        return QueryResult(result)
 
     @staticmethod
     def as_address_query_parameter(address, date_from=None, date_to=None):
