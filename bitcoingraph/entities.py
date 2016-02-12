@@ -128,23 +128,24 @@ def calculate_input_addresses(input_path):
 
             match_address = last_address if output_ref == last_output else None
 
-            for output_row in output_address_reader:
-                output = output_row[0]
-                address = output_row[1]
-                if output_ref == output:
-                    if match_address is None:
-                        match_address = address
-                    else:
-                        match_address = None
+            if output_ref >= last_output:
+                for output_row in output_address_reader:
+                    output = output_row[0]
+                    address = output_row[1]
+                    if output_ref == output:
+                        if match_address is None:
+                            match_address = address
+                        else:
+                            match_address = None
+                            last_output = output
+                            last_address = address
+                            break
+                    elif output_ref < output:
                         last_output = output
                         last_address = address
                         break
-                elif output_ref < output:
                     last_output = output
                     last_address = address
-                    break
-                last_output = output
-                last_address = address
 
             if match_address is not None:
                 input_address_writer.writerow([txid, match_address])
