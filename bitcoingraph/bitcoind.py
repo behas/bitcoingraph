@@ -70,8 +70,8 @@ class JSONRPCInterface:
         hadConnectionFailures = False
         while True:
             try:
-                response = self._session.get(self._url, headers=self._headers,
-                                             data=payload)
+                response = self._session.post(self._url, headers=self._headers,
+                                              data=payload)
             except requests.exceptions.ConnectionError as e:
                 print(self._url)
                 print(e)
